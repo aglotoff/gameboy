@@ -1,18 +1,12 @@
-import { fetchImmediateByte, readRegister, writeRegister } from "./cpu";
-import { instructions } from "./instructions";
+import { readRegister, writeRegister } from "./cpu";
+import { nextInstruction } from "./instructions";
 import * as Memory from "./memory";
 
 const run = () => {
   let cycles = 0;
 
   while (true) {
-    const opcode = fetchImmediateByte();
-
-    const instruction = instructions[opcode];
-
-    if (!instruction) {
-      throw new Error(`Invalid opcode ${opcode.toString(16)}`);
-    }
+    const instruction = nextInstruction();
 
     console.log(
       "Executing instruction",

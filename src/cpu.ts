@@ -147,3 +147,22 @@ let ime = false;
 export const setIME = (value: boolean) => {
   ime = value;
 };
+
+const updateZeroFlag = (result: number) => {
+  if (result === 0) {
+    setFlag("Z");
+  } else {
+    clearFlag("Z");
+  }
+};
+
+export const xor = (a: number, b: number) => {
+  const result = a ^ b;
+
+  updateZeroFlag(result);
+  clearFlag("N");
+  clearFlag("H");
+  clearFlag("CY");
+
+  return result;
+};
