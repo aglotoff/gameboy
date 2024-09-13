@@ -20,6 +20,19 @@ const registers = {
   pc: 0,
 };
 
+export const resetRegisters = () => {
+  registers.a = 0;
+  registers.f = 0;
+  registers.b = 0;
+  registers.c = 0;
+  registers.d = 0;
+  registers.e = 0;
+  registers.h = 0;
+  registers.l = 0;
+  registers.sp = 0;
+  registers.pc = 0;
+};
+
 export const readRegister = (register: Register) => {
   switch (register) {
     case "A":
@@ -83,12 +96,20 @@ export const writeRegister = (register: Register, value: number) => {
 const pairToRegisters = (pair: RegisterPair) =>
   [pair.charAt(0), pair.charAt(1)] as [Register8, Register8];
 
-const getHighByte = (value: number) => (value >> 8) & 0xff;
+export const getHighByte = (value: number) => (value >> 8) & 0xff;
 
-const getLowByte = (value: number) => value & 0xff;
+export const getLowByte = (value: number) => value & 0xff;
 
 const makeWord = (highByte: number, lowByte: number) =>
   (highByte << 8) | lowByte;
+
+export function incrementWord(value: number) {
+  return (value + 1) & 0xffff;
+}
+
+export function decrementWord(value: number) {
+  return (0x10000 + value - 1) & 0xffff;
+}
 
 export const readRegisterPair = (pair: RegisterPair) => {
   const [high, low] = pairToRegisters(pair);

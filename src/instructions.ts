@@ -1,14 +1,17 @@
 import {
   checkCondition,
   Condition,
+  decrementWord,
   fetchImmediateByte,
   fetchImmediateWord,
+  incrementWord,
   readRegister,
   readRegisterPair,
   Register8,
   RegisterPair,
   setIME,
   writeRegister,
+  writeRegisterPair,
   xor,
 } from "./cpu";
 import * as Memory from "./memory";
@@ -20,60 +23,126 @@ const nop = () => {
   return 4;
 };
 
-const loadRegisterIntoRegister =
-  (source: Register8, destination: Register8) => () => {
-    writeRegister(destination, readRegister(source));
-    return 4;
-  };
+export function loadRegisterFromRegister(
+  destination: Register8,
+  source: Register8
+) {
+  writeRegister(destination, readRegister(source));
+  return 4;
+}
 
-const loadImmediateByteIntoRegister = (destination: Register8) => () => {
+export function loadRegisterFromImmediate(destination: Register8) {
   const data = fetchImmediateByte();
   writeRegister(destination, data);
   return 8;
-};
+}
 
-const loadPointerDataIntoRegister =
-  (source: RegisterPair, destination: Register8) => () => {
-    const data = Memory.read(readRegisterPair(source));
-    writeRegister(destination, data);
-    return 8;
-  };
+export function loadRegisterFromIndirectHL(destination: Register8) {
+  const data = Memory.read(readRegisterPair("HL"));
+  writeRegister(destination, data);
+  return 8;
+}
 
-const loadRegisterIntoPointerMemory =
-  (source: Register8, destination: RegisterPair) => () => {
-    Memory.write(readRegisterPair(destination), readRegister(source));
-    return 8;
-  };
+export function loadIndirectHLFromRegister(source: Register8) {
+  Memory.write(readRegisterPair("HL"), readRegister(source));
+  return 8;
+}
 
-const loadImmediateByteIntoHLPointerMemory = () => {
+export const loadIndirectHLFromImmediateData = () => {
   const data = fetchImmediateByte();
   Memory.write(readRegisterPair("HL"), data);
   return 12;
 };
 
-const loadAddressDataIntoA = () => {
+export function loadAccumulatorFromIndirectBC() {
+  const data = Memory.read(readRegisterPair("BC"));
+  writeRegister("A", data);
+  return 8;
+}
+
+export function loadAccumulatorFromIndirectDE() {
+  const data = Memory.read(readRegisterPair("DE"));
+  writeRegister("A", data);
+  return 8;
+}
+
+export function loadIndirectBCFromAccumulator() {
+  Memory.write(readRegisterPair("BC"), readRegister("A"));
+  return 8;
+}
+
+export function loadIndirectDEFromAccumulator() {
+  Memory.write(readRegisterPair("DE"), readRegister("A"));
+  return 8;
+}
+
+export function loadAccumulatorFromDirectWord() {
   const address = fetchImmediateWord();
   writeRegister("A", Memory.read(address));
   return 16;
-};
+}
 
-const loadAIntoAddress = () => {
+export function loadDirectWordFromAccumulator() {
   const address = fetchImmediateWord();
   Memory.write(address, readRegister("A"));
   return 16;
-};
+}
 
-const loadCPointerDataIntoA = () => {
+export function loadAccumulatorFromIndirectC() {
   const address = 0xff00 + readRegister("C");
   writeRegister("A", Memory.read(address));
   return 8;
-};
+}
 
-const loadAIntoCPointerMemory = () => {
+export function loadIndirectCFromAccumulator() {
   const address = 0xff00 + readRegister("C");
   Memory.write(address, readRegister("A"));
   return 8;
-};
+}
+
+export function loadAccumulatorFromDirectByte() {
+  const address = 0xff00 + fetchImmediateByte();
+  writeRegister("A", Memory.read(address));
+  return 12;
+}
+
+export function loadDirectByteFromAccumulator() {
+  const address = 0xff00 + fetchImmediateByte();
+  Memory.write(address, readRegister("A"));
+  return 12;
+}
+
+export function loadAccumulatorFromIndirectHLDecrement() {
+  const address = readRegisterPair("HL");
+  const data = Memory.read(address);
+  writeRegister("A", data);
+  writeRegisterPair("HL", decrementWord(address));
+  return 8;
+}
+
+export function loadAccumulatorFromIndirectHLIncrement() {
+  const address = readRegisterPair("HL");
+  const data = Memory.read(address);
+  writeRegister("A", data);
+  writeRegisterPair("HL", incrementWord(address));
+  return 8;
+}
+
+export function loadIndirectHLDecrementFromAccumulator() {
+  const address = readRegisterPair("HL");
+  Memory.write(address, readRegister("A"));
+  writeRegisterPair("HL", decrementWord(address));
+  return 8;
+}
+
+export function loadIndirectHLIncrementFromAccumulator() {
+  const address = readRegisterPair("HL");
+  Memory.write(address, readRegister("A"));
+  writeRegisterPair("HL", incrementWord(address));
+  return 8;
+}
+
+// -----------------
 
 // Load the operand to the program counter
 const jumpToAddress = () => {
@@ -83,7 +152,7 @@ const jumpToAddress = () => {
 };
 
 // Load the operand in the PC if the condition and the flag status match
-const jumpToAddressIf = (condition: Condition) => () => {
+const jumpToAddressIf = (condition: Condition) => {
   const address = fetchImmediateWord();
 
   if (checkCondition(condition)) {
@@ -135,87 +204,92 @@ const enableInterrupts = () => {
 
 const instructions: Partial<Record<number, Instruction>> = {
   0x00: ["NOP", nop],
-  0x02: ["LD (BC),A", loadRegisterIntoPointerMemory("A", "BC")],
-  0x06: ["LD B,d8", loadImmediateByteIntoRegister("B")],
-  0x0a: ["LD A,(BC)", loadPointerDataIntoRegister("BC", "A")],
-  0x0e: ["LD C,d8", loadImmediateByteIntoRegister("C")],
+  0x02: ["LD (BC),A", loadIndirectBCFromAccumulator],
+  0x06: ["LD B,d8", () => loadRegisterFromImmediate("B")],
+  0x0a: ["LD A,(BC)", loadAccumulatorFromIndirectBC],
+  0x0e: ["LD C,d8", () => loadRegisterFromImmediate("C")],
 
-  0x12: ["LD (DE),A", loadRegisterIntoPointerMemory("A", "DE")],
-  0x16: ["LD D,d8", loadImmediateByteIntoRegister("D")],
-  0x1e: ["LD E,d8", loadImmediateByteIntoRegister("E")],
+  0x12: ["LD (DE),A", loadIndirectDEFromAccumulator],
+  0x16: ["LD D,d8", () => loadRegisterFromImmediate("D")],
+  0x1a: ["LD A,(DE)", loadAccumulatorFromIndirectDE],
+  0x1e: ["LD E,d8", () => loadRegisterFromImmediate("E")],
 
-  0x26: ["LD H,d8", loadImmediateByteIntoRegister("H")],
-  0x2e: ["LD L,d8", loadImmediateByteIntoRegister("L")],
+  0x22: ["LD (HL+),A", loadIndirectHLIncrementFromAccumulator],
+  0x26: ["LD H,d8", () => loadRegisterFromImmediate("H")],
+  0x2a: ["LD A,(HL+)", loadAccumulatorFromIndirectHLIncrement],
+  0x2e: ["LD L,d8", () => loadRegisterFromImmediate("L")],
 
-  0x36: ["LD (HL),d8", loadImmediateByteIntoHLPointerMemory],
-  0x3e: ["LD A,d8", loadImmediateByteIntoRegister("A")],
+  0x32: ["LD (HL-),A", loadIndirectHLDecrementFromAccumulator],
+  0x36: ["LD (HL),d8", loadIndirectHLFromImmediateData],
+  0x3a: ["LD A,(HL-)", loadAccumulatorFromIndirectHLDecrement],
+  0x3e: ["LD A,d8", () => loadRegisterFromImmediate("A")],
 
-  0x40: ["LD B,B", loadRegisterIntoRegister("B", "B")],
-  0x41: ["LD B,C", loadRegisterIntoRegister("C", "B")],
-  0x42: ["LD B,D", loadRegisterIntoRegister("D", "B")],
-  0x43: ["LD B,E", loadRegisterIntoRegister("E", "B")],
-  0x44: ["LD B,H", loadRegisterIntoRegister("H", "B")],
-  0x45: ["LD B,L", loadRegisterIntoRegister("L", "B")],
-  0x46: ["LD B,(HL)", loadPointerDataIntoRegister("HL", "B")],
-  0x47: ["LD B,A", loadRegisterIntoRegister("A", "B")],
-  0x48: ["LD C,B", loadRegisterIntoRegister("B", "C")],
-  0x49: ["LD C,C", loadRegisterIntoRegister("C", "C")],
-  0x4a: ["LD C,D", loadRegisterIntoRegister("D", "C")],
-  0x4b: ["LD C,E", loadRegisterIntoRegister("E", "C")],
-  0x4c: ["LD C,H", loadRegisterIntoRegister("H", "C")],
-  0x4d: ["LD C,L", loadRegisterIntoRegister("L", "C")],
-  0x4e: ["LD C,(HL)", loadPointerDataIntoRegister("HL", "C")],
-  0x4f: ["LD C,A", loadRegisterIntoRegister("A", "C")],
+  0x40: ["LD B,B", () => loadRegisterFromRegister("B", "B")],
+  0x41: ["LD B,C", () => loadRegisterFromRegister("B", "C")],
+  0x42: ["LD B,D", () => loadRegisterFromRegister("B", "D")],
+  0x43: ["LD B,E", () => loadRegisterFromRegister("B", "E")],
+  0x44: ["LD B,H", () => loadRegisterFromRegister("B", "H")],
+  0x45: ["LD B,L", () => loadRegisterFromRegister("B", "L")],
+  0x46: ["LD B,(HL)", () => loadRegisterFromIndirectHL("B")],
+  0x47: ["LD B,A", () => loadRegisterFromRegister("B", "A")],
+  0x48: ["LD C,B", () => loadRegisterFromRegister("C", "B")],
+  0x49: ["LD C,C", () => loadRegisterFromRegister("C", "C")],
+  0x4a: ["LD C,D", () => loadRegisterFromRegister("C", "D")],
+  0x4b: ["LD C,E", () => loadRegisterFromRegister("C", "E")],
+  0x4c: ["LD C,H", () => loadRegisterFromRegister("C", "H")],
+  0x4d: ["LD C,L", () => loadRegisterFromRegister("C", "L")],
+  0x4e: ["LD C,(HL)", () => loadRegisterFromIndirectHL("C")],
+  0x4f: ["LD C,A", () => loadRegisterFromRegister("C", "A")],
 
-  0x50: ["LD D,B", loadRegisterIntoRegister("B", "D")],
-  0x51: ["LD D,C", loadRegisterIntoRegister("C", "D")],
-  0x52: ["LD D,D", loadRegisterIntoRegister("D", "D")],
-  0x53: ["LD D,E", loadRegisterIntoRegister("E", "D")],
-  0x54: ["LD D,H", loadRegisterIntoRegister("H", "D")],
-  0x55: ["LD D,L", loadRegisterIntoRegister("L", "D")],
-  0x56: ["LD D,(HL)", loadPointerDataIntoRegister("HL", "D")],
-  0x57: ["LD D,A", loadRegisterIntoRegister("A", "D")],
-  0x58: ["LD E,B", loadRegisterIntoRegister("B", "E")],
-  0x59: ["LD E,C", loadRegisterIntoRegister("C", "E")],
-  0x5a: ["LD E,D", loadRegisterIntoRegister("D", "E")],
-  0x5b: ["LD E,E", loadRegisterIntoRegister("E", "E")],
-  0x5c: ["LD E,H", loadRegisterIntoRegister("H", "E")],
-  0x5d: ["LD E,L", loadRegisterIntoRegister("L", "E")],
-  0x5e: ["LD E,(HL)", loadPointerDataIntoRegister("HL", "E")],
-  0x5f: ["LD E,A", loadRegisterIntoRegister("A", "E")],
+  0x50: ["LD D,B", () => loadRegisterFromRegister("D", "B")],
+  0x51: ["LD D,C", () => loadRegisterFromRegister("D", "C")],
+  0x52: ["LD D,D", () => loadRegisterFromRegister("D", "D")],
+  0x53: ["LD D,E", () => loadRegisterFromRegister("D", "E")],
+  0x54: ["LD D,H", () => loadRegisterFromRegister("D", "H")],
+  0x55: ["LD D,L", () => loadRegisterFromRegister("L", "D")],
+  0x56: ["LD D,(HL)", () => loadRegisterFromIndirectHL("D")],
+  0x57: ["LD D,A", () => loadRegisterFromRegister("D", "A")],
+  0x58: ["LD E,B", () => loadRegisterFromRegister("E", "B")],
+  0x59: ["LD E,C", () => loadRegisterFromRegister("E", "C")],
+  0x5a: ["LD E,D", () => loadRegisterFromRegister("E", "D")],
+  0x5b: ["LD E,E", () => loadRegisterFromRegister("E", "E")],
+  0x5c: ["LD E,H", () => loadRegisterFromRegister("E", "H")],
+  0x5d: ["LD E,L", () => loadRegisterFromRegister("E", "L")],
+  0x5e: ["LD E,(HL)", () => loadRegisterFromIndirectHL("E")],
+  0x5f: ["LD E,A", () => loadRegisterFromRegister("E", "A")],
 
-  0x60: ["LD H,B", loadRegisterIntoRegister("B", "H")],
-  0x61: ["LD H,C", loadRegisterIntoRegister("C", "H")],
-  0x62: ["LD H,D", loadRegisterIntoRegister("D", "H")],
-  0x63: ["LD H,E", loadRegisterIntoRegister("E", "H")],
-  0x64: ["LD H,H", loadRegisterIntoRegister("H", "H")],
-  0x65: ["LD H,L", loadRegisterIntoRegister("L", "H")],
-  0x66: ["LD H,(HL)", loadPointerDataIntoRegister("HL", "H")],
-  0x67: ["LD H,A", loadRegisterIntoRegister("A", "H")],
-  0x68: ["LD L,B", loadRegisterIntoRegister("B", "L")],
-  0x69: ["LD L,C", loadRegisterIntoRegister("C", "L")],
-  0x6a: ["LD L,D", loadRegisterIntoRegister("D", "L")],
-  0x6b: ["LD L,E", loadRegisterIntoRegister("E", "L")],
-  0x6c: ["LD L,H", loadRegisterIntoRegister("H", "L")],
-  0x6d: ["LD L,L", loadRegisterIntoRegister("L", "L")],
-  0x6e: ["LD L,(HL)", loadPointerDataIntoRegister("HL", "L")],
-  0x6f: ["LD L,A", loadRegisterIntoRegister("A", "L")],
+  0x60: ["LD H,B", () => loadRegisterFromRegister("H", "B")],
+  0x61: ["LD H,C", () => loadRegisterFromRegister("H", "C")],
+  0x62: ["LD H,D", () => loadRegisterFromRegister("H", "D")],
+  0x63: ["LD H,E", () => loadRegisterFromRegister("H", "E")],
+  0x64: ["LD H,H", () => loadRegisterFromRegister("H", "H")],
+  0x65: ["LD H,L", () => loadRegisterFromRegister("H", "L")],
+  0x66: ["LD H,(HL)", () => loadRegisterFromIndirectHL("H")],
+  0x67: ["LD H,A", () => loadRegisterFromRegister("H", "A")],
+  0x68: ["LD L,B", () => loadRegisterFromRegister("L", "B")],
+  0x69: ["LD L,C", () => loadRegisterFromRegister("L", "C")],
+  0x6a: ["LD L,D", () => loadRegisterFromRegister("L", "D")],
+  0x6b: ["LD L,E", () => loadRegisterFromRegister("L", "E")],
+  0x6c: ["LD L,H", () => loadRegisterFromRegister("L", "H")],
+  0x6d: ["LD L,L", () => loadRegisterFromRegister("L", "L")],
+  0x6e: ["LD L,(HL)", () => loadRegisterFromIndirectHL("L")],
+  0x6f: ["LD L,A", () => loadRegisterFromRegister("L", "A")],
 
-  0x70: ["LD (HL),B", loadRegisterIntoPointerMemory("B", "HL")],
-  0x71: ["LD (HL),C", loadRegisterIntoPointerMemory("C", "HL")],
-  0x72: ["LD (HL),D", loadRegisterIntoPointerMemory("D", "HL")],
-  0x73: ["LD (HL),E", loadRegisterIntoPointerMemory("E", "HL")],
-  0x74: ["LD (HL),H", loadRegisterIntoPointerMemory("H", "HL")],
-  0x75: ["LD (HL),L", loadRegisterIntoPointerMemory("L", "HL")],
-  0x77: ["LD (HL),A", loadRegisterIntoPointerMemory("A", "HL")],
-  0x78: ["LD A,B", loadRegisterIntoRegister("B", "A")],
-  0x79: ["LD A,C", loadRegisterIntoRegister("C", "A")],
-  0x7a: ["LD A,D", loadRegisterIntoRegister("D", "A")],
-  0x7b: ["LD A,E", loadRegisterIntoRegister("E", "A")],
-  0x7c: ["LD A,H", loadRegisterIntoRegister("H", "A")],
-  0x7d: ["LD A,L", loadRegisterIntoRegister("L", "A")],
-  0x7e: ["LD A,(HL)", loadPointerDataIntoRegister("HL", "A")],
-  0x7f: ["LD A,A", loadRegisterIntoRegister("A", "A")],
+  0x70: ["LD (HL),B", () => loadIndirectHLFromRegister("B")],
+  0x71: ["LD (HL),C", () => loadIndirectHLFromRegister("C")],
+  0x72: ["LD (HL),D", () => loadIndirectHLFromRegister("D")],
+  0x73: ["LD (HL),E", () => loadIndirectHLFromRegister("E")],
+  0x74: ["LD (HL),H", () => loadIndirectHLFromRegister("H")],
+  0x75: ["LD (HL),L", () => loadIndirectHLFromRegister("L")],
+  0x77: ["LD (HL),A", () => loadIndirectHLFromRegister("A")],
+  0x78: ["LD A,B", () => loadRegisterFromRegister("A", "B")],
+  0x79: ["LD A,C", () => loadRegisterFromRegister("A", "C")],
+  0x7a: ["LD A,D", () => loadRegisterFromRegister("A", "D")],
+  0x7b: ["LD A,E", () => loadRegisterFromRegister("A", "E")],
+  0x7c: ["LD A,H", () => loadRegisterFromRegister("A", "H")],
+  0x7d: ["LD A,L", () => loadRegisterFromRegister("A", "L")],
+  0x7e: ["LD A,(HL)", () => loadRegisterFromIndirectHL("A")],
+  0x7f: ["LD A,A", () => loadRegisterFromRegister("A", "A")],
 
   0xa8: ["XOR B", xorAWithRegister("B")],
   0xa9: ["XOR C", xorAWithRegister("C")],
@@ -226,21 +300,23 @@ const instructions: Partial<Record<number, Instruction>> = {
   0xae: ["XOR (HL)", xorAWithHLPointerData],
   0xaf: ["XOR A", xorAWithRegister("A")],
 
-  0xc2: ["JP NZ,a16", jumpToAddressIf("NZ")],
+  0xc2: ["JP NZ,a16", () => jumpToAddressIf("NZ")],
   0xc3: ["JP a16", jumpToAddress],
-  0xca: ["JP Z,a16", jumpToAddressIf("Z")],
+  0xca: ["JP Z,a16", () => jumpToAddressIf("Z")],
 
-  0xd2: ["JP NC,a16", jumpToAddressIf("NC")],
-  0xda: ["JP C,a16", jumpToAddressIf("C")],
+  0xd2: ["JP NC,a16", () => jumpToAddressIf("NC")],
+  0xda: ["JP C,a16", () => jumpToAddressIf("C")],
 
-  0xe2: ["LD (C),A", loadAIntoCPointerMemory],
+  0xe0: ["LDH (a8),A", loadDirectByteFromAccumulator],
+  0xe2: ["LD (C),A", loadIndirectCFromAccumulator],
   0xe9: ["JP (HL)", jumpToHLAddress],
-  0xea: ["LD (a16),A", loadAIntoAddress],
+  0xea: ["LD (a16),A", loadDirectWordFromAccumulator],
   0xee: ["XOR d8", xorAWithImmediateByte],
 
-  0xf2: ["LD A,(C)", loadCPointerDataIntoA],
+  0xf0: ["LDH A,(a8)", loadAccumulatorFromDirectByte],
+  0xf2: ["LD A,(C)", loadAccumulatorFromIndirectC],
   0xf3: ["DI", disableInterrupts],
-  0xfa: ["LD A,(a16)", loadAddressDataIntoA],
+  0xfa: ["LD A,(a16)", loadAccumulatorFromDirectWord],
   0xfb: ["EI", enableInterrupts],
 };
 
@@ -257,3 +333,16 @@ export const nextInstruction = () => {
 
   return instruction;
 };
+
+export function execNextInstruction() {
+  const instruction = nextInstruction();
+
+  console.log(
+    "Executing instruction",
+    instruction[0],
+    " at ",
+    (readRegister("PC") - 1).toString(16)
+  );
+
+  return instruction[1]();
+}
