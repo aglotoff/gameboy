@@ -4,15 +4,23 @@ import {
   decrementWord,
   fetchImmediateByte,
   fetchImmediateWord,
+  getHighByte,
+  getLowByte,
   incrementWord,
-  readRegister,
+  makeWord,
+  readRegister8,
+  readRegister16,
   readRegisterPair,
   Register8,
   RegisterPair,
   setIME,
-  writeRegister,
+  writeRegister8,
+  writeRegister16,
   writeRegisterPair,
   xor,
+  clearFlag,
+  getSignedByte,
+  setFlag,
 } from "./cpu";
 import * as Memory from "./memory";
 
@@ -27,24 +35,24 @@ export function loadRegisterFromRegister(
   destination: Register8,
   source: Register8
 ) {
-  writeRegister(destination, readRegister(source));
+  writeRegister8(destination, readRegister8(source));
   return 4;
 }
 
 export function loadRegisterFromImmediate(destination: Register8) {
   const data = fetchImmediateByte();
-  writeRegister(destination, data);
+  writeRegister8(destination, data);
   return 8;
 }
 
 export function loadRegisterFromIndirectHL(destination: Register8) {
   const data = Memory.read(readRegisterPair("HL"));
-  writeRegister(destination, data);
+  writeRegister8(destination, data);
   return 8;
 }
 
 export function loadIndirectHLFromRegister(source: Register8) {
-  Memory.write(readRegisterPair("HL"), readRegister(source));
+  Memory.write(readRegisterPair("HL"), readRegister8(source));
   return 8;
 }
 
@@ -56,66 +64,66 @@ export const loadIndirectHLFromImmediateData = () => {
 
 export function loadAccumulatorFromIndirectBC() {
   const data = Memory.read(readRegisterPair("BC"));
-  writeRegister("A", data);
+  writeRegister8("A", data);
   return 8;
 }
 
 export function loadAccumulatorFromIndirectDE() {
   const data = Memory.read(readRegisterPair("DE"));
-  writeRegister("A", data);
+  writeRegister8("A", data);
   return 8;
 }
 
 export function loadIndirectBCFromAccumulator() {
-  Memory.write(readRegisterPair("BC"), readRegister("A"));
+  Memory.write(readRegisterPair("BC"), readRegister8("A"));
   return 8;
 }
 
 export function loadIndirectDEFromAccumulator() {
-  Memory.write(readRegisterPair("DE"), readRegister("A"));
+  Memory.write(readRegisterPair("DE"), readRegister8("A"));
   return 8;
 }
 
 export function loadAccumulatorFromDirectWord() {
   const address = fetchImmediateWord();
-  writeRegister("A", Memory.read(address));
+  writeRegister8("A", Memory.read(address));
   return 16;
 }
 
 export function loadDirectWordFromAccumulator() {
   const address = fetchImmediateWord();
-  Memory.write(address, readRegister("A"));
+  Memory.write(address, readRegister8("A"));
   return 16;
 }
 
 export function loadAccumulatorFromIndirectC() {
-  const address = 0xff00 + readRegister("C");
-  writeRegister("A", Memory.read(address));
+  const address = 0xff00 + readRegister8("C");
+  writeRegister8("A", Memory.read(address));
   return 8;
 }
 
 export function loadIndirectCFromAccumulator() {
-  const address = 0xff00 + readRegister("C");
-  Memory.write(address, readRegister("A"));
+  const address = 0xff00 + readRegister8("C");
+  Memory.write(address, readRegister8("A"));
   return 8;
 }
 
 export function loadAccumulatorFromDirectByte() {
   const address = 0xff00 + fetchImmediateByte();
-  writeRegister("A", Memory.read(address));
+  writeRegister8("A", Memory.read(address));
   return 12;
 }
 
 export function loadDirectByteFromAccumulator() {
   const address = 0xff00 + fetchImmediateByte();
-  Memory.write(address, readRegister("A"));
+  Memory.write(address, readRegister8("A"));
   return 12;
 }
 
 export function loadAccumulatorFromIndirectHLDecrement() {
   const address = readRegisterPair("HL");
   const data = Memory.read(address);
-  writeRegister("A", data);
+  writeRegister8("A", data);
   writeRegisterPair("HL", decrementWord(address));
   return 8;
 }
@@ -123,23 +131,96 @@ export function loadAccumulatorFromIndirectHLDecrement() {
 export function loadAccumulatorFromIndirectHLIncrement() {
   const address = readRegisterPair("HL");
   const data = Memory.read(address);
-  writeRegister("A", data);
+  writeRegister8("A", data);
   writeRegisterPair("HL", incrementWord(address));
   return 8;
 }
 
 export function loadIndirectHLDecrementFromAccumulator() {
   const address = readRegisterPair("HL");
-  Memory.write(address, readRegister("A"));
+  Memory.write(address, readRegister8("A"));
   writeRegisterPair("HL", decrementWord(address));
   return 8;
 }
 
 export function loadIndirectHLIncrementFromAccumulator() {
   const address = readRegisterPair("HL");
-  Memory.write(address, readRegister("A"));
+  Memory.write(address, readRegister8("A"));
   writeRegisterPair("HL", incrementWord(address));
   return 8;
+}
+
+export function loadRegisterPair(destination: RegisterPair | "SP") {
+  const data = fetchImmediateWord();
+  if (destination === "SP") {
+    writeRegister16("SP", data);
+  } else {
+    writeRegisterPair(destination, data);
+  }
+  return 12;
+}
+
+export function loadDirectFromStackPointer() {
+  const address = fetchImmediateWord();
+  const data = readRegister16("SP");
+  Memory.write(address, getLowByte(data));
+  Memory.write(address + 1, getHighByte(data));
+  return 20;
+}
+
+export function loadStackPointerFromHL() {
+  writeRegister16("SP", readRegisterPair("HL"));
+  return 8;
+}
+
+export function pushToStack(rr: RegisterPair) {
+  const data = readRegisterPair(rr);
+  let sp = readRegister16("SP");
+  sp = decrementWord(sp);
+  Memory.write(sp, getHighByte(data));
+  sp = decrementWord(sp);
+  Memory.write(sp, getLowByte(data));
+  writeRegister16("SP", sp);
+  return 16;
+}
+
+export function popFromStack(rr: RegisterPair) {
+  let sp = readRegister16("SP");
+  const lsb = Memory.read(sp);
+  sp = incrementWord(sp);
+  const msb = Memory.read(sp);
+  sp = incrementWord(sp);
+  writeRegisterPair(rr, makeWord(msb, lsb));
+  writeRegister16("SP", sp);
+  return 12;
+}
+
+function add(a: number, b: number) {
+  const result = (a + b) & 0xffff;
+
+  const halfCarry = ((a ^ b ^ result) & 0x10) != 0;
+  const carry = ((a ^ b ^ result) & 0x100) != 0;
+
+  return { result, carry, halfCarry };
+}
+
+export function loadHLFromAdjustedStackPointer() {
+  const e = getSignedByte(fetchImmediateByte());
+  const { result, carry, halfCarry } = add(readRegister16("SP"), e);
+  writeRegisterPair("HL", result);
+  clearFlag("Z");
+  clearFlag("N");
+  if (halfCarry) {
+    setFlag("H");
+  } else {
+    clearFlag("H");
+  }
+  if (carry) {
+    setFlag("CY");
+  } else {
+    clearFlag("CY");
+  }
+  return 12;
 }
 
 // -----------------
@@ -147,7 +228,7 @@ export function loadIndirectHLIncrementFromAccumulator() {
 // Load the operand to the program counter
 const jumpToAddress = () => {
   const address = fetchImmediateWord();
-  writeRegister("PC", address);
+  writeRegister16("PC", address);
   return 16;
 };
 
@@ -156,7 +237,7 @@ const jumpToAddressIf = (condition: Condition) => {
   const address = fetchImmediateWord();
 
   if (checkCondition(condition)) {
-    writeRegister("PC", address);
+    writeRegister16("PC", address);
     return 16;
   }
 
@@ -165,18 +246,18 @@ const jumpToAddressIf = (condition: Condition) => {
 
 // Load the contents of register pair HL in program counter PC
 const jumpToHLAddress = () => {
-  writeRegister("PC", readRegisterPair("HL"));
+  writeRegister16("PC", readRegisterPair("HL"));
   return 4;
 };
 
 // Take the logical exclusive-OR for each bit of the contents of the specified
 // value and register A and store the results in register A
 const xorA = (value: number) => {
-  writeRegister("A", xor(readRegister("A"), value));
+  writeRegister8("A", xor(readRegister8("A"), value));
 };
 
 const xorAWithRegister = (register: Register8) => () => {
-  xorA(readRegister(register));
+  xorA(readRegister8(register));
   return 4;
 };
 
@@ -204,21 +285,26 @@ const enableInterrupts = () => {
 
 const instructions: Partial<Record<number, Instruction>> = {
   0x00: ["NOP", nop],
+  0x01: ["LD BC,d16", () => loadRegisterPair("BC")],
   0x02: ["LD (BC),A", loadIndirectBCFromAccumulator],
   0x06: ["LD B,d8", () => loadRegisterFromImmediate("B")],
+  0x08: ["LD (a16),SP", loadDirectFromStackPointer],
   0x0a: ["LD A,(BC)", loadAccumulatorFromIndirectBC],
   0x0e: ["LD C,d8", () => loadRegisterFromImmediate("C")],
 
+  0x11: ["LD DE,d16", () => loadRegisterPair("DE")],
   0x12: ["LD (DE),A", loadIndirectDEFromAccumulator],
   0x16: ["LD D,d8", () => loadRegisterFromImmediate("D")],
   0x1a: ["LD A,(DE)", loadAccumulatorFromIndirectDE],
   0x1e: ["LD E,d8", () => loadRegisterFromImmediate("E")],
 
+  0x21: ["LD HL,d16", () => loadRegisterPair("HL")],
   0x22: ["LD (HL+),A", loadIndirectHLIncrementFromAccumulator],
   0x26: ["LD H,d8", () => loadRegisterFromImmediate("H")],
   0x2a: ["LD A,(HL+)", loadAccumulatorFromIndirectHLIncrement],
   0x2e: ["LD L,d8", () => loadRegisterFromImmediate("L")],
 
+  0x31: ["LD SP,d16", () => loadRegisterPair("SP")],
   0x32: ["LD (HL-),A", loadIndirectHLDecrementFromAccumulator],
   0x36: ["LD (HL),d8", loadIndirectHLFromImmediateData],
   0x3a: ["LD A,(HL-)", loadAccumulatorFromIndirectHLDecrement],
@@ -300,22 +386,32 @@ const instructions: Partial<Record<number, Instruction>> = {
   0xae: ["XOR (HL)", xorAWithHLPointerData],
   0xaf: ["XOR A", xorAWithRegister("A")],
 
+  0xc1: ["POP BC", () => popFromStack("BC")],
   0xc2: ["JP NZ,a16", () => jumpToAddressIf("NZ")],
   0xc3: ["JP a16", jumpToAddress],
+  0xc5: ["PUSH BC", () => pushToStack("BC")],
   0xca: ["JP Z,a16", () => jumpToAddressIf("Z")],
 
+  0xd1: ["POP BC", () => popFromStack("DE")],
   0xd2: ["JP NC,a16", () => jumpToAddressIf("NC")],
+  0xd5: ["PUSH DE", () => pushToStack("DE")],
   0xda: ["JP C,a16", () => jumpToAddressIf("C")],
 
   0xe0: ["LDH (a8),A", loadDirectByteFromAccumulator],
+  0xe1: ["POP BC", () => popFromStack("HL")],
   0xe2: ["LD (C),A", loadIndirectCFromAccumulator],
+  0xe5: ["PUSH HL", () => pushToStack("HL")],
   0xe9: ["JP (HL)", jumpToHLAddress],
   0xea: ["LD (a16),A", loadDirectWordFromAccumulator],
   0xee: ["XOR d8", xorAWithImmediateByte],
 
   0xf0: ["LDH A,(a8)", loadAccumulatorFromDirectByte],
+  0xf1: ["POP AF", () => popFromStack("AF")],
   0xf2: ["LD A,(C)", loadAccumulatorFromIndirectC],
   0xf3: ["DI", disableInterrupts],
+  0xf5: ["PUSH AF", () => pushToStack("AF")],
+  0xf8: ["LD HL,SP+r8", loadHLFromAdjustedStackPointer],
+  0xf9: ["LD SP,HL", loadStackPointerFromHL],
   0xfa: ["LD A,(a16)", loadAccumulatorFromDirectWord],
   0xfb: ["EI", enableInterrupts],
 };
@@ -341,7 +437,7 @@ export function execNextInstruction() {
     "Executing instruction",
     instruction[0],
     " at ",
-    (readRegister("PC") - 1).toString(16)
+    (readRegister16("PC") - 1).toString(16)
   );
 
   return instruction[1]();

@@ -2,11 +2,14 @@ import { beforeEach, describe, expect, test } from "vitest";
 import {
   getHighByte,
   getLowByte,
-  readRegister,
+  readRegister8,
+  readRegister16,
   readRegisterPair,
   resetRegisters,
-  writeRegister,
+  writeRegister8,
+  writeRegister16,
   writeRegisterPair,
+  isSetFlag,
 } from "./cpu";
 import {
   loadIndirectHLFromImmediateData,
@@ -28,6 +31,12 @@ import {
   loadAccumulatorFromIndirectHLIncrement,
   loadIndirectHLDecrementFromAccumulator,
   loadIndirectHLIncrementFromAccumulator,
+  loadRegisterPair,
+  loadDirectFromStackPointer,
+  loadStackPointerFromHL,
+  pushToStack,
+  popFromStack,
+  loadHLFromAdjustedStackPointer,
 } from "./instructions";
 import * as Memory from "./memory";
 
@@ -38,14 +47,14 @@ beforeEach(() => {
 
 describe("8-bit load instructions", () => {
   test("LD r,r'", () => {
-    writeRegister("B", 0x3c);
-    writeRegister("D", 0x5c);
+    writeRegister8("B", 0x3c);
+    writeRegister8("D", 0x5c);
 
     loadRegisterFromRegister("A", "B");
     loadRegisterFromRegister("B", "D");
 
-    expect(readRegister("A")).toBe(0x3c);
-    expect(readRegister("B")).toBe(0x5c);
+    expect(readRegister8("A")).toBe(0x3c);
+    expect(readRegister8("B")).toBe(0x5c);
   });
 
   test("LD r,n", () => {
@@ -53,7 +62,7 @@ describe("8-bit load instructions", () => {
 
     loadRegisterFromImmediate("B");
 
-    expect(readRegister("B")).toBe(0x24);
+    expect(readRegister8("B")).toBe(0x24);
   });
 
   test("LD r,(HL)", () => {
@@ -62,11 +71,11 @@ describe("8-bit load instructions", () => {
 
     loadRegisterFromIndirectHL("H");
 
-    expect(readRegister("H")).toBe(0x5c);
+    expect(readRegister8("H")).toBe(0x5c);
   });
 
   test("LD (HL),r", () => {
-    writeRegister("A", 0x3c);
+    writeRegister8("A", 0x3c);
     writeRegisterPair("HL", 0x8ac5);
 
     loadIndirectHLFromRegister("A");
@@ -89,7 +98,7 @@ describe("8-bit load instructions", () => {
 
     loadAccumulatorFromIndirectBC();
 
-    expect(readRegister("A")).toBe(0x2f);
+    expect(readRegister8("A")).toBe(0x2f);
   });
 
   test("LD A,(DE)", () => {
@@ -98,12 +107,12 @@ describe("8-bit load instructions", () => {
 
     loadAccumulatorFromIndirectDE();
 
-    expect(readRegister("A")).toBe(0x5f);
+    expect(readRegister8("A")).toBe(0x5f);
   });
 
   test("LD (BC),A", () => {
     writeRegisterPair("BC", 0x205f);
-    writeRegister("A", 0x56);
+    writeRegister8("A", 0x56);
 
     loadIndirectBCFromAccumulator();
 
@@ -112,7 +121,7 @@ describe("8-bit load instructions", () => {
 
   test("LD (DE),A", () => {
     writeRegisterPair("DE", 0x205c);
-    writeRegister("A", 0xaa);
+    writeRegister8("A", 0xaa);
 
     loadIndirectDEFromAccumulator();
 
@@ -126,13 +135,13 @@ describe("8-bit load instructions", () => {
 
     loadAccumulatorFromDirectWord();
 
-    expect(readRegister("A")).toBe(0x5c);
+    expect(readRegister8("A")).toBe(0x5c);
   });
 
   test("LD (nn),A", () => {
     Memory.write(0, getLowByte(0x8000));
     Memory.write(1, getHighByte(0x8000));
-    writeRegister("A", 0x2f);
+    writeRegister8("A", 0x2f);
 
     loadDirectWordFromAccumulator();
 
@@ -141,16 +150,16 @@ describe("8-bit load instructions", () => {
 
   test("LD A,(C)", () => {
     Memory.write(0xff95, 0x2c);
-    writeRegister("C", 0x95);
+    writeRegister8("C", 0x95);
 
     loadAccumulatorFromIndirectC();
 
-    expect(readRegister("A")).toBe(0x2c);
+    expect(readRegister8("A")).toBe(0x2c);
   });
 
   test("LD (C),A", () => {
-    writeRegister("A", 0x5c);
-    writeRegister("C", 0x9f);
+    writeRegister8("A", 0x5c);
+    writeRegister8("C", 0x9f);
 
     loadIndirectCFromAccumulator();
 
@@ -163,12 +172,12 @@ describe("8-bit load instructions", () => {
 
     loadAccumulatorFromDirectByte();
 
-    expect(readRegister("A")).toBe(0x5f);
+    expect(readRegister8("A")).toBe(0x5f);
   });
 
   test("LD (n),A", () => {
     Memory.write(0, getLowByte(0x34));
-    writeRegister("A", 0x2f);
+    writeRegister8("A", 0x2f);
 
     loadDirectByteFromAccumulator();
 
@@ -181,7 +190,7 @@ describe("8-bit load instructions", () => {
 
     loadAccumulatorFromIndirectHLDecrement();
 
-    expect(readRegister("A")).toBe(0x3c);
+    expect(readRegister8("A")).toBe(0x3c);
     expect(readRegisterPair("HL")).toBe(0x8a5b);
   });
 
@@ -191,13 +200,13 @@ describe("8-bit load instructions", () => {
 
     loadAccumulatorFromIndirectHLIncrement();
 
-    expect(readRegister("A")).toBe(0x56);
+    expect(readRegister8("A")).toBe(0x56);
     expect(readRegisterPair("HL")).toBe(0x200);
   });
 
   test("LD (HLD),A", () => {
     writeRegisterPair("HL", 0x4000);
-    writeRegister("A", 0x5);
+    writeRegister8("A", 0x5);
 
     loadIndirectHLDecrementFromAccumulator();
 
@@ -207,11 +216,77 @@ describe("8-bit load instructions", () => {
 
   test("LD (HLI),A", () => {
     writeRegisterPair("HL", 0xffff);
-    writeRegister("A", 0x56);
+    writeRegister8("A", 0x56);
 
     loadIndirectHLIncrementFromAccumulator();
 
     expect(Memory.read(0xffff)).toBe(0x56);
     expect(readRegisterPair("HL")).toBe(0x0);
+  });
+});
+
+describe("16-bit load instructions", () => {
+  test("LD dd,nn", () => {
+    Memory.write(0x00, 0x5b);
+    Memory.write(0x01, 0x3a);
+
+    loadRegisterPair("HL");
+
+    expect(readRegister8("H")).toBe(0x3a);
+    expect(readRegister8("L")).toBe(0x5b);
+  });
+
+  test("LD (nn),SP", () => {
+    writeRegister16("SP", 0xfff8);
+    Memory.write(0x00, 0x00);
+    Memory.write(0x01, 0xc1);
+
+    loadDirectFromStackPointer();
+
+    expect(Memory.read(0xc100)).toBe(0xf8);
+    expect(Memory.read(0xc101)).toBe(0xff);
+  });
+
+  test("LD SP,HL", () => {
+    writeRegisterPair("HL", 0x3a5b);
+
+    loadStackPointerFromHL();
+
+    expect(readRegister16("SP")).toBe(0x3a5b);
+  });
+
+  test("PUSH qq", () => {
+    writeRegister16("SP", 0xfffe);
+    writeRegisterPair("BC", 0x8ac5);
+
+    pushToStack("BC");
+
+    expect(Memory.read(0xfffd)).toBe(0x8a);
+    expect(Memory.read(0xfffc)).toBe(0xc5);
+    expect(readRegister16("SP")).toBe(0xfffc);
+  });
+
+  test("POP qq", () => {
+    writeRegister16("SP", 0xfffc);
+    Memory.write(0xfffc, 0x5f);
+    Memory.write(0xfffd, 0x3c);
+
+    popFromStack("BC");
+
+    expect(readRegisterPair("BC")).toBe(0x3c5f);
+    expect(readRegister16("SP")).toBe(0xfffe);
+  });
+
+  test("LDHL SP,e", () => {
+    writeRegister16("SP", 0xfff8);
+    Memory.write(0x00, 0x2);
+
+    loadHLFromAdjustedStackPointer();
+
+    expect(readRegisterPair("HL")).toBe(0xfffa);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(false);
   });
 });

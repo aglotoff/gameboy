@@ -33,7 +33,7 @@ export const resetRegisters = () => {
   registers.pc = 0;
 };
 
-export const readRegister = (register: Register) => {
+export const readRegister8 = (register: Register8) => {
   switch (register) {
     case "A":
       return registers.a;
@@ -51,6 +51,11 @@ export const readRegister = (register: Register) => {
       return registers.h;
     case "L":
       return registers.l;
+  }
+};
+
+export const readRegister16 = (register: Register16) => {
+  switch (register) {
     case "PC":
       return registers.pc;
     case "SP":
@@ -58,7 +63,7 @@ export const readRegister = (register: Register) => {
   }
 };
 
-export const writeRegister = (register: Register, value: number) => {
+export const writeRegister8 = (register: Register8, value: number) => {
   switch (register) {
     case "A":
       registers.a = value;
@@ -84,6 +89,11 @@ export const writeRegister = (register: Register, value: number) => {
     case "L":
       registers.l = value;
       break;
+  }
+};
+
+export const writeRegister16 = (register: Register16, value: number) => {
+  switch (register) {
     case "PC":
       registers.pc = value;
       break;
@@ -100,7 +110,7 @@ export const getHighByte = (value: number) => (value >> 8) & 0xff;
 
 export const getLowByte = (value: number) => value & 0xff;
 
-const makeWord = (highByte: number, lowByte: number) =>
+export const makeWord = (highByte: number, lowByte: number) =>
   (highByte << 8) | lowByte;
 
 export function incrementWord(value: number) {
@@ -111,15 +121,19 @@ export function decrementWord(value: number) {
   return (0x10000 + value - 1) & 0xffff;
 }
 
+export function getSignedByte(value: number) {
+  return value > 0x7f ? value - 0x100 : value;
+}
+
 export const readRegisterPair = (pair: RegisterPair) => {
   const [high, low] = pairToRegisters(pair);
-  return makeWord(readRegister(high), readRegister(low));
+  return makeWord(readRegister8(high), readRegister8(low));
 };
 
 export const writeRegisterPair = (pair: RegisterPair, value: number) => {
   const [high, low] = pairToRegisters(pair);
-  writeRegister(high, getHighByte(value));
-  writeRegister(low, getLowByte(value));
+  writeRegister8(high, getHighByte(value));
+  writeRegister8(low, getLowByte(value));
 };
 
 const flagShift: Record<Flag, number> = {
