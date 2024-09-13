@@ -10,6 +10,7 @@ import {
   writeRegister16,
   writeRegisterPair,
   isSetFlag,
+  writeFlag,
 } from "./cpu";
 import {
   loadIndirectHLFromImmediateData,
@@ -37,6 +38,38 @@ import {
   pushToStack,
   popFromStack,
   loadHLFromAdjustedStackPointer,
+  addRegister,
+  addIndirectHL,
+  addRegisterWithCarry,
+  addImmediate,
+  addImmediateWithCarry,
+  addIndirectHLWithCarry,
+  subtractRegister,
+  subtractIndirectHL,
+  subtractImmediate,
+  subtractRegisterWithCarry,
+  subtractIndirectHLWithCarry,
+  subtractImmediateWithCarry,
+  compareRegister,
+  compareIndirectHL,
+  compareImmediate,
+  incrementRegister,
+  incrementIndirectHL,
+  decrementRegister,
+  decrementIndirectHL,
+  andRegister,
+  andIndirectHL,
+  andImmediate,
+  orRegister,
+  orIndirectHL,
+  orImmediate,
+  xorRegister,
+  xorIndirectHL,
+  xorImmediate,
+  complementCarryFlag,
+  setCarryFlag,
+  decimalAdjustAccumulator,
+  complementAccumulator,
 } from "./instructions";
 import * as Memory from "./memory";
 
@@ -288,5 +321,425 @@ describe("16-bit load instructions", () => {
     expect(isSetFlag("H")).toBe(false);
     expect(isSetFlag("N")).toBe(false);
     expect(isSetFlag("CY")).toBe(false);
+  });
+});
+
+describe("8-bit arithmetic and logical instructions", () => {
+  test("ADD A,r", () => {
+    writeRegister8("A", 0x3a);
+    writeRegister8("B", 0xc6);
+
+    addRegister("B");
+
+    expect(readRegister8("A")).toBe(0);
+    expect(isSetFlag("Z")).toBe(true);
+    expect(isSetFlag("H")).toBe(true);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(true);
+  });
+
+  test("ADD A,(HL)", () => {
+    writeRegister8("A", 0x3c);
+    writeRegisterPair("HL", 0x3ab6);
+    Memory.write(0x3ab6, 0x12);
+
+    addIndirectHL();
+
+    expect(readRegister8("A")).toBe(0x4e);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("ADD A,n", () => {
+    writeRegister8("A", 0x3c);
+    Memory.write(0, 0xff);
+
+    addImmediate();
+
+    expect(readRegister8("A")).toBe(0x3b);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(true);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(true);
+  });
+
+  test("ADC A,r", () => {
+    writeRegister8("A", 0xe1);
+    writeRegister8("E", 0x0f);
+    writeFlag("CY", true);
+
+    addRegisterWithCarry("E");
+
+    expect(readRegister8("A")).toBe(0xf1);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(true);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("ADC A,(HL)", () => {
+    writeRegister8("A", 0xe1);
+    writeRegisterPair("HL", 0x8ac5);
+    Memory.write(0x8ac5, 0x1e);
+    writeFlag("CY", true);
+
+    addIndirectHLWithCarry();
+
+    expect(readRegister8("A")).toBe(0x00);
+    expect(isSetFlag("Z")).toBe(true);
+    expect(isSetFlag("H")).toBe(true);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(true);
+  });
+
+  test("ADC A,n", () => {
+    writeRegister8("A", 0xe1);
+    Memory.write(0, 0x3b);
+    writeFlag("CY", true);
+
+    addImmediateWithCarry();
+
+    expect(readRegister8("A")).toBe(0x1d);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(true);
+  });
+
+  test("SUB r", () => {
+    writeRegister8("A", 0x3e);
+    writeRegister8("E", 0x3e);
+
+    subtractRegister("E");
+
+    expect(readRegister8("A")).toBe(0);
+    expect(isSetFlag("Z")).toBe(true);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(true);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("SUB (HL)", () => {
+    writeRegister8("A", 0x3e);
+    writeRegisterPair("HL", 0x8ac5);
+    Memory.write(0x8ac5, 0x40);
+
+    subtractIndirectHL();
+
+    expect(readRegister8("A")).toBe(0xfe);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(true);
+    expect(isSetFlag("CY")).toBe(true);
+  });
+
+  test("SUB n", () => {
+    writeRegister8("A", 0x3e);
+    Memory.write(0, 0x0f);
+
+    subtractImmediate();
+
+    expect(readRegister8("A")).toBe(0x2f);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(true);
+    expect(isSetFlag("N")).toBe(true);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("SBC A,r", () => {
+    writeRegister8("A", 0x3b);
+    writeRegister8("H", 0x2a);
+    writeFlag("CY", true);
+
+    subtractRegisterWithCarry("H");
+
+    expect(readRegister8("A")).toBe(0x10);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(true);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("SBC A,(HL)", () => {
+    writeRegister8("A", 0x3b);
+    writeRegisterPair("HL", 0x8ac5);
+    Memory.write(0x8ac5, 0x4f);
+    writeFlag("CY", true);
+
+    subtractIndirectHLWithCarry();
+
+    expect(readRegister8("A")).toBe(0xeb);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(true);
+    expect(isSetFlag("N")).toBe(true);
+    expect(isSetFlag("CY")).toBe(true);
+  });
+
+  test("SBC A,n", () => {
+    writeRegister8("A", 0x3b);
+    Memory.write(0, 0x3a);
+    writeFlag("CY", true);
+
+    subtractImmediateWithCarry();
+
+    expect(readRegister8("A")).toBe(0x00);
+    expect(isSetFlag("Z")).toBe(true);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(true);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("CP r", () => {
+    writeRegister8("A", 0x3c);
+    writeRegister8("B", 0x2f);
+
+    compareRegister("B");
+
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(true);
+    expect(isSetFlag("N")).toBe(true);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("CP (HL)", () => {
+    writeRegister8("A", 0x3c);
+    writeRegisterPair("HL", 0x3ab6);
+    Memory.write(0x3ab6, 0x40);
+
+    compareIndirectHL();
+
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(true);
+    expect(isSetFlag("CY")).toBe(true);
+  });
+
+  test("CP n", () => {
+    writeRegister8("A", 0x3c);
+    Memory.write(0, 0x3c);
+
+    compareImmediate();
+
+    expect(isSetFlag("Z")).toBe(true);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(true);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("INC r", () => {
+    writeRegister8("A", 0xff);
+
+    incrementRegister("A");
+
+    expect(readRegister8("A")).toBe(0x00);
+    expect(isSetFlag("Z")).toBe(true);
+    expect(isSetFlag("H")).toBe(true);
+    expect(isSetFlag("N")).toBe(false);
+  });
+
+  test("INC (HL)", () => {
+    writeRegisterPair("HL", 0x8ac5);
+    Memory.write(0x8ac5, 0x50);
+
+    incrementIndirectHL();
+
+    expect(Memory.read(readRegisterPair("HL"))).toBe(0x51);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(false);
+  });
+
+  test("DEC r", () => {
+    writeRegister8("L", 0x01);
+
+    decrementRegister("L");
+
+    expect(readRegister8("L")).toBe(0x00);
+    expect(isSetFlag("Z")).toBe(true);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(true);
+  });
+
+  test("DEC (HL)", () => {
+    writeRegisterPair("HL", 0xff34);
+    Memory.write(0xff34, 0x00);
+
+    decrementIndirectHL();
+
+    expect(Memory.read(readRegisterPair("HL"))).toBe(0xff);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(true);
+    expect(isSetFlag("N")).toBe(true);
+  });
+
+  test("AND r", () => {
+    writeRegister8("A", 0x5a);
+    writeRegister8("L", 0x3f);
+
+    andRegister("L");
+
+    expect(readRegister8("A")).toBe(0x1a);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(true);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("AND (HL)", () => {
+    writeRegister8("A", 0x5a);
+    writeRegisterPair("HL", 0x8ac5);
+    Memory.write(0x8ac5, 0x00);
+
+    andIndirectHL();
+
+    expect(readRegister8("A")).toBe(0x00);
+    expect(isSetFlag("Z")).toBe(true);
+    expect(isSetFlag("H")).toBe(true);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("AND n", () => {
+    writeRegister8("A", 0x5a);
+    Memory.write(0, 0x38);
+
+    andImmediate();
+
+    expect(readRegister8("A")).toBe(0x18);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(true);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("OR r", () => {
+    writeRegister8("A", 0x5a);
+
+    orRegister("A");
+
+    expect(readRegister8("A")).toBe(0x5a);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("OR (HL)", () => {
+    writeRegister8("A", 0x5a);
+    writeRegisterPair("HL", 0x8ac2);
+    Memory.write(0x8ac2, 0x0f);
+
+    orIndirectHL();
+
+    expect(readRegister8("A")).toBe(0x5f);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("OR n", () => {
+    writeRegister8("A", 0x5a);
+    Memory.write(0, 0x3);
+
+    orImmediate();
+
+    expect(readRegister8("A")).toBe(0x5b);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("XOR r", () => {
+    writeRegister8("A", 0xff);
+
+    xorRegister("A");
+
+    expect(readRegister8("A")).toBe(0x00);
+    expect(isSetFlag("Z")).toBe(true);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("XOR (HL)", () => {
+    writeRegister8("A", 0xff);
+    writeRegisterPair("HL", 0x8ac5);
+    Memory.write(0x8ac5, 0x8a);
+
+    xorIndirectHL();
+
+    expect(readRegister8("A")).toBe(0x75);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("XOR n", () => {
+    writeRegister8("A", 0xff);
+    Memory.write(0, 0xf);
+
+    xorImmediate();
+
+    expect(readRegister8("A")).toBe(0xf0);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("CCF", () => {
+    writeFlag("CY", true);
+
+    complementCarryFlag();
+    expect(isSetFlag("CY")).toBe(false);
+
+    complementCarryFlag();
+    expect(isSetFlag("CY")).toBe(true);
+  });
+
+  test("SCF", () => {
+    writeFlag("CY", false);
+
+    setCarryFlag();
+    expect(isSetFlag("CY")).toBe(true);
+
+    setCarryFlag();
+    expect(isSetFlag("CY")).toBe(true);
+  });
+
+  test("DAA", () => {
+    writeRegister8("A", 0x45);
+    writeRegister8("B", 0x38);
+
+    addRegister("B");
+    expect(readRegister8("A")).toBe(0x7d);
+    expect(isSetFlag("N")).toBe(false);
+
+    decimalAdjustAccumulator();
+    expect(readRegister8("A")).toBe(0x83);
+    expect(isSetFlag("CY")).toBe(false);
+
+    subtractRegister("B");
+    expect(readRegister8("A")).toBe(0x4b);
+    expect(isSetFlag("N")).toBe(true);
+
+    decimalAdjustAccumulator();
+    expect(readRegister8("A")).toBe(0x45);
+    expect(isSetFlag("CY")).toBe(false);
+  });
+
+  test("CPL", () => {
+    writeRegister8("A", 0x35);
+
+    complementAccumulator();
+
+    expect(readRegister8("A")).toBe(0xca);
+    expect(isSetFlag("H")).toBe(true);
+    expect(isSetFlag("N")).toBe(true);
   });
 });

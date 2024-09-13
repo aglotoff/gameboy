@@ -1,3 +1,4 @@
+import { add, add16, sub } from "./alu";
 import {
   checkCondition,
   Condition,
@@ -17,10 +18,9 @@ import {
   writeRegister8,
   writeRegister16,
   writeRegisterPair,
-  xor,
-  clearFlag,
   getSignedByte,
-  setFlag,
+  writeFlag,
+  isSetFlag,
 } from "./cpu";
 import * as Memory from "./memory";
 
@@ -195,32 +195,323 @@ export function popFromStack(rr: RegisterPair) {
   return 12;
 }
 
-function add(a: number, b: number) {
-  const result = (a + b) & 0xffff;
-
-  const halfCarry = ((a ^ b ^ result) & 0x10) != 0;
-  const carry = ((a ^ b ^ result) & 0x100) != 0;
-
-  return { result, carry, halfCarry };
-}
-
 export function loadHLFromAdjustedStackPointer() {
   const e = getSignedByte(fetchImmediateByte());
-  const { result, carry, halfCarry } = add(readRegister16("SP"), e);
+  const { result, carryFrom3, carryFrom7 } = add16(readRegister16("SP"), e);
   writeRegisterPair("HL", result);
-  clearFlag("Z");
-  clearFlag("N");
-  if (halfCarry) {
-    setFlag("H");
-  } else {
-    clearFlag("H");
-  }
-  if (carry) {
-    setFlag("CY");
-  } else {
-    clearFlag("CY");
-  }
+  writeFlag("Z", false);
+  writeFlag("N", false);
+  writeFlag("H", carryFrom3);
+  writeFlag("CY", carryFrom7);
   return 12;
+}
+
+function addToAccumulator(value: number, carry = false) {
+  const { result, carryFrom3, carryFrom7 } = add(
+    readRegister8("A"),
+    value,
+    carry && isSetFlag("CY")
+  );
+
+  writeRegister8("A", result);
+  writeFlag("Z", result === 0);
+  writeFlag("N", false);
+  writeFlag("H", carryFrom3);
+  writeFlag("CY", carryFrom7);
+}
+
+export function addRegister(r: Register8) {
+  addToAccumulator(readRegister8(r));
+  return 4;
+}
+
+export function addIndirectHL() {
+  addToAccumulator(Memory.read(readRegisterPair("HL")));
+  return 8;
+}
+
+export function addImmediate() {
+  addToAccumulator(fetchImmediateByte());
+  return 8;
+}
+
+export function addRegisterWithCarry(r: Register8) {
+  addToAccumulator(readRegister8(r), true);
+  return 4;
+}
+
+export function addIndirectHLWithCarry() {
+  addToAccumulator(Memory.read(readRegisterPair("HL")), true);
+  return 8;
+}
+
+export function addImmediateWithCarry() {
+  addToAccumulator(fetchImmediateByte(), true);
+  return 8;
+}
+
+function subtractFromAccumulator(value: number, carry = false) {
+  const { result, borrowTo3, borrowTo7 } = sub(
+    readRegister8("A"),
+    value,
+    carry && isSetFlag("CY")
+  );
+
+  writeRegister8("A", result);
+  writeFlag("Z", result === 0);
+  writeFlag("N", true);
+  writeFlag("H", borrowTo3);
+  writeFlag("CY", borrowTo7);
+}
+
+export function subtractRegister(r: Register8) {
+  subtractFromAccumulator(readRegister8(r));
+  return 4;
+}
+
+export function subtractIndirectHL() {
+  subtractFromAccumulator(Memory.read(readRegisterPair("HL")));
+  return 8;
+}
+
+export function subtractImmediate() {
+  subtractFromAccumulator(fetchImmediateByte());
+  return 8;
+}
+
+export function subtractRegisterWithCarry(r: Register8) {
+  subtractFromAccumulator(readRegister8(r), true);
+  return 4;
+}
+
+export function subtractIndirectHLWithCarry() {
+  subtractFromAccumulator(Memory.read(readRegisterPair("HL")), true);
+  return 8;
+}
+
+export function subtractImmediateWithCarry() {
+  subtractFromAccumulator(fetchImmediateByte(), true);
+  return 8;
+}
+
+function compareWithAccumulator(value: number) {
+  const { result, borrowTo3, borrowTo7 } = sub(readRegister8("A"), value);
+
+  writeFlag("Z", result === 0);
+  writeFlag("N", true);
+  writeFlag("H", borrowTo3);
+  writeFlag("CY", borrowTo7);
+}
+
+export function compareRegister(r: Register8) {
+  compareWithAccumulator(readRegister8(r));
+  return 4;
+}
+
+export function compareIndirectHL() {
+  compareWithAccumulator(Memory.read(readRegisterPair("HL")));
+  return 8;
+}
+
+export function compareImmediate() {
+  compareWithAccumulator(fetchImmediateByte());
+  return 8;
+}
+
+function increment(value: number) {
+  const { result, carryFrom3 } = add(value, 1);
+
+  writeFlag("Z", result === 0);
+  writeFlag("N", false);
+  writeFlag("H", carryFrom3);
+
+  return result;
+}
+
+export function incrementRegister(r: Register8) {
+  writeRegister8(r, increment(readRegister8(r)));
+  return 4;
+}
+
+export function incrementIndirectHL() {
+  const address = readRegisterPair("HL");
+  Memory.write(address, increment(Memory.read(address)));
+  return 12;
+}
+
+function decrement(value: number) {
+  const { result, borrowTo3 } = sub(value, 1);
+
+  writeFlag("Z", result === 0);
+  writeFlag("N", true);
+  writeFlag("H", borrowTo3);
+
+  return result;
+}
+
+export function decrementRegister(r: Register8) {
+  writeRegister8(r, decrement(readRegister8(r)));
+  return 4;
+}
+
+export function decrementIndirectHL() {
+  const address = readRegisterPair("HL");
+  Memory.write(address, decrement(Memory.read(address)));
+  return 12;
+}
+
+function andAccumulator(value: number) {
+  const result = readRegister8("A") & value;
+
+  writeRegister8("A", result);
+  writeFlag("Z", result === 0);
+  writeFlag("N", false);
+  writeFlag("H", true);
+  writeFlag("CY", false);
+}
+
+export function andRegister(r: Register8) {
+  andAccumulator(readRegister8(r));
+  return 4;
+}
+
+export function andIndirectHL() {
+  andAccumulator(Memory.read(readRegisterPair("HL")));
+  return 8;
+}
+
+export function andImmediate() {
+  andAccumulator(fetchImmediateByte());
+  return 8;
+}
+
+function orAccumulator(value: number) {
+  const result = readRegister8("A") | value;
+
+  writeRegister8("A", result);
+  writeFlag("Z", result === 0);
+  writeFlag("N", false);
+  writeFlag("H", false);
+  writeFlag("CY", false);
+}
+
+export function orRegister(r: Register8) {
+  orAccumulator(readRegister8(r));
+  return 4;
+}
+
+export function orIndirectHL() {
+  orAccumulator(Memory.read(readRegisterPair("HL")));
+  return 8;
+}
+
+export function orImmediate() {
+  orAccumulator(fetchImmediateByte());
+  return 8;
+}
+
+function xorAccumulator(value: number) {
+  const result = readRegister8("A") ^ value;
+
+  writeRegister8("A", result);
+  writeFlag("Z", result === 0);
+  writeFlag("N", false);
+  writeFlag("H", false);
+  writeFlag("CY", false);
+}
+
+export function xorRegister(r: Register8) {
+  xorAccumulator(readRegister8(r));
+  return 4;
+}
+
+export function xorIndirectHL() {
+  xorAccumulator(Memory.read(readRegisterPair("HL")));
+  return 8;
+}
+
+export function xorImmediate() {
+  xorAccumulator(fetchImmediateByte());
+  return 8;
+}
+
+export function complementCarryFlag() {
+  writeFlag("N", false);
+  writeFlag("H", false);
+  writeFlag("CY", !isSetFlag("CY"));
+  return 4;
+}
+
+export function setCarryFlag() {
+  writeFlag("N", false);
+  writeFlag("H", false);
+  writeFlag("CY", true);
+  return 4;
+}
+
+export function decimalAdjustAccumulator() {
+  const a = readRegister8("A");
+  const cy = isSetFlag("CY");
+  const h = isSetFlag("H");
+
+  const high = (a >> 4) & 0xf;
+  const low = a & 0xf;
+
+  if (!isSetFlag("N")) {
+    if (!cy && high <= 0x9 && !h && low <= 0x9) {
+      writeRegister8("A", a + 0x00);
+      writeFlag("CY", false);
+    } else if (!cy && high <= 0x8 && !h && low >= 0xa) {
+      writeRegister8("A", a + 0x06);
+      writeFlag("CY", false);
+    } else if (!cy && high <= 0x9 && h && low <= 0x3) {
+      writeRegister8("A", a + 0x06);
+      writeFlag("CY", false);
+    } else if (!cy && high >= 0xa && !h && low <= 0x9) {
+      writeRegister8("A", a + 0x60);
+      writeFlag("CY", true);
+    } else if (!cy && high >= 0x9 && !h && low >= 0xa) {
+      writeRegister8("A", a + 0x66);
+      writeFlag("CY", true);
+    } else if (!cy && high >= 0xa && h && low <= 0x3) {
+      writeRegister8("A", a + 0x66);
+      writeFlag("CY", true);
+    } else if (cy && high <= 0x2 && !h && low <= 0x9) {
+      writeRegister8("A", a + 0x60);
+      writeFlag("CY", true);
+    } else if (cy && high <= 0x2 && !h && low >= 0xa) {
+      writeRegister8("A", a + 0x66);
+      writeFlag("CY", true);
+    } else if (cy && high <= 0x3 && h && low <= 0x3) {
+      writeRegister8("A", a + 0x66);
+      writeFlag("CY", true);
+    }
+  } else {
+    if (!cy && high <= 0x9 && !h && low <= 0x9) {
+      writeRegister8("A", a + 0x00);
+      writeFlag("CY", false);
+    } else if (!cy && high <= 0x8 && h && low >= 0x6) {
+      writeRegister8("A", a + 0xfa);
+      writeFlag("CY", false);
+    } else if (cy && high >= 0x7 && !h && low <= 0x9) {
+      writeRegister8("A", a + 0xa0);
+      writeFlag("CY", false);
+    } else if (cy && high >= 0x6 && h && low >= 0x6) {
+      writeRegister8("A", a + 0x9a);
+      writeFlag("CY", false);
+    }
+  }
+
+  writeFlag("H", false);
+
+  return 4;
+}
+
+export function complementAccumulator() {
+  writeRegister8("A", ~readRegister8("A"));
+  writeFlag("N", true);
+  writeFlag("H", true);
+  return 4;
 }
 
 // -----------------
@@ -250,27 +541,6 @@ const jumpToHLAddress = () => {
   return 4;
 };
 
-// Take the logical exclusive-OR for each bit of the contents of the specified
-// value and register A and store the results in register A
-const xorA = (value: number) => {
-  writeRegister8("A", xor(readRegister8("A"), value));
-};
-
-const xorAWithRegister = (register: Register8) => () => {
-  xorA(readRegister8(register));
-  return 4;
-};
-
-const xorAWithHLPointerData = () => {
-  xorA(Memory.read(readRegisterPair("HL")));
-  return 8;
-};
-
-const xorAWithImmediateByte = () => {
-  xorA(fetchImmediateByte());
-  return 8;
-};
-
 // Reset the interrupt master enable flag and prohibit maskable interrupts
 const disableInterrupts = () => {
   setIME(false);
@@ -287,28 +557,48 @@ const instructions: Partial<Record<number, Instruction>> = {
   0x00: ["NOP", nop],
   0x01: ["LD BC,d16", () => loadRegisterPair("BC")],
   0x02: ["LD (BC),A", loadIndirectBCFromAccumulator],
+  0x04: ["INC B", () => incrementRegister("B")],
+  0x05: ["DEC B", () => decrementRegister("B")],
   0x06: ["LD B,d8", () => loadRegisterFromImmediate("B")],
   0x08: ["LD (a16),SP", loadDirectFromStackPointer],
   0x0a: ["LD A,(BC)", loadAccumulatorFromIndirectBC],
+  0x0c: ["INC C", () => incrementRegister("C")],
+  0x0d: ["DEC C", () => decrementRegister("C")],
   0x0e: ["LD C,d8", () => loadRegisterFromImmediate("C")],
 
   0x11: ["LD DE,d16", () => loadRegisterPair("DE")],
   0x12: ["LD (DE),A", loadIndirectDEFromAccumulator],
+  0x14: ["INC D", () => incrementRegister("D")],
+  0x15: ["DEC D", () => decrementRegister("D")],
   0x16: ["LD D,d8", () => loadRegisterFromImmediate("D")],
   0x1a: ["LD A,(DE)", loadAccumulatorFromIndirectDE],
+  0x1c: ["INC E", () => incrementRegister("E")],
+  0x1d: ["DEC E", () => decrementRegister("E")],
   0x1e: ["LD E,d8", () => loadRegisterFromImmediate("E")],
 
   0x21: ["LD HL,d16", () => loadRegisterPair("HL")],
   0x22: ["LD (HL+),A", loadIndirectHLIncrementFromAccumulator],
+  0x24: ["INC H", () => incrementRegister("H")],
+  0x25: ["DEC H", () => decrementRegister("H")],
   0x26: ["LD H,d8", () => loadRegisterFromImmediate("H")],
+  0x27: ["DAA", decimalAdjustAccumulator],
   0x2a: ["LD A,(HL+)", loadAccumulatorFromIndirectHLIncrement],
+  0x2c: ["INC L", () => incrementRegister("L")],
+  0x2d: ["DEC L", () => decrementRegister("L")],
   0x2e: ["LD L,d8", () => loadRegisterFromImmediate("L")],
+  0x2f: ["CPL", complementAccumulator],
 
   0x31: ["LD SP,d16", () => loadRegisterPair("SP")],
   0x32: ["LD (HL-),A", loadIndirectHLDecrementFromAccumulator],
+  0x34: ["INC (HL)", incrementIndirectHL],
+  0x35: ["DEC (HL)", decrementIndirectHL],
   0x36: ["LD (HL),d8", loadIndirectHLFromImmediateData],
+  0x37: ["SCF", setCarryFlag],
   0x3a: ["LD A,(HL-)", loadAccumulatorFromIndirectHLDecrement],
+  0x3c: ["INC A", () => incrementRegister("A")],
+  0x3d: ["DEC A", () => decrementRegister("A")],
   0x3e: ["LD A,d8", () => loadRegisterFromImmediate("A")],
+  0x3f: ["CCF", complementCarryFlag],
 
   0x40: ["LD B,B", () => loadRegisterFromRegister("B", "B")],
   0x41: ["LD B,C", () => loadRegisterFromRegister("B", "C")],
@@ -377,43 +667,109 @@ const instructions: Partial<Record<number, Instruction>> = {
   0x7e: ["LD A,(HL)", () => loadRegisterFromIndirectHL("A")],
   0x7f: ["LD A,A", () => loadRegisterFromRegister("A", "A")],
 
-  0xa8: ["XOR B", xorAWithRegister("B")],
-  0xa9: ["XOR C", xorAWithRegister("C")],
-  0xaa: ["XOR D", xorAWithRegister("D")],
-  0xab: ["XOR E", xorAWithRegister("E")],
-  0xac: ["XOR H", xorAWithRegister("H")],
-  0xad: ["XOR L", xorAWithRegister("L")],
-  0xae: ["XOR (HL)", xorAWithHLPointerData],
-  0xaf: ["XOR A", xorAWithRegister("A")],
+  0x80: ["ADD A,B", () => addRegister("B")],
+  0x81: ["ADD A,C", () => addRegister("C")],
+  0x82: ["ADD A,D", () => addRegister("D")],
+  0x83: ["ADD A,E", () => addRegister("E")],
+  0x84: ["ADD A,H", () => addRegister("H")],
+  0x85: ["ADD A,L", () => addRegister("L")],
+  0x86: ["ADD A,(HL)", addIndirectHL],
+  0x87: ["ADD A,A", () => addRegister("A")],
+  0x88: ["ADC A,B", () => addRegisterWithCarry("B")],
+  0x89: ["ADC A,C", () => addRegisterWithCarry("C")],
+  0x8a: ["ADC A,D", () => addRegisterWithCarry("D")],
+  0x8b: ["ADC A,E", () => addRegisterWithCarry("E")],
+  0x8c: ["ADC A,H", () => addRegisterWithCarry("H")],
+  0x8d: ["ADC A,L", () => addRegisterWithCarry("L")],
+  0x8e: ["ADC A,(HL)", addIndirectHLWithCarry],
+  0x8f: ["ADC A,A", () => addRegisterWithCarry("A")],
+
+  0x90: ["SUB B", () => subtractRegister("B")],
+  0x91: ["SUB C", () => subtractRegister("C")],
+  0x92: ["SUB D", () => subtractRegister("D")],
+  0x93: ["SUB E", () => subtractRegister("E")],
+  0x94: ["SUB H", () => subtractRegister("H")],
+  0x95: ["SUB L", () => subtractRegister("L")],
+  0x96: ["SUB (HL)", subtractIndirectHL],
+  0x97: ["SUB A", () => subtractRegister("A")],
+  0x98: ["SBC A,B", () => subtractRegisterWithCarry("B")],
+  0x99: ["SBC A,C", () => subtractRegisterWithCarry("C")],
+  0x9a: ["SBC A,D", () => subtractRegisterWithCarry("D")],
+  0x9b: ["SBC A,E", () => subtractRegisterWithCarry("E")],
+  0x9c: ["SBC A,H", () => subtractRegisterWithCarry("H")],
+  0x9d: ["SBC A,L", () => subtractRegisterWithCarry("L")],
+  0x9e: ["SBC A,(HL)", subtractIndirectHLWithCarry],
+  0x9f: ["SBC A,A", () => subtractRegisterWithCarry("A")],
+
+  0xa0: ["AND B", () => andRegister("B")],
+  0xa1: ["AND C", () => andRegister("C")],
+  0xa2: ["AND D", () => andRegister("D")],
+  0xa3: ["AND E", () => andRegister("E")],
+  0xa4: ["AND H", () => andRegister("H")],
+  0xa5: ["AND L", () => andRegister("L")],
+  0xa6: ["AND (HL)", andIndirectHL],
+  0xa7: ["AND A", () => andRegister("A")],
+  0xa8: ["XOR B", () => xorRegister("B")],
+  0xa9: ["XOR C", () => xorRegister("C")],
+  0xaa: ["XOR D", () => xorRegister("D")],
+  0xab: ["XOR E", () => xorRegister("E")],
+  0xac: ["XOR H", () => xorRegister("H")],
+  0xad: ["XOR L", () => xorRegister("L")],
+  0xae: ["XOR (HL)", xorIndirectHL],
+  0xaf: ["XOR A", () => xorRegister("A")],
+
+  0xb0: ["OR B", () => orRegister("B")],
+  0xb1: ["OR C", () => orRegister("C")],
+  0xb2: ["OR D", () => orRegister("D")],
+  0xb3: ["OR E", () => orRegister("E")],
+  0xb4: ["OR H", () => orRegister("H")],
+  0xb5: ["OR L", () => orRegister("L")],
+  0xb6: ["OR (HL)", orIndirectHL],
+  0xb7: ["OR A", () => orRegister("A")],
+  0xb8: ["CP B", () => compareRegister("B")],
+  0xb9: ["CP C", () => compareRegister("C")],
+  0xba: ["CP D", () => compareRegister("D")],
+  0xbb: ["CP E", () => compareRegister("E")],
+  0xbc: ["CP H", () => compareRegister("H")],
+  0xbd: ["CP L", () => compareRegister("L")],
+  0xbe: ["CP (HL)", compareIndirectHL],
+  0xbf: ["CP A", () => compareRegister("A")],
 
   0xc1: ["POP BC", () => popFromStack("BC")],
   0xc2: ["JP NZ,a16", () => jumpToAddressIf("NZ")],
   0xc3: ["JP a16", jumpToAddress],
   0xc5: ["PUSH BC", () => pushToStack("BC")],
+  0xc6: ["ADD A,d8", addImmediate],
   0xca: ["JP Z,a16", () => jumpToAddressIf("Z")],
+  0xce: ["ADC A,d8", addImmediateWithCarry],
 
   0xd1: ["POP BC", () => popFromStack("DE")],
   0xd2: ["JP NC,a16", () => jumpToAddressIf("NC")],
   0xd5: ["PUSH DE", () => pushToStack("DE")],
+  0xd6: ["SUB d8", subtractImmediate],
   0xda: ["JP C,a16", () => jumpToAddressIf("C")],
+  0xde: ["SBC A,d8", subtractImmediateWithCarry],
 
   0xe0: ["LDH (a8),A", loadDirectByteFromAccumulator],
   0xe1: ["POP BC", () => popFromStack("HL")],
   0xe2: ["LD (C),A", loadIndirectCFromAccumulator],
   0xe5: ["PUSH HL", () => pushToStack("HL")],
+  0xe6: ["AND d8", andImmediate],
   0xe9: ["JP (HL)", jumpToHLAddress],
   0xea: ["LD (a16),A", loadDirectWordFromAccumulator],
-  0xee: ["XOR d8", xorAWithImmediateByte],
+  0xee: ["XOR d8", xorImmediate],
 
   0xf0: ["LDH A,(a8)", loadAccumulatorFromDirectByte],
   0xf1: ["POP AF", () => popFromStack("AF")],
   0xf2: ["LD A,(C)", loadAccumulatorFromIndirectC],
   0xf3: ["DI", disableInterrupts],
   0xf5: ["PUSH AF", () => pushToStack("AF")],
+  0xf6: ["AND d8", orImmediate],
   0xf8: ["LD HL,SP+r8", loadHLFromAdjustedStackPointer],
   0xf9: ["LD SP,HL", loadStackPointerFromHL],
   0xfa: ["LD A,(a16)", loadAccumulatorFromDirectWord],
   0xfb: ["EI", enableInterrupts],
+  0xfe: ["CP d8", compareImmediate],
 };
 
 // const prefixCBInstructions: Partial<Record<number, Instruction>> = {};

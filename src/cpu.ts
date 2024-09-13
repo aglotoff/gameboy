@@ -66,28 +66,28 @@ export const readRegister16 = (register: Register16) => {
 export const writeRegister8 = (register: Register8, value: number) => {
   switch (register) {
     case "A":
-      registers.a = value;
+      registers.a = value & 0xff;
       break;
     case "F":
-      registers.f = value;
+      registers.f = value & 0xff;
       break;
     case "B":
-      registers.b = value;
+      registers.b = value & 0xff;
       break;
     case "C":
-      registers.c = value;
+      registers.c = value & 0xff;
       break;
     case "D":
-      registers.d = value;
+      registers.d = value & 0xff;
       break;
     case "E":
-      registers.e = value;
+      registers.e = value & 0xff;
       break;
     case "H":
-      registers.h = value;
+      registers.h = value & 0xff;
       break;
     case "L":
-      registers.l = value;
+      registers.l = value & 0xff;
       break;
   }
 };
@@ -95,10 +95,10 @@ export const writeRegister8 = (register: Register8, value: number) => {
 export const writeRegister16 = (register: Register16, value: number) => {
   switch (register) {
     case "PC":
-      registers.pc = value;
+      registers.pc = value & 0xffff;
       break;
     case "SP":
-      registers.sp = value;
+      registers.sp = value & 0xffff;
       break;
   }
 };
@@ -149,6 +149,14 @@ export const isSetFlag = (flag: Flag) =>
 export const setFlag = (flag: Flag) => {
   registers.f |= 1 << flagShift[flag];
 };
+
+export function writeFlag(flag: Flag, value: boolean) {
+  if (value) {
+    setFlag(flag);
+  } else {
+    clearFlag(flag);
+  }
+}
 
 export const clearFlag = (flag: Flag) => {
   registers.f &= ~(1 << flagShift[flag]);
