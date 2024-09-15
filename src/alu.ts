@@ -12,6 +12,16 @@ export function add16(a: number, b: number, carryFlag = false) {
   const c = carryFlag ? 1 : 0;
 
   return {
+    carryFrom11: (a & 0xfff) + (b & 0xfff) + c > 0xfff,
+    carryFrom15: (a & 0xffff) + (b & 0xffff) + c > 0xffff,
+    result: (a + b + c) & 0xffff,
+  };
+}
+
+export function addSigned(a: number, b: number, carryFlag = false) {
+  const c = carryFlag ? 1 : 0;
+
+  return {
     carryFrom3: (a & 0xf) + (b & 0xf) + c > 0xf,
     carryFrom7: (a & 0xff) + (b & 0xff) + c > 0xff,
     result: (a + b + c) & 0xffff,

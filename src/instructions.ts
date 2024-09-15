@@ -1,4 +1,4 @@
-import { add, add16, sub } from "./alu";
+import { add, add16, addSigned, sub } from "./alu";
 import {
   checkCondition,
   Condition,
@@ -197,7 +197,7 @@ export function popFromStack(rr: RegisterPair) {
 
 export function loadHLFromAdjustedStackPointer() {
   const e = getSignedByte(fetchImmediateByte());
-  const { result, carryFrom3, carryFrom7 } = add16(readRegister16("SP"), e);
+  const { result, carryFrom3, carryFrom7 } = addSigned(readRegister16("SP"), e);
   writeRegisterPair("HL", result);
   writeFlag("Z", false);
   writeFlag("N", false);
@@ -514,6 +514,49 @@ export function complementAccumulator() {
   return 4;
 }
 
+export function incrementRegisterPair(rr: RegisterPair | "SP") {
+  if (rr === "SP") {
+    writeRegister16("SP", readRegister16("SP") + 1);
+  } else {
+    writeRegisterPair(rr, readRegisterPair(rr) + 1);
+  }
+  return 8;
+}
+
+export function decrementRegisterPair(rr: RegisterPair | "SP") {
+  if (rr === "SP") {
+    writeRegister16("SP", readRegister16("SP") - 1);
+  } else {
+    writeRegisterPair(rr, readRegisterPair(rr) - 1);
+  }
+  return 8;
+}
+
+export function addRegisterPair(rr: RegisterPair | "SP") {
+  const { result, carryFrom11, carryFrom15 } = add16(
+    readRegisterPair("HL"),
+    rr === "SP" ? readRegister16("SP") : readRegisterPair(rr)
+  );
+
+  writeRegisterPair("HL", result);
+  writeFlag("N", false);
+  writeFlag("H", carryFrom11);
+  writeFlag("CY", carryFrom15);
+
+  return 8;
+}
+
+export function addToStackPointer() {
+  const e = getSignedByte(fetchImmediateByte());
+  const { result, carryFrom3, carryFrom7 } = addSigned(readRegister16("SP"), e);
+  writeRegister16("SP", result);
+  writeFlag("Z", false);
+  writeFlag("N", false);
+  writeFlag("H", carryFrom3);
+  writeFlag("CY", carryFrom7);
+  return 16;
+}
+
 // -----------------
 
 // Load the operand to the program counter
@@ -557,32 +600,41 @@ const instructions: Partial<Record<number, Instruction>> = {
   0x00: ["NOP", nop],
   0x01: ["LD BC,d16", () => loadRegisterPair("BC")],
   0x02: ["LD (BC),A", loadIndirectBCFromAccumulator],
+  0x03: ["INC BC", () => incrementRegisterPair("BC")],
   0x04: ["INC B", () => incrementRegister("B")],
   0x05: ["DEC B", () => decrementRegister("B")],
   0x06: ["LD B,d8", () => loadRegisterFromImmediate("B")],
   0x08: ["LD (a16),SP", loadDirectFromStackPointer],
+  0x09: ["ADD HL,BC", () => addRegisterPair("BC")],
   0x0a: ["LD A,(BC)", loadAccumulatorFromIndirectBC],
+  0x0b: ["DEC BC", () => decrementRegisterPair("BC")],
   0x0c: ["INC C", () => incrementRegister("C")],
   0x0d: ["DEC C", () => decrementRegister("C")],
   0x0e: ["LD C,d8", () => loadRegisterFromImmediate("C")],
 
   0x11: ["LD DE,d16", () => loadRegisterPair("DE")],
   0x12: ["LD (DE),A", loadIndirectDEFromAccumulator],
+  0x13: ["INC DE", () => incrementRegisterPair("DE")],
   0x14: ["INC D", () => incrementRegister("D")],
   0x15: ["DEC D", () => decrementRegister("D")],
   0x16: ["LD D,d8", () => loadRegisterFromImmediate("D")],
+  0x19: ["ADD HL,DE", () => addRegisterPair("DE")],
   0x1a: ["LD A,(DE)", loadAccumulatorFromIndirectDE],
+  0x1b: ["DEC DE", () => decrementRegisterPair("DE")],
   0x1c: ["INC E", () => incrementRegister("E")],
   0x1d: ["DEC E", () => decrementRegister("E")],
   0x1e: ["LD E,d8", () => loadRegisterFromImmediate("E")],
 
   0x21: ["LD HL,d16", () => loadRegisterPair("HL")],
   0x22: ["LD (HL+),A", loadIndirectHLIncrementFromAccumulator],
+  0x23: ["INC HL", () => incrementRegisterPair("HL")],
   0x24: ["INC H", () => incrementRegister("H")],
   0x25: ["DEC H", () => decrementRegister("H")],
   0x26: ["LD H,d8", () => loadRegisterFromImmediate("H")],
   0x27: ["DAA", decimalAdjustAccumulator],
+  0x29: ["ADD HL,HL", () => addRegisterPair("HL")],
   0x2a: ["LD A,(HL+)", loadAccumulatorFromIndirectHLIncrement],
+  0x2b: ["DEC HL", () => decrementRegisterPair("HL")],
   0x2c: ["INC L", () => incrementRegister("L")],
   0x2d: ["DEC L", () => decrementRegister("L")],
   0x2e: ["LD L,d8", () => loadRegisterFromImmediate("L")],
@@ -590,11 +642,14 @@ const instructions: Partial<Record<number, Instruction>> = {
 
   0x31: ["LD SP,d16", () => loadRegisterPair("SP")],
   0x32: ["LD (HL-),A", loadIndirectHLDecrementFromAccumulator],
+  0x33: ["INC SP", () => incrementRegisterPair("SP")],
   0x34: ["INC (HL)", incrementIndirectHL],
   0x35: ["DEC (HL)", decrementIndirectHL],
   0x36: ["LD (HL),d8", loadIndirectHLFromImmediateData],
   0x37: ["SCF", setCarryFlag],
+  0x39: ["ADD HL,SP", () => addRegisterPair("SP")],
   0x3a: ["LD A,(HL-)", loadAccumulatorFromIndirectHLDecrement],
+  0x3b: ["DEC SP", () => decrementRegisterPair("SP")],
   0x3c: ["INC A", () => incrementRegister("A")],
   0x3d: ["DEC A", () => decrementRegister("A")],
   0x3e: ["LD A,d8", () => loadRegisterFromImmediate("A")],
@@ -755,6 +810,7 @@ const instructions: Partial<Record<number, Instruction>> = {
   0xe2: ["LD (C),A", loadIndirectCFromAccumulator],
   0xe5: ["PUSH HL", () => pushToStack("HL")],
   0xe6: ["AND d8", andImmediate],
+  0xe8: ["ADD SP,r8", addToStackPointer],
   0xe9: ["JP (HL)", jumpToHLAddress],
   0xea: ["LD (a16),A", loadDirectWordFromAccumulator],
   0xee: ["XOR d8", xorImmediate],

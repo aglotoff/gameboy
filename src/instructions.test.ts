@@ -70,6 +70,10 @@ import {
   setCarryFlag,
   decimalAdjustAccumulator,
   complementAccumulator,
+  incrementRegisterPair,
+  decrementRegisterPair,
+  addRegisterPair,
+  addToStackPointer,
 } from "./instructions";
 import * as Memory from "./memory";
 
@@ -696,9 +700,11 @@ describe("8-bit arithmetic and logical instructions", () => {
     writeFlag("CY", true);
 
     complementCarryFlag();
+
     expect(isSetFlag("CY")).toBe(false);
 
     complementCarryFlag();
+
     expect(isSetFlag("CY")).toBe(true);
   });
 
@@ -706,9 +712,11 @@ describe("8-bit arithmetic and logical instructions", () => {
     writeFlag("CY", false);
 
     setCarryFlag();
+
     expect(isSetFlag("CY")).toBe(true);
 
     setCarryFlag();
+
     expect(isSetFlag("CY")).toBe(true);
   });
 
@@ -717,18 +725,22 @@ describe("8-bit arithmetic and logical instructions", () => {
     writeRegister8("B", 0x38);
 
     addRegister("B");
+
     expect(readRegister8("A")).toBe(0x7d);
     expect(isSetFlag("N")).toBe(false);
 
     decimalAdjustAccumulator();
+
     expect(readRegister8("A")).toBe(0x83);
     expect(isSetFlag("CY")).toBe(false);
 
     subtractRegister("B");
+
     expect(readRegister8("A")).toBe(0x4b);
     expect(isSetFlag("N")).toBe(true);
 
     decimalAdjustAccumulator();
+
     expect(readRegister8("A")).toBe(0x45);
     expect(isSetFlag("CY")).toBe(false);
   });
@@ -741,5 +753,57 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(readRegister8("A")).toBe(0xca);
     expect(isSetFlag("H")).toBe(true);
     expect(isSetFlag("N")).toBe(true);
+  });
+});
+
+describe("16-bit arithmetic instructions", () => {
+  test("INC rr", () => {
+    writeRegisterPair("DE", 0x235f);
+
+    incrementRegisterPair("DE");
+
+    expect(readRegisterPair("DE")).toBe(0x2360);
+  });
+
+  test("DEC rr", () => {
+    writeRegisterPair("DE", 0x235f);
+
+    decrementRegisterPair("DE");
+
+    expect(readRegisterPair("DE")).toBe(0x235e);
+  });
+
+  test("ADD HL,rr", () => {
+    writeRegisterPair("HL", 0x8a23);
+    writeRegisterPair("BC", 0x0605);
+
+    addRegisterPair("BC");
+
+    expect(readRegisterPair("HL")).toBe(0x9028);
+    expect(isSetFlag("H")).toBe(true);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(false);
+
+    writeRegisterPair("HL", 0x8a23);
+
+    addRegisterPair("HL");
+
+    expect(readRegisterPair("HL")).toBe(0x1446);
+    expect(isSetFlag("H")).toBe(true);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(true);
+  });
+
+  test("ADD SP,e", () => {
+    writeRegister16("SP", 0xfff8);
+    Memory.write(0, 0x2);
+
+    addToStackPointer();
+
+    expect(readRegister16("SP")).toBe(0xfffa);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(false);
+    expect(isSetFlag("CY")).toBe(false);
+    expect(isSetFlag("Z")).toBe(false);
   });
 });
