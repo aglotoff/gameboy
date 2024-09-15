@@ -74,6 +74,10 @@ import {
   decrementRegisterPair,
   addRegisterPair,
   addToStackPointer,
+  rotateLeftCircularAccumulator,
+  rotateRightCircularAccumulator,
+  rotateLeftAccumulator,
+  rotateRightAccumulator,
 } from "./instructions";
 import * as Memory from "./memory";
 
@@ -805,5 +809,57 @@ describe("16-bit arithmetic instructions", () => {
     expect(isSetFlag("N")).toBe(false);
     expect(isSetFlag("CY")).toBe(false);
     expect(isSetFlag("Z")).toBe(false);
+  });
+});
+
+describe("Rotate, shift, and bit operation instructions", () => {
+  test("RLCA", () => {
+    writeRegister8("A", 0x85);
+
+    rotateLeftCircularAccumulator();
+
+    expect(readRegister8("A")).toBe(0x0b);
+    expect(isSetFlag("CY")).toBe(true);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(false);
+  });
+
+  test("RRCA", () => {
+    writeRegister8("A", 0x3b);
+
+    rotateRightCircularAccumulator();
+
+    expect(readRegister8("A")).toBe(0x9d);
+    expect(isSetFlag("CY")).toBe(true);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(false);
+  });
+
+  test("RLA", () => {
+    writeRegister8("A", 0x95);
+    writeFlag("CY", true);
+
+    rotateLeftAccumulator();
+
+    expect(readRegister8("A")).toBe(0x2b);
+    expect(isSetFlag("CY")).toBe(true);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(false);
+  });
+
+  test("RRA", () => {
+    writeRegister8("A", 0x81);
+    writeFlag("CY", false);
+
+    rotateRightAccumulator();
+
+    expect(readRegister8("A")).toBe(0x40);
+    expect(isSetFlag("CY")).toBe(true);
+    expect(isSetFlag("Z")).toBe(false);
+    expect(isSetFlag("H")).toBe(false);
+    expect(isSetFlag("N")).toBe(false);
   });
 });

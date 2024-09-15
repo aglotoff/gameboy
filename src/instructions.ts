@@ -557,6 +557,46 @@ export function addToStackPointer() {
   return 16;
 }
 
+export function rotateLeftCircularAccumulator() {
+  const value = readRegister8("A");
+  writeRegister8("A", ((value << 1) | (value >> 7)) & 0xff);
+  writeFlag("Z", false);
+  writeFlag("N", false);
+  writeFlag("H", false);
+  writeFlag("CY", (value & 0x80) != 0);
+  return 4;
+}
+
+export function rotateRightCircularAccumulator() {
+  const value = readRegister8("A");
+  writeRegister8("A", ((value >> 1) | (value << 7)) & 0xff);
+  writeFlag("Z", false);
+  writeFlag("N", false);
+  writeFlag("H", false);
+  writeFlag("CY", (value & 0x01) != 0);
+  return 4;
+}
+
+export function rotateLeftAccumulator() {
+  const value = readRegister8("A");
+  writeRegister8("A", ((value << 1) & 0xff) | (isSetFlag("CY") ? 1 : 0));
+  writeFlag("Z", false);
+  writeFlag("N", false);
+  writeFlag("H", false);
+  writeFlag("CY", (value & 0x80) != 0);
+  return 4;
+}
+
+export function rotateRightAccumulator() {
+  const value = readRegister8("A");
+  writeRegister8("A", ((value >> 1) & 0xff) | (isSetFlag("CY") ? 0x80 : 0));
+  writeFlag("Z", false);
+  writeFlag("N", false);
+  writeFlag("H", false);
+  writeFlag("CY", (value & 0x1) != 0);
+  return 4;
+}
+
 // -----------------
 
 // Load the operand to the program counter
@@ -604,6 +644,7 @@ const instructions: Partial<Record<number, Instruction>> = {
   0x04: ["INC B", () => incrementRegister("B")],
   0x05: ["DEC B", () => decrementRegister("B")],
   0x06: ["LD B,d8", () => loadRegisterFromImmediate("B")],
+  0x07: ["RLCA", rotateLeftCircularAccumulator],
   0x08: ["LD (a16),SP", loadDirectFromStackPointer],
   0x09: ["ADD HL,BC", () => addRegisterPair("BC")],
   0x0a: ["LD A,(BC)", loadAccumulatorFromIndirectBC],
@@ -611,6 +652,7 @@ const instructions: Partial<Record<number, Instruction>> = {
   0x0c: ["INC C", () => incrementRegister("C")],
   0x0d: ["DEC C", () => decrementRegister("C")],
   0x0e: ["LD C,d8", () => loadRegisterFromImmediate("C")],
+  0x0f: ["RRCA", rotateRightCircularAccumulator],
 
   0x11: ["LD DE,d16", () => loadRegisterPair("DE")],
   0x12: ["LD (DE),A", loadIndirectDEFromAccumulator],
@@ -618,12 +660,14 @@ const instructions: Partial<Record<number, Instruction>> = {
   0x14: ["INC D", () => incrementRegister("D")],
   0x15: ["DEC D", () => decrementRegister("D")],
   0x16: ["LD D,d8", () => loadRegisterFromImmediate("D")],
+  0x17: ["RLA", rotateLeftAccumulator],
   0x19: ["ADD HL,DE", () => addRegisterPair("DE")],
   0x1a: ["LD A,(DE)", loadAccumulatorFromIndirectDE],
   0x1b: ["DEC DE", () => decrementRegisterPair("DE")],
   0x1c: ["INC E", () => incrementRegister("E")],
   0x1d: ["DEC E", () => decrementRegister("E")],
   0x1e: ["LD E,d8", () => loadRegisterFromImmediate("E")],
+  0x1f: ["RRA", rotateRightAccumulator],
 
   0x21: ["LD HL,d16", () => loadRegisterPair("HL")],
   0x22: ["LD (HL+),A", loadIndirectHLIncrementFromAccumulator],
