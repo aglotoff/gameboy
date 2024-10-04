@@ -1,10 +1,11 @@
-import { RegisterFile, RegisterPair } from "../cpu";
+import { InterruptFlags, RegisterFile, RegisterPair } from "../cpu";
 import { Memory } from "../memory";
 import { incrementWord, makeWord } from "../utils";
 
 export interface InstructionCtx {
   regs: RegisterFile;
   memory: Memory;
+  interruptFlags: InterruptFlags;
 }
 
 export type Instruction = [string, (ctx: InstructionCtx) => number];

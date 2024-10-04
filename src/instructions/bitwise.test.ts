@@ -1,6 +1,6 @@
 import { describe, expect, test as baseTest } from "vitest";
 
-import { Flag, Register, RegisterFile } from "../cpu";
+import { Flag, InterruptFlags, Register, RegisterFile } from "../cpu";
 import { Memory } from "../memory";
 
 import { InstructionCtx } from "./lib";
@@ -13,7 +13,11 @@ import {
 
 const test = baseTest.extend({
   ctx: async ({}, use: (ctx: InstructionCtx) => Promise<void>) => {
-    await use({ regs: new RegisterFile(), memory: new Memory() });
+    await use({
+      regs: new RegisterFile(),
+      memory: new Memory(),
+      interruptFlags: new InterruptFlags(),
+    });
   },
 });
 

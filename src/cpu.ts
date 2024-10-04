@@ -1,5 +1,4 @@
-import { Memory } from "./memory";
-import { getLSB, getMSB, makeWord, incrementWord } from "./utils";
+import { getLSB, getMSB, makeWord } from "./utils";
 
 export enum Register {
   A = 0,
@@ -82,6 +81,22 @@ export class RegisterFile {
   }
 }
 
+export class InterruptFlags {
+  private ime = false;
+
+  masterEnable() {
+    this.ime = true;
+  }
+
+  masterDisable() {
+    this.ime = false;
+  }
+
+  isMasterEnabled() {
+    return this.ime;
+  }
+}
+
 export const regs = new RegisterFile();
 
 export type Condition = "Z" | "C" | "NZ" | "NC";
@@ -97,10 +112,4 @@ export const checkCondition = (regs: RegisterFile, condition: Condition) => {
     case "NC":
       return !regs.isFlagSet(Flag.CY);
   }
-};
-
-let ime = false;
-
-export const setIME = (value: boolean) => {
-  ime = value;
 };

@@ -1,17 +1,10 @@
-import {
-  checkCondition,
-  Condition,
-  RegisterPair,
-  setIME,
-  Register,
-  regs,
-} from "./cpu";
+import { RegisterPair, Register, regs } from "../cpu";
 import {
   addRegisterPair,
   addToStackPointer,
   decrementRegisterPair,
   incrementRegisterPair,
-} from "./inst/arithmetic16";
+} from "./arithmetic16";
 import {
   addImmediate,
   addImmediateWithCarry,
@@ -45,19 +38,27 @@ import {
   xorImmediate,
   xorIndirectHL,
   xorRegister,
-} from "./inst/arithmetic8";
+} from "./arithmetic8";
 import {
   rotateLeftAccumulator,
   rotateLeftCircularAccumulator,
   rotateRightAccumulator,
   rotateRightCircularAccumulator,
-} from "./inst/bitwise";
+} from "./bitwise";
 import {
-  fetchImmediateByte,
-  fetchImmediateWord,
-  Instruction,
-  InstructionCtx,
-} from "./inst/lib";
+  callFunction,
+  callFunctionConditional,
+  jump,
+  jumpConditional,
+  jumpToHL,
+  relativeJump,
+  relativeJumpConditional,
+  restartFunction,
+  returnFromFunction,
+  returnFromFunctionConditional,
+  returnFromInterruptHandler,
+} from "./flow";
+import { fetchImmediateByte, Instruction, InstructionCtx } from "./lib";
 import {
   loadDirectFromStackPointer,
   loadHLFromAdjustedStackPointer,
@@ -65,7 +66,7 @@ import {
   loadStackPointerFromHL,
   popFromStack,
   pushToStack,
-} from "./inst/load16";
+} from "./load16";
 import {
   loadAccumulatorFromDirectByte,
   loadAccumulatorFromDirectWord,
@@ -86,54 +87,9 @@ import {
   loadRegisterFromImmediate,
   loadRegisterFromIndirectHL,
   loadRegisterFromRegister,
-} from "./inst/load8";
-
-// Perform no operation
-const nop = () => {
-  return 4;
-};
-
-// -----------------
-
-// Load the operand to the program counter
-const jumpToAddress = (ctx: InstructionCtx) => {
-  const address = fetchImmediateWord(ctx);
-  ctx.regs.writePair(RegisterPair.PC, address);
-  return 16;
-};
-
-// Load the operand in the PC if the condition and the flag status match
-const jumpToAddressIf = (ctx: InstructionCtx, condition: Condition) => {
-  const address = fetchImmediateWord(ctx);
-
-  if (checkCondition(ctx.regs, condition)) {
-    ctx.regs.writePair(RegisterPair.PC, address);
-    return 16;
-  }
-
-  return 12;
-};
-
-// Load the contents of register pair HL in program counter PC
-const jumpToHLAddress = (ctx: InstructionCtx) => {
-  ctx.regs.writePair(RegisterPair.PC, ctx.regs.readPair(RegisterPair.HL));
-  return 4;
-};
-
-// Reset the interrupt master enable flag and prohibit maskable interrupts
-const disableInterrupts = () => {
-  setIME(false);
-  return 4;
-};
-
-// Set the interrupt master enable flag and enable maskable interrupts
-const enableInterrupts = () => {
-  setIME(true);
-  return 4;
-};
+} from "./load8";
 
 const instructions: Partial<Record<number, Instruction>> = {
-  0x00: ["NOP", nop],
   0x01: ["LD BC,d16", (c) => loadRegisterPair(c, RegisterPair.BC)],
   0x02: ["LD (BC),A", loadIndirectBCFromAccumulator],
   0x03: ["INC BC", (c) => incrementRegisterPair(c, RegisterPair.BC)],
@@ -157,6 +113,7 @@ const instructions: Partial<Record<number, Instruction>> = {
   0x15: ["DEC D", (c) => decrementRegister(c, Register.D)],
   0x16: ["LD D,d8", (c) => loadRegisterFromImmediate(c, Register.D)],
   0x17: ["RLA", rotateLeftAccumulator],
+  0x18: ["JR r8", relativeJump],
   0x19: ["ADD HL,DE", (c) => addRegisterPair(c, RegisterPair.DE)],
   0x1a: ["LD A,(DE)", loadAccumulatorFromIndirectDE],
   0x1b: ["DEC DE", (c) => decrementRegisterPair(c, RegisterPair.DE)],
@@ -165,6 +122,7 @@ const instructions: Partial<Record<number, Instruction>> = {
   0x1e: ["LD E,d8", (c) => loadRegisterFromImmediate(c, Register.E)],
   0x1f: ["RRA", rotateRightAccumulator],
 
+  0x20: ["JR NZ,r8", (c) => relativeJumpConditional(c, "NZ")],
   0x21: ["LD HL,d16", (c) => loadRegisterPair(c, RegisterPair.HL)],
   0x22: ["LD (HL+),A", loadIndirectHLIncrementFromAccumulator],
   0x23: ["INC HL", (c) => incrementRegisterPair(c, RegisterPair.HL)],
@@ -172,6 +130,7 @@ const instructions: Partial<Record<number, Instruction>> = {
   0x25: ["DEC H", (c) => decrementRegister(c, Register.H)],
   0x26: ["LD H,d8", (c) => loadRegisterFromImmediate(c, Register.H)],
   0x27: ["DAA", decimalAdjustAccumulator],
+  0x28: ["JR Z,r8", (c) => relativeJumpConditional(c, "Z")],
   0x29: ["ADD HL,HL", (c) => addRegisterPair(c, RegisterPair.HL)],
   0x2a: ["LD A,(HL+)", loadAccumulatorFromIndirectHLIncrement],
   0x2b: ["DEC HL", (c) => decrementRegisterPair(c, RegisterPair.HL)],
@@ -180,6 +139,7 @@ const instructions: Partial<Record<number, Instruction>> = {
   0x2e: ["LD L,d8", (c) => loadRegisterFromImmediate(c, Register.L)],
   0x2f: ["CPL", complementAccumulator],
 
+  0x30: ["JR NC,r8", (c) => relativeJumpConditional(c, "NC")],
   0x31: ["LD SP,d16", (c) => loadRegisterPair(c, RegisterPair.SP)],
   0x32: ["LD (HL-),A", loadIndirectHLDecrementFromAccumulator],
   0x33: ["INC SP", (c) => incrementRegisterPair(c, RegisterPair.SP)],
@@ -187,6 +147,7 @@ const instructions: Partial<Record<number, Instruction>> = {
   0x35: ["DEC (HL)", decrementIndirectHL],
   0x36: ["LD (HL),d8", loadIndirectHLFromImmediateData],
   0x37: ["SCF", setCarryFlag],
+  0x38: ["JR C,r8", (c) => relativeJumpConditional(c, "C")],
   0x39: ["ADD HL,SP", (c) => addRegisterPair(c, RegisterPair.SP)],
   0x3a: ["LD A,(HL-)", loadAccumulatorFromIndirectHLDecrement],
   0x3b: ["DEC SP", (c) => decrementRegisterPair(c, RegisterPair.SP)],
@@ -330,42 +291,59 @@ const instructions: Partial<Record<number, Instruction>> = {
   0xbe: ["CP (HL)", compareIndirectHL],
   0xbf: ["CP A", (c) => compareRegister(c, Register.A)],
 
+  0xc0: ["RET NZ", (c) => returnFromFunctionConditional(c, "NZ")],
   0xc1: ["POP BC", (c) => popFromStack(c, RegisterPair.BC)],
-  0xc2: ["JP NZ,a16", (c) => jumpToAddressIf(c, "NZ")],
-  0xc3: ["JP a16", jumpToAddress],
+  0xc2: ["JP NZ,a16", (c) => jumpConditional(c, "NZ")],
+  0xc3: ["JP a16", jump],
+  0xc4: ["CALL NZ,a16", (c) => callFunctionConditional(c, "NZ")],
   0xc5: ["PUSH BC", (c) => pushToStack(c, RegisterPair.BC)],
   0xc6: ["ADD A,d8", addImmediate],
-  0xca: ["JP Z,a16", (c) => jumpToAddressIf(c, "Z")],
+  0xc7: ["RST 00H", (c) => restartFunction(c, 0x00)],
+  0xc8: ["RET Z", (c) => returnFromFunctionConditional(c, "Z")],
+  0xc9: ["RET", returnFromFunction],
+  0xca: ["JP Z,a16", (c) => jumpConditional(c, "Z")],
+  0xcc: ["CALL Z,a16", (c) => callFunctionConditional(c, "Z")],
+  0xcd: ["CALL a16", callFunction],
   0xce: ["ADC A,d8", addImmediateWithCarry],
+  0xcf: ["RST 08H", (c) => restartFunction(c, 0x08)],
 
+  0xd0: ["RET NC", (c) => returnFromFunctionConditional(c, "NC")],
   0xd1: ["POP BC", (c) => popFromStack(c, RegisterPair.DE)],
-  0xd2: ["JP NC,a16", (c) => jumpToAddressIf(c, "NC")],
+  0xd2: ["JP NC,a16", (c) => jumpConditional(c, "NC")],
+  0xd4: ["CALL NC,a16", (c) => callFunctionConditional(c, "NC")],
   0xd5: ["PUSH DE", (c) => pushToStack(c, RegisterPair.DE)],
   0xd6: ["SUB d8", subtractImmediate],
-  0xda: ["JP C,a16", (c) => jumpToAddressIf(c, "C")],
+  0xd7: ["RST 10H", (c) => restartFunction(c, 0x10)],
+  0xd8: ["RET C", (c) => returnFromFunctionConditional(c, "C")],
+  0xd9: ["RETI", returnFromInterruptHandler],
+  0xda: ["JP C,a16", (c) => jumpConditional(c, "C")],
+  0xdc: ["CALL C,a16", (c) => callFunctionConditional(c, "C")],
   0xde: ["SBC A,d8", subtractImmediateWithCarry],
+  0xdf: ["RST 18H", (c) => restartFunction(c, 0x18)],
 
   0xe0: ["LDH (a8),A", loadDirectByteFromAccumulator],
   0xe1: ["POP BC", (c) => popFromStack(c, RegisterPair.HL)],
   0xe2: ["LD (C),A", loadIndirectCFromAccumulator],
   0xe5: ["PUSH HL", (c) => pushToStack(c, RegisterPair.HL)],
   0xe6: ["AND d8", andImmediate],
+  0xe7: ["RST 20H", (c) => restartFunction(c, 0x20)],
   0xe8: ["ADD SP,r8", addToStackPointer],
-  0xe9: ["JP (HL)", jumpToHLAddress],
+  0xe9: ["JP (HL)", jumpToHL],
   0xea: ["LD (a16),A", loadDirectWordFromAccumulator],
   0xee: ["XOR d8", xorImmediate],
+  0xef: ["RST 28H", (c) => restartFunction(c, 0x28)],
 
   0xf0: ["LDH A,(a8)", loadAccumulatorFromDirectByte],
   0xf1: ["POP AF", (c) => popFromStack(c, RegisterPair.AF)],
   0xf2: ["LD A,(C)", loadAccumulatorFromIndirectC],
-  0xf3: ["DI", disableInterrupts],
   0xf5: ["PUSH AF", (c) => pushToStack(c, RegisterPair.AF)],
   0xf6: ["AND d8", orImmediate],
+  0xf7: ["RST 30H", (c) => restartFunction(c, 0x30)],
   0xf8: ["LD HL,SP+r8", loadHLFromAdjustedStackPointer],
   0xf9: ["LD SP,HL", loadStackPointerFromHL],
   0xfa: ["LD A,(a16)", loadAccumulatorFromDirectWord],
-  0xfb: ["EI", enableInterrupts],
   0xfe: ["CP d8", compareImmediate],
+  0xff: ["RST 38H", (c) => restartFunction(c, 0x38)],
 };
 
 // const prefixCBInstructions: Partial<Record<number, Instruction>> = {};
