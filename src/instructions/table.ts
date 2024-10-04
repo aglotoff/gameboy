@@ -88,8 +88,16 @@ import {
   loadRegisterFromIndirectHL,
   loadRegisterFromRegister,
 } from "./load8";
+import {
+  disableInterrupts,
+  enableInterrupts,
+  halt,
+  noOperation,
+  stop,
+} from "./misc";
 
 const instructions: Partial<Record<number, Instruction>> = {
+  0x00: ["NOP", noOperation],
   0x01: ["LD BC,d16", (c) => loadRegisterPair(c, RegisterPair.BC)],
   0x02: ["LD (BC),A", loadIndirectBCFromAccumulator],
   0x03: ["INC BC", (c) => incrementRegisterPair(c, RegisterPair.BC)],
@@ -106,6 +114,7 @@ const instructions: Partial<Record<number, Instruction>> = {
   0x0e: ["LD C,d8", (c) => loadRegisterFromImmediate(c, Register.C)],
   0x0f: ["RRCA", rotateRightCircularAccumulator],
 
+  0x10: ["STOP 0", stop],
   0x11: ["LD DE,d16", (c) => loadRegisterPair(c, RegisterPair.DE)],
   0x12: ["LD (DE),A", loadIndirectDEFromAccumulator],
   0x13: ["INC DE", (c) => incrementRegisterPair(c, RegisterPair.DE)],
@@ -213,6 +222,7 @@ const instructions: Partial<Record<number, Instruction>> = {
   0x73: ["LD (HL),E", (c) => loadIndirectHLFromRegister(c, Register.E)],
   0x74: ["LD (HL),H", (c) => loadIndirectHLFromRegister(c, Register.H)],
   0x75: ["LD (HL),L", (c) => loadIndirectHLFromRegister(c, Register.L)],
+  0x76: ["HALT", halt],
   0x77: ["LD (HL),A", (c) => loadIndirectHLFromRegister(c, Register.A)],
   0x78: ["LD A,B", (c) => loadRegisterFromRegister(c, Register.A, Register.B)],
   0x79: ["LD A,C", (c) => loadRegisterFromRegister(c, Register.A, Register.C)],
@@ -302,6 +312,7 @@ const instructions: Partial<Record<number, Instruction>> = {
   0xc8: ["RET Z", (c) => returnFromFunctionConditional(c, "Z")],
   0xc9: ["RET", returnFromFunction],
   0xca: ["JP Z,a16", (c) => jumpConditional(c, "Z")],
+  // 0xcb: prefix CB
   0xcc: ["CALL Z,a16", (c) => callFunctionConditional(c, "Z")],
   0xcd: ["CALL a16", callFunction],
   0xce: ["ADC A,d8", addImmediateWithCarry],
@@ -336,12 +347,14 @@ const instructions: Partial<Record<number, Instruction>> = {
   0xf0: ["LDH A,(a8)", loadAccumulatorFromDirectByte],
   0xf1: ["POP AF", (c) => popFromStack(c, RegisterPair.AF)],
   0xf2: ["LD A,(C)", loadAccumulatorFromIndirectC],
+  0xf3: ["DI", disableInterrupts],
   0xf5: ["PUSH AF", (c) => pushToStack(c, RegisterPair.AF)],
   0xf6: ["AND d8", orImmediate],
   0xf7: ["RST 30H", (c) => restartFunction(c, 0x30)],
   0xf8: ["LD HL,SP+r8", loadHLFromAdjustedStackPointer],
   0xf9: ["LD SP,HL", loadStackPointerFromHL],
   0xfa: ["LD A,(a16)", loadAccumulatorFromDirectWord],
+  0xfb: ["EI", enableInterrupts],
   0xfe: ["CP d8", compareImmediate],
   0xff: ["RST 38H", (c) => restartFunction(c, 0x38)],
 };
