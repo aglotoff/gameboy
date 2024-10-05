@@ -1,6 +1,6 @@
 import { RegisterFile, RegisterPair } from "../regs";
 import { Memory } from "../memory";
-import { incrementWord, makeWord } from "../utils";
+import { wrapIncrementWord, makeWord } from "../utils";
 
 export interface CpuState {
   regs: RegisterFile;
@@ -21,7 +21,7 @@ export type OpTable = Partial<
 export function fetchImmediateByte({ cpu, memory }: InstructionCtx) {
   let pc = cpu.regs.readPair(RegisterPair.PC);
   const data = memory.read(pc);
-  cpu.regs.writePair(RegisterPair.PC, incrementWord(pc));
+  cpu.regs.writePair(RegisterPair.PC, wrapIncrementWord(pc));
   return data;
 }
 

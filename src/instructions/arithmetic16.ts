@@ -1,10 +1,10 @@
 import { RegisterPair, Flag } from "../regs";
-import { incrementWord, addWords, addSignedByteToWord } from "../utils";
+import { wrapIncrementWord, addWords, addSignedByteToWord } from "../utils";
 import { instruction, instructionWithImmediateByte } from "./lib";
 
 export const incrementRegisterPair = instruction(
   ({ cpu }, pair: RegisterPair) => {
-    cpu.regs.writePair(pair, incrementWord(cpu.regs.readPair(pair)));
+    cpu.regs.writePair(pair, wrapIncrementWord(cpu.regs.readPair(pair)));
     return 8;
   }
 );

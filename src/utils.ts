@@ -70,10 +70,10 @@ export function subtractBytes(a: number, b: number, carryFlag = false) {
   };
 }
 
-export function incrementWord(value: number) {
+export function wrapIncrementWord(value: number) {
   return value == WORD_MAX ? WORD_MIN : value + 1;
 }
 
-export function decrementWord(value: number) {
+export function wrapDecrementWord(value: number) {
   return value == WORD_MIN ? WORD_MAX : value - 1;
 }

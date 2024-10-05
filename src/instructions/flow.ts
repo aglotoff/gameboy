@@ -1,10 +1,10 @@
 import { checkCondition, Condition, RegisterPair } from "../regs";
 import {
   addSignedByteToWord,
-  decrementWord,
+  wrapDecrementWord,
   getLSB,
   getMSB,
-  incrementWord,
+  wrapIncrementWord,
   makeWord,
 } from "../utils";
 import {
@@ -104,6 +104,7 @@ export const returnFromFunctionConditional = instruction(
 export const returnFromInterruptHandler = instruction((ctx) => {
   popProgramCounter(ctx);
 
+  console.log("IME = true");
   ctx.cpu.ime = true;
 
   return 16;
@@ -113,9 +114,9 @@ function popProgramCounter({ cpu, memory }: InstructionCtx) {
   let sp = cpu.regs.readPair(RegisterPair.SP);
 
   const lsb = memory.read(sp);
-  sp = incrementWord(sp);
+  sp = wrapIncrementWord(sp);
   const msb = memory.read(sp);
-  sp = incrementWord(sp);
+  sp = wrapIncrementWord(sp);
 
   cpu.regs.writePair(RegisterPair.SP, sp);
   cpu.regs.writePair(RegisterPair.PC, makeWord(msb, lsb));
@@ -133,9 +134,9 @@ function pushProgramCounter({ cpu, memory }: InstructionCtx) {
   const pc = cpu.regs.readPair(RegisterPair.PC);
   let sp = cpu.regs.readPair(RegisterPair.SP);
 
-  sp = decrementWord(sp);
+  sp = wrapDecrementWord(sp);
   memory.write(sp, getMSB(pc));
-  sp = decrementWord(sp);
+  sp = wrapDecrementWord(sp);
   memory.write(sp, getLSB(pc));
 
   cpu.regs.writePair(RegisterPair.SP, sp);

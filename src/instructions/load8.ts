@@ -1,5 +1,5 @@
 import { Register, RegisterPair } from "../regs";
-import { decrementWord, incrementWord } from "../utils";
+import { wrapDecrementWord, wrapIncrementWord } from "../utils";
 import {
   instruction,
   instructionWithImmediateByte,
@@ -121,7 +121,7 @@ export const loadAccumulatorFromIndirectHLIncrement = instruction(
     const address = cpu.regs.readPair(RegisterPair.HL);
     const data = memory.read(address);
     cpu.regs.write(Register.A, data);
-    cpu.regs.writePair(RegisterPair.HL, incrementWord(address));
+    cpu.regs.writePair(RegisterPair.HL, wrapIncrementWord(address));
     return 8;
   }
 );
@@ -130,7 +130,7 @@ export const loadIndirectHLDecrementFromAccumulator = instruction(
   ({ cpu, memory }) => {
     const address = cpu.regs.readPair(RegisterPair.HL);
     memory.write(address, cpu.regs.read(Register.A));
-    cpu.regs.writePair(RegisterPair.HL, decrementWord(address));
+    cpu.regs.writePair(RegisterPair.HL, wrapDecrementWord(address));
     return 8;
   }
 );
@@ -139,7 +139,7 @@ export const loadIndirectHLIncrementFromAccumulator = instruction(
   ({ cpu, memory }) => {
     const address = cpu.regs.readPair(RegisterPair.HL);
     memory.write(address, cpu.regs.read(Register.A));
-    cpu.regs.writePair(RegisterPair.HL, incrementWord(address));
+    cpu.regs.writePair(RegisterPair.HL, wrapIncrementWord(address));
     return 8;
   }
 );

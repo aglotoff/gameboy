@@ -1,10 +1,10 @@
 import { Flag, RegisterPair } from "../regs";
 import {
   addSignedByteToWord,
-  decrementWord,
+  wrapDecrementWord,
   getLSB,
   getMSB,
-  incrementWord,
+  wrapIncrementWord,
   makeWord,
 } from "../utils";
 import {
@@ -39,9 +39,9 @@ export const pushToStack = instruction(
     const data = cpu.regs.readPair(pair);
     let sp = cpu.regs.readPair(RegisterPair.SP);
 
-    sp = decrementWord(sp);
+    sp = wrapDecrementWord(sp);
     memory.write(sp, getMSB(data));
-    sp = decrementWord(sp);
+    sp = wrapDecrementWord(sp);
     memory.write(sp, getLSB(data));
 
     cpu.regs.writePair(RegisterPair.SP, sp);
@@ -54,9 +54,9 @@ export const popFromStack = instruction(({ cpu, memory }, rr: RegisterPair) => {
   let sp = cpu.regs.readPair(RegisterPair.SP);
 
   const lsb = memory.read(sp);
-  sp = incrementWord(sp);
+  sp = wrapIncrementWord(sp);
   const msb = memory.read(sp);
-  sp = incrementWord(sp);
+  sp = wrapIncrementWord(sp);
 
   cpu.regs.writePair(rr, makeWord(msb, lsb));
   cpu.regs.writePair(RegisterPair.SP, sp);
