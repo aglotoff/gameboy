@@ -1,41 +1,46 @@
-import { RegisterPair, Flag } from "../cpu";
+import { RegisterPair, Flag } from "../regs";
 import { incrementWord, addWords, addSignedByteToWord } from "../utils";
-import { InstructionCtx, fetchImmediateByte } from "./lib";
+import { instruction, instructionWithImmediateByte } from "./lib";
 
-export function incrementRegisterPair(ctx: InstructionCtx, rr: RegisterPair) {
-  ctx.regs.writePair(rr, incrementWord(ctx.regs.readPair(rr)));
-  return 8;
-}
+export const incrementRegisterPair = instruction(
+  ({ cpu }, pair: RegisterPair) => {
+    cpu.regs.writePair(pair, incrementWord(cpu.regs.readPair(pair)));
+    return 8;
+  }
+);
 
-export function decrementRegisterPair(ctx: InstructionCtx, rr: RegisterPair) {
-  ctx.regs.writePair(rr, ctx.regs.readPair(rr) - 1);
-  return 8;
-}
+export const decrementRegisterPair = instruction(
+  ({ cpu }, pair: RegisterPair) => {
+    cpu.regs.writePair(pair, cpu.regs.readPair(pair) - 1);
+    return 8;
+  }
+);
 
-export function addRegisterPair(ctx: InstructionCtx, rr: RegisterPair) {
+export const addRegisterPair = instruction(({ cpu }, pair: RegisterPair) => {
   const { result, carryFrom11, carryFrom15 } = addWords(
-    ctx.regs.readPair(RegisterPair.HL),
-    ctx.regs.readPair(rr)
+    cpu.regs.readPair(RegisterPair.HL),
+    cpu.regs.readPair(pair)
   );
 
-  ctx.regs.writePair(RegisterPair.HL, result);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, carryFrom11);
-  ctx.regs.setFlag(Flag.CY, carryFrom15);
+  cpu.regs.writePair(RegisterPair.HL, result);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, carryFrom11);
+  cpu.regs.setFlag(Flag.CY, carryFrom15);
 
   return 8;
-}
+});
 
-export function addToStackPointer(ctx: InstructionCtx) {
-  const e = fetchImmediateByte(ctx);
+export const addToStackPointer = instructionWithImmediateByte((ctx, e) => {
   const { result, carryFrom3, carryFrom7 } = addSignedByteToWord(
-    ctx.regs.readPair(RegisterPair.SP),
+    ctx.cpu.regs.readPair(RegisterPair.SP),
     e
   );
-  ctx.regs.writePair(RegisterPair.SP, result);
-  ctx.regs.setFlag(Flag.Z, false);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, carryFrom3);
-  ctx.regs.setFlag(Flag.CY, carryFrom7);
+
+  ctx.cpu.regs.writePair(RegisterPair.SP, result);
+  ctx.cpu.regs.setFlag(Flag.Z, false);
+  ctx.cpu.regs.setFlag(Flag.N, false);
+  ctx.cpu.regs.setFlag(Flag.H, carryFrom3);
+  ctx.cpu.regs.setFlag(Flag.CY, carryFrom7);
+
   return 16;
-}
+});

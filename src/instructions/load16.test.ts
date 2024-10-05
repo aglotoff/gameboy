@@ -1,13 +1,6 @@
-import { describe, expect, test as baseTest } from "vitest";
+import { describe, expect } from "vitest";
 
-import {
-  Flag,
-  InterruptFlags,
-  Register,
-  RegisterFile,
-  RegisterPair,
-} from "../cpu";
-import { Memory } from "../memory";
+import { Flag, Register, RegisterPair } from "../regs";
 
 import {
   loadDirectFromStackPointer,
@@ -17,80 +10,70 @@ import {
   popFromStack,
   pushToStack,
 } from "./load16";
-import { InstructionCtx } from "./lib";
-
-const test = baseTest.extend({
-  ctx: async ({}, use: (ctx: InstructionCtx) => Promise<void>) => {
-    await use({
-      regs: new RegisterFile(),
-      memory: new Memory(),
-      interruptFlags: new InterruptFlags(),
-    });
-  },
-});
+import { test } from "./test-lib";
 
 describe("16-bit load instructions", () => {
-  test("LD dd,nn", ({ ctx }) => {
-    ctx.memory.write(0x00, 0x5b);
-    ctx.memory.write(0x01, 0x3a);
+  test("LD dd,nn", ({ cpu, memory }) => {
+    memory.write(0x00, 0x5b);
+    memory.write(0x01, 0x3a);
 
-    loadRegisterPair(ctx, RegisterPair.HL);
+    loadRegisterPair({ cpu, memory }, RegisterPair.HL);
 
-    expect(ctx.regs.read(Register.H)).toBe(0x3a);
-    expect(ctx.regs.read(Register.L)).toBe(0x5b);
+    expect(cpu.regs.read(Register.H)).toBe(0x3a);
+    expect(cpu.regs.read(Register.L)).toBe(0x5b);
   });
 
-  test("LD (nn),SP", ({ ctx }) => {
-    ctx.regs.writePair(RegisterPair.SP, 0xfff8);
-    ctx.memory.write(0x00, 0x00);
-    ctx.memory.write(0x01, 0xc1);
+  test("LD (nn),SP", ({ cpu, memory }) => {
+    cpu.regs.writePair(RegisterPair.SP, 0xfff8);
+    memory.write(0x00, 0x00);
+    memory.write(0x01, 0xc1);
 
-    loadDirectFromStackPointer(ctx);
+    loadDirectFromStackPointer({ cpu, memory });
 
-    expect(ctx.memory.read(0xc100)).toBe(0xf8);
-    expect(ctx.memory.read(0xc101)).toBe(0xff);
+    expect(memory.read(0xc100)).toBe(0xf8);
+    expect(memory.read(0xc101)).toBe(0xff);
   });
 
-  test("LD SP,HL", ({ ctx }) => {
-    ctx.regs.writePair(RegisterPair.HL, 0x3a5b);
+  test("LD SP,HL", ({ cpu, memory }) => {
+    cpu.regs.writePair(RegisterPair.HL, 0x3a5b);
 
-    loadStackPointerFromHL(ctx);
+    loadStackPointerFromHL({ cpu, memory });
 
-    expect(ctx.regs.readPair(RegisterPair.SP)).toBe(0x3a5b);
+    expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0x3a5b);
   });
 
-  test("PUSH qq", ({ ctx }) => {
-    ctx.regs.writePair(RegisterPair.SP, 0xfffe);
-    ctx.regs.writePair(RegisterPair.BC, 0x8ac5);
+  test("PUSH qq", ({ cpu, memory }) => {
+    cpu.regs.writePair(RegisterPair.SP, 0xfffe);
+    cpu.regs.writePair(RegisterPair.BC, 0x8ac5);
 
-    pushToStack(ctx, RegisterPair.BC);
+    pushToStack({ cpu, memory }, RegisterPair.BC);
 
-    expect(ctx.memory.read(0xfffd)).toBe(0x8a);
-    expect(ctx.memory.read(0xfffc)).toBe(0xc5);
-    expect(ctx.regs.readPair(RegisterPair.SP)).toBe(0xfffc);
+    expect(memory.read(0xfffd)).toBe(0x8a);
+    expect(memory.read(0xfffc)).toBe(0xc5);
+    expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffc);
   });
 
-  test("POP qq", ({ ctx }) => {
-    ctx.regs.writePair(RegisterPair.SP, 0xfffc);
-    ctx.memory.write(0xfffc, 0x5f);
-    ctx.memory.write(0xfffd, 0x3c);
+  test("POP qq", ({ cpu, memory }) => {
+    cpu.regs.writePair(RegisterPair.SP, 0xfffc);
+    memory.write(0xfffc, 0x5f);
+    memory.write(0xfffd, 0x3c);
 
-    popFromStack(ctx, RegisterPair.BC);
+    popFromStack({ cpu, memory }, RegisterPair.BC);
 
-    expect(ctx.regs.readPair(RegisterPair.BC)).toBe(0x3c5f);
-    expect(ctx.regs.readPair(RegisterPair.SP)).toBe(0xfffe);
+    expect(cpu.regs.readPair(RegisterPair.BC)).toBe(0x3c5f);
+    expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffe);
   });
 
-  test("LDHL SP,e", ({ ctx }) => {
-    ctx.regs.writePair(RegisterPair.SP, 0xfff8);
-    ctx.memory.write(0x00, 0x2);
+  test("LDHL SP,e", ({ cpu, memory }) => {
+    cpu.regs.writePair(RegisterPair.SP, 0xfff8);
+    memory.write(0x00, 0x2);
 
-    loadHLFromAdjustedStackPointer(ctx);
+    loadHLFromAdjustedStackPointer({ cpu, memory });
 
-    expect(ctx.regs.readPair(RegisterPair.HL)).toBe(0xfffa);
-    expect(ctx.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(ctx.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(ctx.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(ctx.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(cpu.regs.readPair(RegisterPair.HL)).toBe(0xfffa);
+    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
+    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
+    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
+    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
   });
 });

@@ -1,19 +1,27 @@
-import { InterruptFlags, RegisterFile, RegisterPair } from "../cpu";
+import { RegisterFile, RegisterPair } from "../regs";
 import { Memory } from "../memory";
 import { incrementWord, makeWord } from "../utils";
 
-export interface InstructionCtx {
+export interface CpuState {
   regs: RegisterFile;
-  memory: Memory;
-  interruptFlags: InterruptFlags;
+  ime: boolean;
+  halted: boolean;
+  stopped: boolean;
 }
 
-export type Instruction = [string, (ctx: InstructionCtx) => number];
+export interface InstructionCtx {
+  cpu: CpuState;
+  memory: Memory;
+}
 
-export function fetchImmediateByte(ctx: InstructionCtx) {
-  let pc = ctx.regs.readPair(RegisterPair.PC);
-  const data = ctx.memory.read(pc);
-  ctx.regs.writePair(RegisterPair.PC, incrementWord(pc));
+export type OpTable = Partial<
+  Record<number, [string, (ctx: InstructionCtx) => number]>
+>;
+
+export function fetchImmediateByte({ cpu, memory }: InstructionCtx) {
+  let pc = cpu.regs.readPair(RegisterPair.PC);
+  const data = memory.read(pc);
+  cpu.regs.writePair(RegisterPair.PC, incrementWord(pc));
   return data;
 }
 
@@ -21,4 +29,24 @@ export function fetchImmediateWord(ctx: InstructionCtx) {
   let lowByte = fetchImmediateByte(ctx);
   let highByte = fetchImmediateByte(ctx);
   return makeWord(highByte, lowByte);
+}
+
+export function instruction<T extends unknown[]>(
+  cb: (ctx: InstructionCtx, ...args: T) => number
+) {
+  return cb;
+}
+
+export function instructionWithImmediateByte<T extends unknown[]>(
+  cb: (ctx: InstructionCtx, byte: number, ...args: T) => number
+) {
+  return (ctx: InstructionCtx, ...args: T) =>
+    cb(ctx, fetchImmediateByte(ctx), ...args);
+}
+
+export function instructionWithImmediateWord<T extends unknown[]>(
+  cb: (ctx: InstructionCtx, word: number, ...args: T) => number
+) {
+  return (ctx: InstructionCtx, ...args: T) =>
+    cb(ctx, fetchImmediateWord(ctx), ...args);
 }

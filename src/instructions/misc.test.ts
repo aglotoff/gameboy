@@ -1,37 +1,34 @@
-import { describe, expect, test as baseTest } from "vitest";
+import { describe, expect } from "vitest";
 
-import { InterruptFlags, RegisterFile } from "../cpu";
-import { Memory } from "../memory";
-
-import { InstructionCtx } from "./lib";
-import { disableInterrupts, enableInterrupts } from "./misc";
-
-const test = baseTest.extend({
-  ctx: async ({}, use: (ctx: InstructionCtx) => Promise<void>) => {
-    await use({
-      regs: new RegisterFile(),
-      memory: new Memory(),
-      interruptFlags: new InterruptFlags(),
-    });
-  },
-});
+import { disableInterrupts, enableInterrupts, halt, stop } from "./misc";
+import { test } from "./test-lib";
 
 describe("Miscellaneous instructions", () => {
-  test("DI", ({ ctx }) => {
-    ctx.interruptFlags.masterEnable();
+  test("HALT", ({ cpu, memory }) => {
+    halt({ cpu, memory });
 
-    disableInterrupts(ctx);
-
-    expect(ctx.interruptFlags.isMasterEnabled()).toBe(false);
+    expect(cpu.halted).toBe(true);
   });
-});
 
-describe("Miscellaneous instructions", () => {
-  test("EI", ({ ctx }) => {
-    ctx.interruptFlags.masterDisable();
+  test("STOP", ({ cpu, memory }) => {
+    stop({ cpu, memory });
 
-    enableInterrupts(ctx);
+    expect(cpu.stopped).toBe(true);
+  });
 
-    expect(ctx.interruptFlags.isMasterEnabled()).toBe(true);
+  test("DI", ({ cpu, memory }) => {
+    cpu.ime = true;
+
+    disableInterrupts({ cpu, memory });
+
+    expect(cpu.ime).toBe(false);
+  });
+
+  test("EI", ({ cpu, memory }) => {
+    cpu.ime = false;
+
+    enableInterrupts({ cpu, memory });
+
+    expect(cpu.ime).toBe(true);
   });
 });

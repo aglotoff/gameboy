@@ -1,162 +1,142 @@
-import { checkCondition, Condition, RegisterPair } from "../cpu";
-import { addSignedByteToWord, getLSB, getMSB, makeWord } from "../utils";
-import { fetchImmediateByte, fetchImmediateWord, InstructionCtx } from "./lib";
+import { checkCondition, Condition, RegisterPair } from "../regs";
+import {
+  addSignedByteToWord,
+  decrementWord,
+  getLSB,
+  getMSB,
+  incrementWord,
+  makeWord,
+} from "../utils";
+import {
+  instruction,
+  InstructionCtx,
+  instructionWithImmediateByte,
+  instructionWithImmediateWord,
+} from "./lib";
 
-export function jump(ctx: InstructionCtx) {
-  const address = fetchImmediateWord(ctx);
-  ctx.regs.writePair(RegisterPair.PC, address);
+export const jump = instructionWithImmediateWord(({ cpu }, address) => {
+  cpu.regs.writePair(RegisterPair.PC, address);
   return 16;
-}
+});
 
-export function jumpToHL(ctx: InstructionCtx) {
-  ctx.regs.writePair(RegisterPair.PC, ctx.regs.readPair(RegisterPair.HL));
+export const jumpToHL = instruction(({ cpu }) => {
+  cpu.regs.writePair(RegisterPair.PC, cpu.regs.readPair(RegisterPair.HL));
   return 4;
-}
+});
 
-export function jumpConditional(ctx: InstructionCtx, condition: Condition) {
-  const address = fetchImmediateWord(ctx);
+export const jumpConditional = instructionWithImmediateWord(
+  ({ cpu }, address, condition: Condition) => {
+    if (!checkCondition(cpu.regs, condition)) {
+      return 12;
+    }
 
-  if (checkCondition(ctx.regs, condition)) {
-    ctx.regs.writePair(RegisterPair.PC, address);
+    cpu.regs.writePair(RegisterPair.PC, address);
+
     return 16;
   }
+);
 
-  return 12;
-}
-
-export function relativeJump(ctx: InstructionCtx) {
-  const offset = fetchImmediateByte(ctx);
-
+export const relativeJump = instructionWithImmediateByte(({ cpu }, offset) => {
   const { result } = addSignedByteToWord(
-    ctx.regs.readPair(RegisterPair.PC),
+    cpu.regs.readPair(RegisterPair.PC),
     offset
   );
-  ctx.regs.writePair(RegisterPair.PC, result);
+
+  cpu.regs.writePair(RegisterPair.PC, result);
 
   return 12;
-}
+});
 
-export function relativeJumpConditional(
-  ctx: InstructionCtx,
-  condition: Condition
-) {
-  const offset = fetchImmediateByte(ctx);
+export const relativeJumpConditional = instructionWithImmediateByte(
+  ({ cpu }, offset, condition: Condition) => {
+    if (!checkCondition(cpu.regs, condition)) {
+      return 8;
+    }
 
-  if (checkCondition(ctx.regs, condition)) {
     const { result } = addSignedByteToWord(
-      ctx.regs.readPair(RegisterPair.PC),
+      cpu.regs.readPair(RegisterPair.PC),
       offset
     );
-    ctx.regs.writePair(RegisterPair.PC, result);
+
+    cpu.regs.writePair(RegisterPair.PC, result);
+
     return 12;
   }
+);
 
-  return 8;
-}
-
-export function callFunction(ctx: InstructionCtx) {
-  const address = fetchImmediateWord(ctx);
-
-  const pc = ctx.regs.readPair(RegisterPair.PC);
-  let sp = ctx.regs.readPair(RegisterPair.SP);
-
-  sp -= 1;
-  ctx.memory.write(sp, getMSB(pc));
-  sp -= 1;
-  ctx.memory.write(sp, getLSB(pc));
-
-  ctx.regs.writePair(RegisterPair.SP, sp);
-  ctx.regs.writePair(RegisterPair.PC, address);
+export const callFunction = instructionWithImmediateWord((ctx, address) => {
+  pushProgramCounter(ctx);
+  ctx.cpu.regs.writePair(RegisterPair.PC, address);
 
   return 24;
-}
+});
 
-export function callFunctionConditional(
-  ctx: InstructionCtx,
-  condition: Condition
-) {
-  const address = fetchImmediateWord(ctx);
+export const callFunctionConditional = instructionWithImmediateWord(
+  (ctx, address, condition: Condition) => {
+    if (!checkCondition(ctx.cpu.regs, condition)) {
+      return 12;
+    }
 
-  if (checkCondition(ctx.regs, condition)) {
-    const pc = ctx.regs.readPair(RegisterPair.PC);
-    let sp = ctx.regs.readPair(RegisterPair.SP);
-
-    sp -= 1;
-    ctx.memory.write(sp, getMSB(pc));
-    sp -= 1;
-    ctx.memory.write(sp, getLSB(pc));
-
-    ctx.regs.writePair(RegisterPair.SP, sp);
-    ctx.regs.writePair(RegisterPair.PC, address);
+    pushProgramCounter(ctx);
+    ctx.cpu.regs.writePair(RegisterPair.PC, address);
 
     return 24;
   }
+);
 
-  return 12;
-}
-
-export function returnFromFunction(ctx: InstructionCtx) {
-  let sp = ctx.regs.readPair(RegisterPair.SP);
-
-  const lsb = ctx.memory.read(sp);
-  sp += 1;
-  const msb = ctx.memory.read(sp);
-  sp += 1;
-
-  ctx.regs.writePair(RegisterPair.SP, sp);
-  ctx.regs.writePair(RegisterPair.PC, makeWord(msb, lsb));
-
+export const returnFromFunction = instruction((ctx) => {
+  popProgramCounter(ctx);
   return 16;
-}
+});
 
-export function returnFromFunctionConditional(
-  ctx: InstructionCtx,
-  condition: Condition
-) {
-  if (!checkCondition(ctx.regs, condition)) {
-    return 8;
+export const returnFromFunctionConditional = instruction(
+  (ctx, condition: Condition) => {
+    if (!checkCondition(ctx.cpu.regs, condition)) {
+      return 8;
+    }
+
+    popProgramCounter(ctx);
+
+    return 20;
   }
+);
 
-  let sp = ctx.regs.readPair(RegisterPair.SP);
+export const returnFromInterruptHandler = instruction((ctx) => {
+  popProgramCounter(ctx);
 
-  const lsb = ctx.memory.read(sp);
-  sp += 1;
-  const msb = ctx.memory.read(sp);
-  sp += 1;
-
-  ctx.regs.writePair(RegisterPair.SP, sp);
-  ctx.regs.writePair(RegisterPair.PC, makeWord(msb, lsb));
-
-  return 20;
-}
-
-export function returnFromInterruptHandler(ctx: InstructionCtx) {
-  let sp = ctx.regs.readPair(RegisterPair.SP);
-
-  const lsb = ctx.memory.read(sp);
-  sp += 1;
-  const msb = ctx.memory.read(sp);
-  sp += 1;
-
-  ctx.regs.writePair(RegisterPair.SP, sp);
-  ctx.regs.writePair(RegisterPair.PC, makeWord(msb, lsb));
-
-  ctx.interruptFlags.masterEnable();
+  ctx.cpu.ime = true;
 
   return 16;
+});
+
+function popProgramCounter({ cpu, memory }: InstructionCtx) {
+  let sp = cpu.regs.readPair(RegisterPair.SP);
+
+  const lsb = memory.read(sp);
+  sp = incrementWord(sp);
+  const msb = memory.read(sp);
+  sp = incrementWord(sp);
+
+  cpu.regs.writePair(RegisterPair.SP, sp);
+  cpu.regs.writePair(RegisterPair.PC, makeWord(msb, lsb));
 }
 
-export function restartFunction(ctx: InstructionCtx, address: number) {
-  const pc = ctx.regs.readPair(RegisterPair.PC);
-  let sp = ctx.regs.readPair(RegisterPair.SP);
+export const restartFunction = instruction((ctx, address: number) => {
+  pushProgramCounter(ctx);
 
-  sp -= 1;
-  ctx.memory.write(sp, getMSB(pc));
-  sp -= 1;
-  ctx.memory.write(sp, getLSB(pc));
-
-  ctx.regs.writePair(RegisterPair.SP, sp);
-  ctx.regs.writePair(RegisterPair.PC, makeWord(0x00, address));
+  ctx.cpu.regs.writePair(RegisterPair.PC, makeWord(0x00, address));
 
   return 16;
+});
+
+function pushProgramCounter({ cpu, memory }: InstructionCtx) {
+  const pc = cpu.regs.readPair(RegisterPair.PC);
+  let sp = cpu.regs.readPair(RegisterPair.SP);
+
+  sp = decrementWord(sp);
+  memory.write(sp, getMSB(pc));
+  sp = decrementWord(sp);
+  memory.write(sp, getLSB(pc));
+
+  cpu.regs.writePair(RegisterPair.SP, sp);
 }

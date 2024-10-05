@@ -1,5 +1,45 @@
-import { Flag, Register, RegisterPair } from "../cpu";
-import { InstructionCtx } from "./lib";
+import { Flag, Register, RegisterPair } from "../regs";
+import { instruction } from "./lib";
+
+export const rotateLeftCircularAccumulator = instruction(({ cpu }) => {
+  const { result, carry } = rotateLeftCircular(cpu.regs.read(Register.A));
+
+  cpu.regs.write(Register.A, result);
+  cpu.regs.setFlag(Flag.Z, false);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, false);
+  cpu.regs.setFlag(Flag.CY, carry);
+
+  return 4;
+});
+
+export const rotateLeftCircularRegister = instruction(
+  ({ cpu }, reg: Register) => {
+    const { result, carry } = rotateLeftCircular(cpu.regs.read(reg));
+
+    cpu.regs.write(reg, result);
+    cpu.regs.setFlag(Flag.Z, result === 0);
+    cpu.regs.setFlag(Flag.N, false);
+    cpu.regs.setFlag(Flag.H, false);
+    cpu.regs.setFlag(Flag.CY, carry);
+
+    return 8;
+  }
+);
+
+export const rotateLeftCircularIndirectHL = instruction(({ cpu, memory }) => {
+  const address = cpu.regs.readPair(RegisterPair.HL);
+
+  const { result, carry } = rotateLeftCircular(memory.read(address));
+
+  memory.write(address, result);
+  cpu.regs.setFlag(Flag.Z, result === 0);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, false);
+  cpu.regs.setFlag(Flag.CY, carry);
+
+  return 16;
+});
 
 function rotateLeftCircular(value: number) {
   return {
@@ -8,12 +48,45 @@ function rotateLeftCircular(value: number) {
   };
 }
 
-function rotateLeft(value: number, carry: boolean) {
-  return {
-    result: ((value << 1) & 0xff) | (carry ? 0x01 : 0x00),
-    carry: (value & 0x80) != 0,
-  };
-}
+export const rotateRightCircularAccumulator = instruction(({ cpu }) => {
+  const { result, carry } = rotateRightCircular(cpu.regs.read(Register.A));
+
+  cpu.regs.write(Register.A, result);
+  cpu.regs.setFlag(Flag.Z, false);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, false);
+  cpu.regs.setFlag(Flag.CY, carry);
+
+  return 4;
+});
+
+export const rotateRightCircularRegister = instruction(
+  ({ cpu }, reg: Register) => {
+    const { result, carry } = rotateRightCircular(cpu.regs.read(reg));
+
+    cpu.regs.write(reg, result);
+    cpu.regs.setFlag(Flag.Z, result === 0);
+    cpu.regs.setFlag(Flag.N, false);
+    cpu.regs.setFlag(Flag.H, false);
+    cpu.regs.setFlag(Flag.CY, carry);
+
+    return 8;
+  }
+);
+
+export const rotateRightCircularIndirectHL = instruction(({ cpu, memory }) => {
+  const address = cpu.regs.readPair(RegisterPair.HL);
+
+  const { result, carry } = rotateRightCircular(memory.read(address));
+
+  memory.write(address, result);
+  cpu.regs.setFlag(Flag.Z, result === 0);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, false);
+  cpu.regs.setFlag(Flag.CY, carry);
+
+  return 16;
+});
 
 function rotateRightCircular(value: number) {
   return {
@@ -22,6 +95,107 @@ function rotateRightCircular(value: number) {
   };
 }
 
+export const rotateLeftAccumulator = instruction(({ cpu }) => {
+  const { result, carry } = rotateLeft(
+    cpu.regs.read(Register.A),
+    cpu.regs.isFlagSet(Flag.CY)
+  );
+
+  cpu.regs.write(Register.A, result);
+  cpu.regs.setFlag(Flag.Z, false);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, false);
+  cpu.regs.setFlag(Flag.CY, carry);
+
+  return 4;
+});
+
+export const rotateLeftRegister = instruction(({ cpu }, reg: Register) => {
+  const { result, carry } = rotateLeft(
+    cpu.regs.read(reg),
+    cpu.regs.isFlagSet(Flag.CY)
+  );
+
+  cpu.regs.write(reg, result);
+  cpu.regs.setFlag(Flag.Z, result === 0);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, false);
+  cpu.regs.setFlag(Flag.CY, carry);
+
+  return 8;
+});
+
+export const rotateLeftIndirectHL = instruction(({ cpu, memory }) => {
+  const address = cpu.regs.readPair(RegisterPair.HL);
+
+  const { result, carry } = rotateLeft(
+    memory.read(address),
+    cpu.regs.isFlagSet(Flag.CY)
+  );
+
+  memory.write(address, result);
+  cpu.regs.setFlag(Flag.Z, result === 0);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, false);
+  cpu.regs.setFlag(Flag.CY, carry);
+
+  return 16;
+});
+
+function rotateLeft(value: number, carry: boolean) {
+  return {
+    result: ((value << 1) & 0xff) | (carry ? 0x01 : 0x00),
+    carry: (value & 0x80) != 0,
+  };
+}
+
+export const rotateRightAccumulator = instruction(({ cpu }) => {
+  const { result, carry } = rotateRight(
+    cpu.regs.read(Register.A),
+    cpu.regs.isFlagSet(Flag.CY)
+  );
+
+  cpu.regs.write(Register.A, result);
+  cpu.regs.setFlag(Flag.Z, false);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, false);
+  cpu.regs.setFlag(Flag.CY, carry);
+
+  return 4;
+});
+
+export const rotateRightRegister = instruction(({ cpu }, reg: Register) => {
+  const { result, carry } = rotateRight(
+    cpu.regs.read(reg),
+    cpu.regs.isFlagSet(Flag.CY)
+  );
+
+  cpu.regs.write(reg, result);
+  cpu.regs.setFlag(Flag.Z, result === 0);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, false);
+  cpu.regs.setFlag(Flag.CY, carry);
+
+  return 8;
+});
+
+export const rotateRightIndirectHL = instruction(({ cpu, memory }) => {
+  const address = cpu.regs.readPair(RegisterPair.HL);
+
+  const { result, carry } = rotateRight(
+    memory.read(address),
+    cpu.regs.isFlagSet(Flag.CY)
+  );
+
+  memory.write(address, result);
+  cpu.regs.setFlag(Flag.Z, result === 0);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, false);
+  cpu.regs.setFlag(Flag.CY, carry);
+
+  return 16;
+});
+
 function rotateRight(value: number, carry: boolean) {
   return {
     result: ((value >> 1) & 0xff) | (carry ? 0x80 : 0x00),
@@ -29,181 +203,33 @@ function rotateRight(value: number, carry: boolean) {
   };
 }
 
-export function rotateLeftCircularAccumulator(ctx: InstructionCtx) {
-  const { result, carry } = rotateLeftCircular(ctx.regs.read(Register.A));
+export const shiftLeftArithmeticRegister = instruction(
+  ({ cpu }, reg: Register) => {
+    const { result, carry } = shiftLeftArithmetic(cpu.regs.read(reg));
 
-  ctx.regs.write(Register.A, result);
-  ctx.regs.setFlag(Flag.Z, false);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
+    cpu.regs.write(reg, result);
+    cpu.regs.setFlag(Flag.Z, result === 0);
+    cpu.regs.setFlag(Flag.N, false);
+    cpu.regs.setFlag(Flag.H, false);
+    cpu.regs.setFlag(Flag.CY, carry);
 
-  return 4;
-}
+    return 8;
+  }
+);
 
-export function rotateRightCircularAccumulator(ctx: InstructionCtx) {
-  const { result, carry } = rotateRightCircular(ctx.regs.read(Register.A));
+export const shiftLeftArithmeticIndirectHL = instruction(({ cpu, memory }) => {
+  const address = cpu.regs.readPair(RegisterPair.HL);
 
-  ctx.regs.write(Register.A, result);
-  ctx.regs.setFlag(Flag.Z, false);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
+  const { result, carry } = shiftLeftArithmetic(memory.read(address));
 
-  return 4;
-}
-
-export function rotateLeftAccumulator(ctx: InstructionCtx) {
-  const { result, carry } = rotateLeft(
-    ctx.regs.read(Register.A),
-    ctx.regs.isFlagSet(Flag.CY)
-  );
-
-  ctx.regs.write(Register.A, result);
-  ctx.regs.setFlag(Flag.Z, false);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
-
-  return 4;
-}
-
-export function rotateRightAccumulator(ctx: InstructionCtx) {
-  const { result, carry } = rotateRight(
-    ctx.regs.read(Register.A),
-    ctx.regs.isFlagSet(Flag.CY)
-  );
-
-  ctx.regs.write(Register.A, result);
-  ctx.regs.setFlag(Flag.Z, false);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
-
-  return 4;
-}
-
-export function rotateLeftCircularRegister(
-  ctx: InstructionCtx,
-  register: Register
-) {
-  const { result, carry } = rotateLeftCircular(ctx.regs.read(register));
-
-  ctx.regs.write(register, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
-
-  return 8;
-}
-
-export function rotateLeftCircularIndirectHL(ctx: InstructionCtx) {
-  const address = ctx.regs.readPair(RegisterPair.HL);
-
-  const { result, carry } = rotateLeftCircular(ctx.memory.read(address));
-
-  ctx.memory.write(address, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
+  memory.write(address, result);
+  cpu.regs.setFlag(Flag.Z, result === 0);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, false);
+  cpu.regs.setFlag(Flag.CY, carry);
 
   return 16;
-}
-
-export function rotateRightCircularRegister(
-  ctx: InstructionCtx,
-  register: Register
-) {
-  const { result, carry } = rotateRightCircular(ctx.regs.read(register));
-
-  ctx.regs.write(register, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
-
-  return 8;
-}
-
-export function rotateRightCircularIndirectHL(ctx: InstructionCtx) {
-  const address = ctx.regs.readPair(RegisterPair.HL);
-
-  const { result, carry } = rotateRightCircular(ctx.memory.read(address));
-
-  ctx.memory.write(address, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
-
-  return 16;
-}
-
-export function rotateLeftRegister(ctx: InstructionCtx, register: Register) {
-  const { result, carry } = rotateLeft(
-    ctx.regs.read(register),
-    ctx.regs.isFlagSet(Flag.CY)
-  );
-
-  ctx.regs.write(register, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
-
-  return 8;
-}
-
-export function rotateLeftIndirectHL(ctx: InstructionCtx) {
-  const address = ctx.regs.readPair(RegisterPair.HL);
-
-  const { result, carry } = rotateLeft(
-    ctx.memory.read(address),
-    ctx.regs.isFlagSet(Flag.CY)
-  );
-
-  ctx.memory.write(address, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
-
-  return 16;
-}
-
-export function rotateRightRegister(ctx: InstructionCtx, register: Register) {
-  const { result, carry } = rotateRight(
-    ctx.regs.read(register),
-    ctx.regs.isFlagSet(Flag.CY)
-  );
-
-  ctx.regs.write(register, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
-
-  return 8;
-}
-
-export function rotateRightIndirectHL(ctx: InstructionCtx) {
-  const address = ctx.regs.readPair(RegisterPair.HL);
-
-  const { result, carry } = rotateRight(
-    ctx.memory.read(address),
-    ctx.regs.isFlagSet(Flag.CY)
-  );
-
-  ctx.memory.write(address, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
-
-  return 16;
-}
+});
 
 function shiftLeftArithmetic(value: number) {
   return {
@@ -212,34 +238,33 @@ function shiftLeftArithmetic(value: number) {
   };
 }
 
-export function shiftLeftArithmeticRegister(
-  ctx: InstructionCtx,
-  register: Register
-) {
-  const { result, carry } = shiftLeftArithmetic(ctx.regs.read(register));
+export const shiftRightArithmeticRegister = instruction(
+  ({ cpu }, reg: Register) => {
+    const { result, carry } = shiftRightArithmetic(cpu.regs.read(reg));
 
-  ctx.regs.write(register, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
+    cpu.regs.write(reg, result);
+    cpu.regs.setFlag(Flag.Z, result === 0);
+    cpu.regs.setFlag(Flag.N, false);
+    cpu.regs.setFlag(Flag.H, false);
+    cpu.regs.setFlag(Flag.CY, carry);
 
-  return 8;
-}
+    return 8;
+  }
+);
 
-export function shiftLeftArithmeticIndirectHL(ctx: InstructionCtx) {
-  const address = ctx.regs.readPair(RegisterPair.HL);
+export const shiftRightArithmeticIndirectHL = instruction(({ cpu, memory }) => {
+  const address = cpu.regs.readPair(RegisterPair.HL);
 
-  const { result, carry } = shiftLeftArithmetic(ctx.memory.read(address));
+  const { result, carry } = shiftRightArithmetic(memory.read(address));
 
-  ctx.memory.write(address, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
+  memory.write(address, result);
+  cpu.regs.setFlag(Flag.Z, result === 0);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, false);
+  cpu.regs.setFlag(Flag.CY, carry);
 
   return 16;
-}
+});
 
 function shiftRightArithmetic(value: number) {
   return {
@@ -248,34 +273,33 @@ function shiftRightArithmetic(value: number) {
   };
 }
 
-export function shiftRightArithmeticRegister(
-  ctx: InstructionCtx,
-  register: Register
-) {
-  const { result, carry } = shiftRightArithmetic(ctx.regs.read(register));
+export const shiftRightLogicalRegister = instruction(
+  ({ cpu }, reg: Register) => {
+    const { result, carry } = shiftRightLogical(cpu.regs.read(reg));
 
-  ctx.regs.write(register, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
+    cpu.regs.write(reg, result);
+    cpu.regs.setFlag(Flag.Z, result === 0);
+    cpu.regs.setFlag(Flag.N, false);
+    cpu.regs.setFlag(Flag.H, false);
+    cpu.regs.setFlag(Flag.CY, carry);
 
-  return 8;
-}
+    return 8;
+  }
+);
 
-export function shiftRightArithmeticIndirectHL(ctx: InstructionCtx) {
-  const address = ctx.regs.readPair(RegisterPair.HL);
+export const shiftRightLogicalIndirectHL = instruction(({ cpu, memory }) => {
+  const address = cpu.regs.readPair(RegisterPair.HL);
 
-  const { result, carry } = shiftRightArithmetic(ctx.memory.read(address));
+  const { result, carry } = shiftRightLogical(memory.read(address));
 
-  ctx.memory.write(address, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
+  memory.write(address, result);
+  cpu.regs.setFlag(Flag.Z, result === 0);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, false);
+  cpu.regs.setFlag(Flag.CY, carry);
 
   return 16;
-}
+});
 
 function shiftRightLogical(value: number) {
   return {
@@ -284,125 +308,92 @@ function shiftRightLogical(value: number) {
   };
 }
 
-export function shiftRightLogicalRegister(
-  ctx: InstructionCtx,
-  register: Register
-) {
-  const { result, carry } = shiftRightLogical(ctx.regs.read(register));
+export const swapNibblesRegister = instruction(({ cpu }, reg: Register) => {
+  const result = swapNibbles(cpu.regs.read(reg));
 
-  ctx.regs.write(register, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
+  cpu.regs.write(reg, result);
+  cpu.regs.setFlag(Flag.Z, result === 0);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, false);
+  cpu.regs.setFlag(Flag.CY, false);
 
   return 8;
-}
+});
 
-export function shiftRightLogicalIndirectHL(ctx: InstructionCtx) {
-  const address = ctx.regs.readPair(RegisterPair.HL);
+export const swapNibblesIndirectHL = instruction(({ cpu, memory }) => {
+  const address = cpu.regs.readPair(RegisterPair.HL);
 
-  const { result, carry } = shiftRightLogical(ctx.memory.read(address));
+  const result = swapNibbles(memory.read(address));
 
-  ctx.memory.write(address, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, carry);
+  memory.write(address, result);
+  cpu.regs.setFlag(Flag.Z, result === 0);
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, false);
+  cpu.regs.setFlag(Flag.CY, false);
 
   return 16;
-}
+});
 
 function swapNibbles(value: number) {
   return ((value & 0xf) << 4) | ((value >> 4) & 0xf);
 }
 
-export function swapNibblesRegister(ctx: InstructionCtx, register: Register) {
-  const result = swapNibbles(ctx.regs.read(register));
+export const testBitRegister = instruction(
+  ({ cpu }, bit: number, reg: Register) => {
+    cpu.regs.setFlag(Flag.Z, testBit(cpu.regs.read(reg), bit));
+    cpu.regs.setFlag(Flag.N, false);
+    cpu.regs.setFlag(Flag.H, true);
 
-  ctx.regs.write(register, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, false);
+    return 8;
+  }
+);
 
-  return 8;
-}
+export const testBitIndirectHL = instruction(({ cpu, memory }, bit: number) => {
+  const address = cpu.regs.readPair(RegisterPair.HL);
 
-export function swapNibblesIndirectHL(ctx: InstructionCtx) {
-  const address = ctx.regs.readPair(RegisterPair.HL);
+  cpu.regs.setFlag(Flag.Z, testBit(memory.read(address), bit));
+  cpu.regs.setFlag(Flag.N, false);
+  cpu.regs.setFlag(Flag.H, true);
 
-  const result = swapNibbles(ctx.memory.read(address));
-
-  ctx.memory.write(address, result);
-  ctx.regs.setFlag(Flag.Z, result === 0);
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, false);
-  ctx.regs.setFlag(Flag.CY, false);
-
-  return 16;
-}
+  return 12;
+});
 
 function testBit(value: number, bit: number) {
   return !(value & (1 << bit));
 }
 
-export function testBitRegister(
-  ctx: InstructionCtx,
-  bit: number,
-  register: Register
-) {
-  ctx.regs.setFlag(Flag.Z, testBit(ctx.regs.read(register), bit));
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, true);
+export const resetBitRegister = instruction(
+  ({ cpu }, bit: number, reg: Register) => {
+    cpu.regs.write(reg, resetBit(cpu.regs.read(reg), bit));
+    return 8;
+  }
+);
 
-  return 8;
-}
-
-export function testBitIndirectHL(ctx: InstructionCtx, bit: number) {
-  const address = ctx.regs.readPair(RegisterPair.HL);
-
-  ctx.regs.setFlag(Flag.Z, testBit(ctx.memory.read(address), bit));
-  ctx.regs.setFlag(Flag.N, false);
-  ctx.regs.setFlag(Flag.H, true);
-
-  return 12;
-}
+export const resetBitIndirectHL = instruction(
+  ({ cpu, memory }, bit: number) => {
+    const address = cpu.regs.readPair(RegisterPair.HL);
+    memory.write(address, resetBit(memory.read(address), bit));
+    return 16;
+  }
+);
 
 function resetBit(value: number, bit: number) {
   return value & ~(1 << bit);
 }
 
-export function resetBitRegister(
-  ctx: InstructionCtx,
-  bit: number,
-  register: Register
-) {
-  ctx.regs.write(register, resetBit(ctx.regs.read(register), bit));
-  return 8;
-}
+export const setBitRegister = instruction(
+  ({ cpu }, bit: number, reg: Register) => {
+    cpu.regs.write(reg, setBit(cpu.regs.read(reg), bit));
+    return 8;
+  }
+);
 
-export function resetBitIndirectHL(ctx: InstructionCtx, bit: number) {
-  const address = ctx.regs.readPair(RegisterPair.HL);
-  ctx.memory.write(address, resetBit(ctx.memory.read(address), bit));
+export const setBitIndirectHL = instruction(({ cpu, memory }, bit: number) => {
+  const address = cpu.regs.readPair(RegisterPair.HL);
+  memory.write(address, setBit(memory.read(address), bit));
   return 16;
-}
+});
 
 function setBit(value: number, bit: number) {
   return value | (1 << bit);
-}
-
-export function setBitRegister(
-  ctx: InstructionCtx,
-  bit: number,
-  register: Register
-) {
-  ctx.regs.write(register, setBit(ctx.regs.read(register), bit));
-  return 8;
-}
-
-export function setBitIndirectHL(ctx: InstructionCtx, bit: number) {
-  const address = ctx.regs.readPair(RegisterPair.HL);
-  ctx.memory.write(address, setBit(ctx.memory.read(address), bit));
-  return 16;
 }

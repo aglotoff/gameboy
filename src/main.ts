@@ -1,28 +1,6 @@
-import { InterruptFlags, RegisterFile, RegisterPair } from "./cpu";
-import { InstructionCtx } from "./instructions/lib";
-import { execNextInstruction } from "./instructions/table";
+import { Cpu } from "./cpu";
 import { Memory } from "./memory";
-
-let ctx: InstructionCtx = {
-  regs: new RegisterFile(),
-  memory: new Memory(),
-  interruptFlags: new InterruptFlags(),
-};
-
-const run = async () => {
-  let cycles = 0;
-
-  while (true) {
-    cycles += execNextInstruction(ctx);
-
-    if (cycles >= 10000) {
-      await new Promise((resolve) => {
-        setTimeout(resolve, 16);
-      });
-      cycles = 0;
-    }
-  }
-};
+import { RegisterPair } from "./regs";
 
 const logoBytes = [
   0xce, 0xed, 0x66, 0x66, 0xcc, 0x0d, 0x00, 0x0b, 0x03, 0x73, 0x00, 0x83, 0x00,
@@ -68,11 +46,8 @@ const TYPE = 0x0147;
 const ROM_SIZE = 0x0148;
 
 async function readImage(file: File) {
-  ctx = {
-    regs: new RegisterFile(),
-    memory: new Memory(),
-    interruptFlags: new InterruptFlags(),
-  };
+  const memory = new Memory();
+  const cpu = new Cpu(memory);
 
   const buffer = await file.arrayBuffer();
   const data = new Uint8Array(buffer);
@@ -107,11 +82,10 @@ async function readImage(file: File) {
   console.log(romSize);
 
   for (let i = 0; i < Math.min(0x8000, romSize); i++) {
-    ctx.memory.write(i, data[i]);
+    memory.write(i, data[i]);
   }
 
-  ctx.regs.writePair(RegisterPair.PC, 0x100);
-  run();
+  cpu.run();
 }
 
 const displayLogo = (bytes: Uint8Array) => {

@@ -1,27 +1,23 @@
-import { InstructionCtx } from "./lib";
+import { instruction, instructionWithImmediateByte } from "./lib";
 
-export function halt() {
-  // TODO
-  throw new Error("HALT");
+export const halt = instruction(({ cpu }) => {
+  cpu.halted = true;
   return 4;
-}
+});
 
-export function stop() {
-  // TODO
-  throw new Error("STOP");
+export const stop = instructionWithImmediateByte(({ cpu }) => {
+  cpu.stopped = true;
   return 4;
-}
+});
 
-export function disableInterrupts(ctx: InstructionCtx) {
-  ctx.interruptFlags.masterDisable();
+export const disableInterrupts = instruction(({ cpu }) => {
+  cpu.ime = false;
   return 4;
-}
+});
 
-export function enableInterrupts(ctx: InstructionCtx) {
-  ctx.interruptFlags.masterEnable();
+export const enableInterrupts = instruction(({ cpu }) => {
+  cpu.ime = true;
   return 4;
-}
+});
 
-export function noOperation() {
-  return 4;
-}
+export const noOperation = instruction(() => 4);
