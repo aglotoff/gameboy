@@ -2,11 +2,13 @@ import { InstructionCtx } from "./lib";
 
 export function halt() {
   // TODO
+  throw new Error("HALT");
   return 4;
 }
 
 export function stop() {
   // TODO
+  throw new Error("STOP");
   return 4;
 }
 

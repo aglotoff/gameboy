@@ -1,4 +1,4 @@
-import { RegisterPair, Register, regs } from "../cpu";
+import { RegisterPair, Register } from "../cpu";
 import {
   addRegisterPair,
   addToStackPointer,
@@ -54,6 +54,8 @@ import {
   rotateRightCircularRegister,
   rotateRightIndirectHL,
   rotateRightRegister,
+  setBitIndirectHL,
+  setBitRegister,
   shiftLeftArithmeticIndirectHL,
   shiftLeftArithmeticRegister,
   shiftRightArithmeticIndirectHL,
@@ -203,11 +205,11 @@ const instructions: Partial<Record<number, Instruction>> = {
   0x4f: ["LD C,A", (c) => loadRegisterFromRegister(c, Register.C, Register.A)],
 
   0x50: ["LD D,B", (c) => loadRegisterFromRegister(c, Register.D, Register.B)],
-  0x51: ["LD D,C", (c) => loadRegisterFromRegister(c, Register.D, Register.D)],
+  0x51: ["LD D,C", (c) => loadRegisterFromRegister(c, Register.D, Register.C)],
   0x52: ["LD D,D", (c) => loadRegisterFromRegister(c, Register.D, Register.D)],
   0x53: ["LD D,E", (c) => loadRegisterFromRegister(c, Register.D, Register.E)],
   0x54: ["LD D,H", (c) => loadRegisterFromRegister(c, Register.D, Register.H)],
-  0x55: ["LD D,L", (c) => loadRegisterFromRegister(c, Register.L, Register.D)],
+  0x55: ["LD D,L", (c) => loadRegisterFromRegister(c, Register.D, Register.L)],
   0x56: ["LD D,(HL)", (c) => loadRegisterFromIndirectHL(c, Register.D)],
   0x57: ["LD D,A", (c) => loadRegisterFromRegister(c, Register.D, Register.A)],
   0x58: ["LD E,B", (c) => loadRegisterFromRegister(c, Register.E, Register.B)],
@@ -457,7 +459,7 @@ export const prefixCBInstructions: Partial<Record<number, Instruction>> = {
   0x46: ["BIT 0,(HL)", (c) => testBitIndirectHL(c, 0)],
   0x47: ["BIT 0,A", (c) => testBitRegister(c, 0, Register.A)],
   0x48: ["BIT 1,B", (c) => testBitRegister(c, 1, Register.B)],
-  0x49: ["BIT 1,C", (c) => testBitRegister(c, 1, Register.D)],
+  0x49: ["BIT 1,C", (c) => testBitRegister(c, 1, Register.C)],
   0x4a: ["BIT 1,D", (c) => testBitRegister(c, 1, Register.D)],
   0x4b: ["BIT 1,E", (c) => testBitRegister(c, 1, Register.E)],
   0x4c: ["BIT 1,H", (c) => testBitRegister(c, 1, Register.H)],
@@ -583,12 +585,83 @@ export const prefixCBInstructions: Partial<Record<number, Instruction>> = {
   0xbd: ["RES 7,L", (c) => resetBitRegister(c, 7, Register.L)],
   0xbe: ["RES 7,(HL)", (c) => resetBitIndirectHL(c, 7)],
   0xbf: ["RES 7,A", (c) => resetBitRegister(c, 7, Register.A)],
+
+  0xc0: ["SET 0,B", (c) => setBitRegister(c, 0, Register.B)],
+  0xc1: ["SET 0,C", (c) => setBitRegister(c, 0, Register.C)],
+  0xc2: ["SET 0,D", (c) => setBitRegister(c, 0, Register.D)],
+  0xc3: ["SET 0,E", (c) => setBitRegister(c, 0, Register.E)],
+  0xc4: ["SET 0,H", (c) => setBitRegister(c, 0, Register.H)],
+  0xc5: ["SET 0,L", (c) => setBitRegister(c, 0, Register.L)],
+  0xc6: ["SET 0,(HL)", (c) => setBitIndirectHL(c, 0)],
+  0xc7: ["SET 0,A", (c) => setBitRegister(c, 0, Register.A)],
+  0xc8: ["SET 1,B", (c) => setBitRegister(c, 1, Register.B)],
+  0xc9: ["SET 1,C", (c) => setBitRegister(c, 1, Register.C)],
+  0xca: ["SET 1,D", (c) => setBitRegister(c, 1, Register.D)],
+  0xcb: ["SET 1,E", (c) => setBitRegister(c, 1, Register.E)],
+  0xcc: ["SET 1,H", (c) => setBitRegister(c, 1, Register.H)],
+  0xcd: ["SET 1,L", (c) => setBitRegister(c, 1, Register.L)],
+  0xce: ["SET 1,(HL)", (c) => setBitIndirectHL(c, 1)],
+  0xcf: ["SET 1,A", (c) => setBitRegister(c, 1, Register.A)],
+
+  0xd0: ["SET 2,B", (c) => setBitRegister(c, 2, Register.B)],
+  0xd1: ["SET 2,C", (c) => setBitRegister(c, 2, Register.C)],
+  0xd2: ["SET 2,D", (c) => setBitRegister(c, 2, Register.D)],
+  0xd3: ["SET 2,E", (c) => setBitRegister(c, 2, Register.E)],
+  0xd4: ["SET 2,H", (c) => setBitRegister(c, 2, Register.H)],
+  0xd5: ["SET 2,L", (c) => setBitRegister(c, 2, Register.L)],
+  0xd6: ["SET 2,(HL)", (c) => setBitIndirectHL(c, 2)],
+  0xd7: ["SET 2,A", (c) => setBitRegister(c, 2, Register.A)],
+  0xd8: ["SET 3,B", (c) => setBitRegister(c, 3, Register.B)],
+  0xd9: ["SET 3,C", (c) => setBitRegister(c, 3, Register.C)],
+  0xda: ["SET 3,D", (c) => setBitRegister(c, 3, Register.D)],
+  0xdb: ["SET 3,E", (c) => setBitRegister(c, 3, Register.E)],
+  0xdc: ["SET 3,H", (c) => setBitRegister(c, 3, Register.H)],
+  0xdd: ["SET 3,L", (c) => setBitRegister(c, 3, Register.L)],
+  0xde: ["SET 3,(HL)", (c) => setBitIndirectHL(c, 3)],
+  0xdf: ["SET 3,A", (c) => setBitRegister(c, 3, Register.A)],
+
+  0xe0: ["SET 4,B", (c) => setBitRegister(c, 4, Register.B)],
+  0xe1: ["SET 4,C", (c) => setBitRegister(c, 4, Register.C)],
+  0xe2: ["SET 4,D", (c) => setBitRegister(c, 4, Register.D)],
+  0xe3: ["SET 4,E", (c) => setBitRegister(c, 4, Register.E)],
+  0xe4: ["SET 4,H", (c) => setBitRegister(c, 4, Register.H)],
+  0xe5: ["SET 4,L", (c) => setBitRegister(c, 4, Register.L)],
+  0xe6: ["SET 4,(HL)", (c) => setBitIndirectHL(c, 4)],
+  0xe7: ["SET 4,A", (c) => setBitRegister(c, 4, Register.A)],
+  0xe8: ["SET 5,B", (c) => setBitRegister(c, 5, Register.B)],
+  0xe9: ["SET 5,C", (c) => setBitRegister(c, 5, Register.C)],
+  0xea: ["SET 5,D", (c) => setBitRegister(c, 5, Register.D)],
+  0xeb: ["SET 5,E", (c) => setBitRegister(c, 5, Register.E)],
+  0xec: ["SET 5,H", (c) => setBitRegister(c, 5, Register.H)],
+  0xed: ["SET 5,L", (c) => setBitRegister(c, 5, Register.L)],
+  0xee: ["SET 5,(HL)", (c) => setBitIndirectHL(c, 5)],
+  0xef: ["SET 5,A", (c) => setBitRegister(c, 5, Register.A)],
+
+  0xf0: ["SET 6,B", (c) => setBitRegister(c, 6, Register.B)],
+  0xf1: ["SET 6,C", (c) => setBitRegister(c, 6, Register.C)],
+  0xf2: ["SET 6,D", (c) => setBitRegister(c, 6, Register.D)],
+  0xf3: ["SET 6,E", (c) => setBitRegister(c, 6, Register.E)],
+  0xf4: ["SET 6,H", (c) => setBitRegister(c, 6, Register.H)],
+  0xf5: ["SET 6,L", (c) => setBitRegister(c, 6, Register.L)],
+  0xf6: ["SET 6,(HL)", (c) => setBitIndirectHL(c, 6)],
+  0xf7: ["SET 6,A", (c) => setBitRegister(c, 6, Register.A)],
+  0xf8: ["SET 7,B", (c) => setBitRegister(c, 7, Register.B)],
+  0xf9: ["SET 7,C", (c) => setBitRegister(c, 7, Register.C)],
+  0xfa: ["SET 7,D", (c) => setBitRegister(c, 7, Register.D)],
+  0xfb: ["SET 7,E", (c) => setBitRegister(c, 7, Register.E)],
+  0xfc: ["SET 7,H", (c) => setBitRegister(c, 7, Register.H)],
+  0xfd: ["SET 7,L", (c) => setBitRegister(c, 7, Register.L)],
+  0xfe: ["SET 7,(HL)", (c) => setBitIndirectHL(c, 7)],
+  0xff: ["SET 7,A", (c) => setBitRegister(c, 7, Register.A)],
 };
 
 export const nextInstruction = (ctx: InstructionCtx) => {
   const opcode = fetchImmediateByte(ctx);
 
-  const instruction = instructions[opcode];
+  const instruction =
+    opcode === 0xcb
+      ? prefixCBInstructions[fetchImmediateByte(ctx)]
+      : instructions[opcode];
 
   if (!instruction) {
     throw new Error(`Invalid opcode ${opcode.toString(16)}`);
@@ -600,12 +673,12 @@ export const nextInstruction = (ctx: InstructionCtx) => {
 export function execNextInstruction(ctx: InstructionCtx) {
   const instruction = nextInstruction(ctx);
 
-  console.log(
-    "Executing instruction",
-    instruction[0],
-    " at ",
-    (regs.readPair(RegisterPair.PC) - 1).toString(16)
-  );
+  // console.log(
+  //   "Executing instruction",
+  //   instruction[0],
+  //   " at ",
+  //   (ctx.regs.readPair(RegisterPair.PC) - 1).toString(16)
+  // );
 
   return instruction[1](ctx);
 }

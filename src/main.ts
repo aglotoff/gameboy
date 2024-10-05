@@ -1,21 +1,26 @@
-import { readRegister, writeRegister } from "./cpu";
-import { nextInstruction } from "./instructions";
-import * as Memory from "./memory";
+import { InterruptFlags, RegisterFile, RegisterPair } from "./cpu";
+import { InstructionCtx } from "./instructions/lib";
+import { execNextInstruction } from "./instructions/table";
+import { Memory } from "./memory";
 
-const run = () => {
+let ctx: InstructionCtx = {
+  regs: new RegisterFile(),
+  memory: new Memory(),
+  interruptFlags: new InterruptFlags(),
+};
+
+const run = async () => {
   let cycles = 0;
 
   while (true) {
-    const instruction = nextInstruction();
+    cycles += execNextInstruction(ctx);
 
-    console.log(
-      "Executing instruction",
-      instruction[0],
-      " at ",
-      (readRegister("PC") - 1).toString(16)
-    );
-
-    cycles += instruction[1]();
+    if (cycles >= 10000) {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 16);
+      });
+      cycles = 0;
+    }
   }
 };
 
@@ -63,6 +68,12 @@ const TYPE = 0x0147;
 const ROM_SIZE = 0x0148;
 
 async function readImage(file: File) {
+  ctx = {
+    regs: new RegisterFile(),
+    memory: new Memory(),
+    interruptFlags: new InterruptFlags(),
+  };
+
   const buffer = await file.arrayBuffer();
   const data = new Uint8Array(buffer);
 
@@ -96,10 +107,10 @@ async function readImage(file: File) {
   console.log(romSize);
 
   for (let i = 0; i < Math.min(0x8000, romSize); i++) {
-    Memory.write(i, data[i]);
+    ctx.memory.write(i, data[i]);
   }
 
-  writeRegister("PC", 0x100);
+  ctx.regs.writePair(RegisterPair.PC, 0x100);
   run();
 }
 

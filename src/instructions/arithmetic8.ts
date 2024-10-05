@@ -270,59 +270,33 @@ export function setCarryFlag(ctx: InstructionCtx) {
 }
 
 export function decimalAdjustAccumulator(ctx: InstructionCtx) {
-  const a = ctx.regs.read(Register.A);
+  let a = ctx.regs.read(Register.A);
   const cy = ctx.regs.isFlagSet(Flag.CY);
   const h = ctx.regs.isFlagSet(Flag.H);
+  const n = ctx.regs.isFlagSet(Flag.N);
 
-  const high = (a >> 4) & 0xf;
-  const low = a & 0xf;
+  let offset = 0;
+  let carry = false;
 
-  if (!ctx.regs.isFlagSet(Flag.N)) {
-    if (!cy && high <= 0x9 && !h && low <= 0x9) {
-      ctx.regs.write(Register.A, a + 0x00);
-      ctx.regs.setFlag(Flag.CY, false);
-    } else if (!cy && high <= 0x8 && !h && low >= 0xa) {
-      ctx.regs.write(Register.A, a + 0x06);
-      ctx.regs.setFlag(Flag.CY, false);
-    } else if (!cy && high <= 0x9 && h && low <= 0x3) {
-      ctx.regs.write(Register.A, a + 0x06);
-      ctx.regs.setFlag(Flag.CY, false);
-    } else if (!cy && high >= 0xa && !h && low <= 0x9) {
-      ctx.regs.write(Register.A, a + 0x60);
-      ctx.regs.setFlag(Flag.CY, true);
-    } else if (!cy && high >= 0x9 && !h && low >= 0xa) {
-      ctx.regs.write(Register.A, a + 0x66);
-      ctx.regs.setFlag(Flag.CY, true);
-    } else if (!cy && high >= 0xa && h && low <= 0x3) {
-      ctx.regs.write(Register.A, a + 0x66);
-      ctx.regs.setFlag(Flag.CY, true);
-    } else if (cy && high <= 0x2 && !h && low <= 0x9) {
-      ctx.regs.write(Register.A, a + 0x60);
-      ctx.regs.setFlag(Flag.CY, true);
-    } else if (cy && high <= 0x2 && !h && low >= 0xa) {
-      ctx.regs.write(Register.A, a + 0x66);
-      ctx.regs.setFlag(Flag.CY, true);
-    } else if (cy && high <= 0x3 && h && low <= 0x3) {
-      ctx.regs.write(Register.A, a + 0x66);
-      ctx.regs.setFlag(Flag.CY, true);
-    }
-  } else {
-    if (!cy && high <= 0x9 && !h && low <= 0x9) {
-      ctx.regs.write(Register.A, a + 0x00);
-      ctx.regs.setFlag(Flag.CY, false);
-    } else if (!cy && high <= 0x8 && h && low >= 0x6) {
-      ctx.regs.write(Register.A, a + 0xfa);
-      ctx.regs.setFlag(Flag.CY, false);
-    } else if (cy && high >= 0x7 && !h && low <= 0x9) {
-      ctx.regs.write(Register.A, a + 0xa0);
-      ctx.regs.setFlag(Flag.CY, false);
-    } else if (cy && high >= 0x6 && h && low >= 0x6) {
-      ctx.regs.write(Register.A, a + 0x9a);
-      ctx.regs.setFlag(Flag.CY, false);
-    }
+  if ((!n && (a & 0xf) > 0x09) || h) {
+    offset |= 0x06;
   }
 
+  if ((!n && a > 0x99) || cy) {
+    offset |= 0x60;
+    carry = true;
+  }
+
+  if (!n) {
+    a = (a + offset) & 0xff;
+  } else {
+    a = (a - offset) & 0xff;
+  }
+
+  ctx.regs.write(Register.A, a);
+  ctx.regs.setFlag(Flag.Z, a === 0);
   ctx.regs.setFlag(Flag.H, false);
+  ctx.regs.setFlag(Flag.CY, carry);
 
   return 4;
 }

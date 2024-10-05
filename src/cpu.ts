@@ -54,7 +54,11 @@ export class RegisterFile {
   }
 
   write(register: Register, value: number) {
-    this.registers[register] = value;
+    if (register === Register.F) {
+      this.registers[register] = value & 0xf0;
+    } else {
+      this.registers[register] = value;
+    }
   }
 
   readPair(pair: RegisterPair) {
@@ -64,8 +68,8 @@ export class RegisterFile {
 
   writePair(pair: RegisterPair, value: number) {
     const [high, low] = pairToRegisters[pair];
-    this.registers[high] = getMSB(value);
-    this.registers[low] = getLSB(value);
+    this.write(high, getMSB(value));
+    this.write(low, getLSB(value));
   }
 
   isFlagSet(flag: Flag) {
@@ -96,8 +100,6 @@ export class InterruptFlags {
     return this.ime;
   }
 }
-
-export const regs = new RegisterFile();
 
 export type Condition = "Z" | "C" | "NZ" | "NC";
 
