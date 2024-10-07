@@ -24,184 +24,184 @@ import {
   loadIndirectHLDecrementFromAccumulator,
   loadIndirectHLIncrementFromAccumulator,
 } from "./load8";
-import { test } from "./test-lib";
+import { testInstruction } from "./test-lib";
 
 describe("8-bit load instructions", () => {
-  test("LD r,r'", ({ cpu, memory }) => {
-    cpu.regs.write(Register.B, 0x3c);
-    cpu.regs.write(Register.D, 0x5c);
+  testInstruction("LD r,r'", ({ state }) => {
+    state.writeRegister(Register.B, 0x3c);
+    state.writeRegister(Register.D, 0x5c);
 
-    loadRegisterFromRegister({ cpu, memory }, Register.A, Register.B);
-    loadRegisterFromRegister({ cpu, memory }, Register.B, Register.D);
+    loadRegisterFromRegister(state, Register.A, Register.B);
+    loadRegisterFromRegister(state, Register.B, Register.D);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x3c);
-    expect(cpu.regs.read(Register.B)).toBe(0x5c);
+    expect(state.readRegister(Register.A)).toBe(0x3c);
+    expect(state.readRegister(Register.B)).toBe(0x5c);
   });
 
-  test("LD r,n", ({ cpu, memory }) => {
-    memory.write(0, 0x24);
+  testInstruction("LD r,n", ({ state }) => {
+    state.writeBus(0, 0x24);
 
-    loadRegisterFromImmediate({ cpu, memory }, Register.B);
+    loadRegisterFromImmediate(state, Register.B);
 
-    expect(cpu.regs.read(Register.B)).toBe(0x24);
+    expect(state.readRegister(Register.B)).toBe(0x24);
   });
 
-  test("LD r,(HL)", ({ cpu, memory }) => {
-    memory.write(0x8ac5, 0x5c);
-    cpu.regs.writePair(RegisterPair.HL, 0x8ac5);
+  testInstruction("LD r,(HL)", ({ state }) => {
+    state.writeBus(0x8ac5, 0x5c);
+    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
-    loadRegisterFromIndirectHL({ cpu, memory }, Register.H);
+    loadRegisterFromIndirectHL(state, Register.H);
 
-    expect(cpu.regs.read(Register.H)).toBe(0x5c);
+    expect(state.readRegister(Register.H)).toBe(0x5c);
   });
 
-  test("LD (HL),r", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x3c);
-    cpu.regs.writePair(RegisterPair.HL, 0x8ac5);
+  testInstruction("LD (HL),r", ({ state }) => {
+    state.writeRegister(Register.A, 0x3c);
+    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
-    loadIndirectHLFromRegister({ cpu, memory }, Register.A);
+    loadIndirectHLFromRegister(state, Register.A);
 
-    expect(memory.read(0x8ac5)).toBe(0x3c);
+    expect(state.readBus(0x8ac5)).toBe(0x3c);
   });
 
-  test("LD (HL),n", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.HL, 0x8ac5);
-    memory.write(0, 0x3c);
+  testInstruction("LD (HL),n", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    state.writeBus(0, 0x3c);
 
-    loadIndirectHLFromImmediateData({ cpu, memory });
+    loadIndirectHLFromImmediateData(state);
 
-    expect(memory.read(0x8ac5)).toBe(0x3c);
+    expect(state.readBus(0x8ac5)).toBe(0x3c);
   });
 
-  test("LD A,(BC)", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.BC, 0x8ac5);
-    memory.write(0x8ac5, 0x2f);
+  testInstruction("LD A,(BC)", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.BC, 0x8ac5);
+    state.writeBus(0x8ac5, 0x2f);
 
-    loadAccumulatorFromIndirectBC({ cpu, memory });
+    loadAccumulatorFromIndirectBC(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x2f);
+    expect(state.readRegister(Register.A)).toBe(0x2f);
   });
 
-  test("LD A,(DE)", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.DE, 0x8ac5);
-    memory.write(0x8ac5, 0x5f);
+  testInstruction("LD A,(DE)", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.DE, 0x8ac5);
+    state.writeBus(0x8ac5, 0x5f);
 
-    loadAccumulatorFromIndirectDE({ cpu, memory });
+    loadAccumulatorFromIndirectDE(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x5f);
+    expect(state.readRegister(Register.A)).toBe(0x5f);
   });
 
-  test("LD (BC),A", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.BC, 0x205f);
-    cpu.regs.write(Register.A, 0x56);
+  testInstruction("LD (BC),A", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.BC, 0x205f);
+    state.writeRegister(Register.A, 0x56);
 
-    loadIndirectBCFromAccumulator({ cpu, memory });
+    loadIndirectBCFromAccumulator(state);
 
-    expect(memory.read(0x205f)).toBe(0x56);
+    expect(state.readBus(0x205f)).toBe(0x56);
   });
 
-  test("LD (DE),A", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.DE, 0x205c);
-    cpu.regs.write(Register.A, 0xaa);
+  testInstruction("LD (DE),A", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.DE, 0x205c);
+    state.writeRegister(Register.A, 0xaa);
 
-    loadIndirectDEFromAccumulator({ cpu, memory });
+    loadIndirectDEFromAccumulator(state);
 
-    expect(memory.read(0x205c)).toBe(0xaa);
+    expect(state.readBus(0x205c)).toBe(0xaa);
   });
 
-  test("LD A,(nn)", ({ cpu, memory }) => {
-    memory.write(0, getLSB(0x8000));
-    memory.write(1, getMSB(0x8000));
-    memory.write(0x8000, 0x5c);
+  testInstruction("LD A,(nn)", ({ state }) => {
+    state.writeBus(0, getLSB(0x8000));
+    state.writeBus(1, getMSB(0x8000));
+    state.writeBus(0x8000, 0x5c);
 
-    loadAccumulatorFromDirectWord({ cpu, memory });
+    loadAccumulatorFromDirectWord(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x5c);
+    expect(state.readRegister(Register.A)).toBe(0x5c);
   });
 
-  test("LD (nn),A", ({ cpu, memory }) => {
-    memory.write(0, getLSB(0x8000));
-    memory.write(1, getMSB(0x8000));
-    cpu.regs.write(Register.A, 0x2f);
+  testInstruction("LD (nn),A", ({ state }) => {
+    state.writeBus(0, getLSB(0x8000));
+    state.writeBus(1, getMSB(0x8000));
+    state.writeRegister(Register.A, 0x2f);
 
-    loadDirectWordFromAccumulator({ cpu, memory });
+    loadDirectWordFromAccumulator(state);
 
-    expect(memory.read(0x8000)).toBe(0x2f);
+    expect(state.readBus(0x8000)).toBe(0x2f);
   });
 
-  test("LD A,(C)", ({ cpu, memory }) => {
-    memory.write(0xff95, 0x2c);
-    cpu.regs.write(Register.C, 0x95);
+  testInstruction("LD A,(C)", ({ state }) => {
+    state.writeBus(0xff95, 0x2c);
+    state.writeRegister(Register.C, 0x95);
 
-    loadAccumulatorFromIndirectC({ cpu, memory });
+    loadAccumulatorFromIndirectC(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x2c);
+    expect(state.readRegister(Register.A)).toBe(0x2c);
   });
 
-  test("LD (C),A", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x5c);
-    cpu.regs.write(Register.C, 0x9f);
+  testInstruction("LD (C),A", ({ state }) => {
+    state.writeRegister(Register.A, 0x5c);
+    state.writeRegister(Register.C, 0x9f);
 
-    loadIndirectCFromAccumulator({ cpu, memory });
+    loadIndirectCFromAccumulator(state);
 
-    expect(memory.read(0xff9f)).toBe(0x5c);
+    expect(state.readBus(0xff9f)).toBe(0x5c);
   });
 
-  test("LD A,(n)", ({ cpu, memory }) => {
-    memory.write(0, getLSB(0x34));
-    memory.write(0xff34, 0x5f);
+  testInstruction("LD A,(n)", ({ state }) => {
+    state.writeBus(0, getLSB(0x34));
+    state.writeBus(0xff34, 0x5f);
 
-    loadAccumulatorFromDirectByte({ cpu, memory });
+    loadAccumulatorFromDirectByte(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x5f);
+    expect(state.readRegister(Register.A)).toBe(0x5f);
   });
 
-  test("LD (n),A", ({ cpu, memory }) => {
-    memory.write(0, getLSB(0x34));
-    cpu.regs.write(Register.A, 0x2f);
+  testInstruction("LD (n),A", ({ state }) => {
+    state.writeBus(0, getLSB(0x34));
+    state.writeRegister(Register.A, 0x2f);
 
-    loadDirectByteFromAccumulator({ cpu, memory });
+    loadDirectByteFromAccumulator(state);
 
-    expect(memory.read(0xff34)).toBe(0x2f);
+    expect(state.readBus(0xff34)).toBe(0x2f);
   });
 
-  test("LD A,(HLD)", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.HL, 0x8a5c);
-    memory.write(0x8a5c, 0x3c);
+  testInstruction("LD A,(HLD)", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.HL, 0x8a5c);
+    state.writeBus(0x8a5c, 0x3c);
 
-    loadAccumulatorFromIndirectHLDecrement({ cpu, memory });
+    loadAccumulatorFromIndirectHLDecrement(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x3c);
-    expect(cpu.regs.readPair(RegisterPair.HL)).toBe(0x8a5b);
+    expect(state.readRegister(Register.A)).toBe(0x3c);
+    expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x8a5b);
   });
 
-  test("LD A,(HLI)", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.HL, 0x1ff);
-    memory.write(0x1ff, 0x56);
+  testInstruction("LD A,(HLI)", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.HL, 0x1ff);
+    state.writeBus(0x1ff, 0x56);
 
-    loadAccumulatorFromIndirectHLIncrement({ cpu, memory });
+    loadAccumulatorFromIndirectHLIncrement(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x56);
-    expect(cpu.regs.readPair(RegisterPair.HL)).toBe(0x200);
+    expect(state.readRegister(Register.A)).toBe(0x56);
+    expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x200);
   });
 
-  test("LD (HLD),A", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.HL, 0x4000);
-    cpu.regs.write(Register.A, 0x5);
+  testInstruction("LD (HLD),A", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.HL, 0x4000);
+    state.writeRegister(Register.A, 0x5);
 
-    loadIndirectHLDecrementFromAccumulator({ cpu, memory });
+    loadIndirectHLDecrementFromAccumulator(state);
 
-    expect(memory.read(0x4000)).toBe(0x5);
-    expect(cpu.regs.readPair(RegisterPair.HL)).toBe(0x3fff);
+    expect(state.readBus(0x4000)).toBe(0x5);
+    expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x3fff);
   });
 
-  test("LD (HLI),A", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.HL, 0xffff);
-    cpu.regs.write(Register.A, 0x56);
+  testInstruction("LD (HLI),A", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.HL, 0xffff);
+    state.writeRegister(Register.A, 0x56);
 
-    loadIndirectHLIncrementFromAccumulator({ cpu, memory });
+    loadIndirectHLIncrementFromAccumulator(state);
 
-    expect(memory.read(0xffff)).toBe(0x56);
-    expect(cpu.regs.readPair(RegisterPair.HL)).toBe(0x0);
+    expect(state.readBus(0xffff)).toBe(0x56);
+    expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x0000);
   });
 });

@@ -3,44 +3,47 @@ import { wrapIncrementWord, addWords, addSignedByteToWord } from "../utils";
 import { instruction, instructionWithImmediateByte } from "./lib";
 
 export const incrementRegisterPair = instruction(
-  ({ cpu }, pair: RegisterPair) => {
-    cpu.regs.writePair(pair, wrapIncrementWord(cpu.regs.readPair(pair)));
+  (state, pair: RegisterPair) => {
+    state.writeRegisterPair(
+      pair,
+      wrapIncrementWord(state.readRegisterPair(pair))
+    );
     return 8;
   }
 );
 
 export const decrementRegisterPair = instruction(
-  ({ cpu }, pair: RegisterPair) => {
-    cpu.regs.writePair(pair, cpu.regs.readPair(pair) - 1);
+  (state, pair: RegisterPair) => {
+    state.writeRegisterPair(pair, state.readRegisterPair(pair) - 1);
     return 8;
   }
 );
 
-export const addRegisterPair = instruction(({ cpu }, pair: RegisterPair) => {
+export const addRegisterPair = instruction((state, pair: RegisterPair) => {
   const { result, carryFrom11, carryFrom15 } = addWords(
-    cpu.regs.readPair(RegisterPair.HL),
-    cpu.regs.readPair(pair)
+    state.readRegisterPair(RegisterPair.HL),
+    state.readRegisterPair(pair)
   );
 
-  cpu.regs.writePair(RegisterPair.HL, result);
-  cpu.regs.setFlag(Flag.N, false);
-  cpu.regs.setFlag(Flag.H, carryFrom11);
-  cpu.regs.setFlag(Flag.CY, carryFrom15);
+  state.writeRegisterPair(RegisterPair.HL, result);
+  state.setFlag(Flag.N, false);
+  state.setFlag(Flag.H, carryFrom11);
+  state.setFlag(Flag.CY, carryFrom15);
 
   return 8;
 });
 
-export const addToStackPointer = instructionWithImmediateByte((ctx, e) => {
+export const addToStackPointer = instructionWithImmediateByte((state, e) => {
   const { result, carryFrom3, carryFrom7 } = addSignedByteToWord(
-    ctx.cpu.regs.readPair(RegisterPair.SP),
+    state.readRegisterPair(RegisterPair.SP),
     e
   );
 
-  ctx.cpu.regs.writePair(RegisterPair.SP, result);
-  ctx.cpu.regs.setFlag(Flag.Z, false);
-  ctx.cpu.regs.setFlag(Flag.N, false);
-  ctx.cpu.regs.setFlag(Flag.H, carryFrom3);
-  ctx.cpu.regs.setFlag(Flag.CY, carryFrom7);
+  state.writeRegisterPair(RegisterPair.SP, result);
+  state.setFlag(Flag.Z, false);
+  state.setFlag(Flag.N, false);
+  state.setFlag(Flag.H, carryFrom3);
+  state.setFlag(Flag.CY, carryFrom7);
 
   return 16;
 });

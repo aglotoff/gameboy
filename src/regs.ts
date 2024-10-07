@@ -84,18 +84,3 @@ export class RegisterFile {
     }
   }
 }
-
-export type Condition = "Z" | "C" | "NZ" | "NC";
-
-export const checkCondition = (regs: RegisterFile, condition: Condition) => {
-  switch (condition) {
-    case "Z":
-      return regs.isFlagSet(Flag.Z);
-    case "C":
-      return regs.isFlagSet(Flag.CY);
-    case "NZ":
-      return !regs.isFlagSet(Flag.Z);
-    case "NC":
-      return !regs.isFlagSet(Flag.CY);
-  }
-};

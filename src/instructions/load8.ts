@@ -7,139 +7,140 @@ import {
 } from "./lib";
 
 export const loadRegisterFromRegister = instruction(
-  ({ cpu }, dst: Register, src: Register) => {
-    cpu.regs.write(dst, cpu.regs.read(src));
+  (state, dst: Register, src: Register) => {
+    state.writeRegister(dst, state.readRegister(src));
     return 4;
   }
 );
 
 export const loadRegisterFromImmediate = instructionWithImmediateByte(
-  ({ cpu }, data, dst: Register) => {
-    cpu.regs.write(dst, data);
+  (state, data, dst: Register) => {
+    state.writeRegister(dst, data);
     return 8;
   }
 );
 
 export const loadRegisterFromIndirectHL = instruction(
-  ({ cpu, memory }, dst: Register) => {
-    const data = memory.read(cpu.regs.readPair(RegisterPair.HL));
-    cpu.regs.write(dst, data);
+  (state, dst: Register) => {
+    const data = state.readBus(state.readRegisterPair(RegisterPair.HL));
+    state.writeRegister(dst, data);
     return 8;
   }
 );
 
 export const loadIndirectHLFromRegister = instruction(
-  ({ cpu, memory }, src: Register) => {
-    memory.write(cpu.regs.readPair(RegisterPair.HL), cpu.regs.read(src));
+  (state, src: Register) => {
+    state.writeBus(
+      state.readRegisterPair(RegisterPair.HL),
+      state.readRegister(src)
+    );
     return 8;
   }
 );
 
 export const loadIndirectHLFromImmediateData = instructionWithImmediateByte(
-  (ctx, data) => {
-    ctx.memory.write(ctx.cpu.regs.readPair(RegisterPair.HL), data);
+  (state, data) => {
+    state.writeBus(state.readRegisterPair(RegisterPair.HL), data);
     return 12;
   }
 );
 
-export const loadAccumulatorFromIndirectBC = instruction(({ cpu, memory }) => {
-  const data = memory.read(cpu.regs.readPair(RegisterPair.BC));
-  cpu.regs.write(Register.A, data);
+export const loadAccumulatorFromIndirectBC = instruction((state) => {
+  const data = state.readBus(state.readRegisterPair(RegisterPair.BC));
+  state.writeRegister(Register.A, data);
   return 8;
 });
 
-export const loadAccumulatorFromIndirectDE = instruction(({ cpu, memory }) => {
-  const data = memory.read(cpu.regs.readPair(RegisterPair.DE));
-  cpu.regs.write(Register.A, data);
+export const loadAccumulatorFromIndirectDE = instruction((state) => {
+  const data = state.readBus(state.readRegisterPair(RegisterPair.DE));
+  state.writeRegister(Register.A, data);
   return 8;
 });
 
-export const loadIndirectBCFromAccumulator = instruction(({ cpu, memory }) => {
-  memory.write(cpu.regs.readPair(RegisterPair.BC), cpu.regs.read(Register.A));
+export const loadIndirectBCFromAccumulator = instruction((state) => {
+  state.writeBus(
+    state.readRegisterPair(RegisterPair.BC),
+    state.readRegister(Register.A)
+  );
   return 8;
 });
 
-export const loadIndirectDEFromAccumulator = instruction(({ cpu, memory }) => {
-  memory.write(cpu.regs.readPair(RegisterPair.DE), cpu.regs.read(Register.A));
+export const loadIndirectDEFromAccumulator = instruction((state) => {
+  state.writeBus(
+    state.readRegisterPair(RegisterPair.DE),
+    state.readRegister(Register.A)
+  );
   return 8;
 });
 
 export const loadAccumulatorFromDirectWord = instructionWithImmediateWord(
-  ({ cpu, memory }, address) => {
-    cpu.regs.write(Register.A, memory.read(address));
+  (state, address) => {
+    state.writeRegister(Register.A, state.readBus(address));
     return 16;
   }
 );
 
 export const loadDirectWordFromAccumulator = instructionWithImmediateWord(
-  ({ cpu, memory }, address) => {
-    memory.write(address, cpu.regs.read(Register.A));
+  (state, address) => {
+    state.writeBus(address, state.readRegister(Register.A));
     return 16;
   }
 );
 
-export const loadAccumulatorFromIndirectC = instruction(({ cpu, memory }) => {
-  const address = 0xff00 + cpu.regs.read(Register.C);
-  cpu.regs.write(Register.A, memory.read(address));
+export const loadAccumulatorFromIndirectC = instruction((state) => {
+  const address = 0xff00 + state.readRegister(Register.C);
+  state.writeRegister(Register.A, state.readBus(address));
   return 8;
 });
 
-export const loadIndirectCFromAccumulator = instruction(({ cpu, memory }) => {
-  const address = 0xff00 + cpu.regs.read(Register.C);
-  memory.write(address, cpu.regs.read(Register.A));
+export const loadIndirectCFromAccumulator = instruction((state) => {
+  const address = 0xff00 + state.readRegister(Register.C);
+  state.writeBus(address, state.readRegister(Register.A));
   return 8;
 });
 
 export const loadAccumulatorFromDirectByte = instructionWithImmediateByte(
-  ({ cpu, memory }, offset) => {
+  (state, offset) => {
     const address = 0xff00 + offset;
-    cpu.regs.write(Register.A, memory.read(address));
+    state.writeRegister(Register.A, state.readBus(address));
     return 12;
   }
 );
 
 export const loadDirectByteFromAccumulator = instructionWithImmediateByte(
-  ({ cpu, memory }, offset) => {
+  (state, offset) => {
     const address = 0xff00 + offset;
-    memory.write(address, cpu.regs.read(Register.A));
+    state.writeBus(address, state.readRegister(Register.A));
     return 12;
   }
 );
 
-export const loadAccumulatorFromIndirectHLDecrement = instruction(
-  ({ cpu, memory }) => {
-    const address = cpu.regs.readPair(RegisterPair.HL);
-    const data = memory.read(address);
-    cpu.regs.write(Register.A, data);
-    cpu.regs.writePair(RegisterPair.HL, address - 1);
-    return 8;
-  }
-);
+export const loadAccumulatorFromIndirectHLDecrement = instruction((state) => {
+  const address = state.readRegisterPair(RegisterPair.HL);
+  const data = state.readBus(address);
+  state.writeRegister(Register.A, data);
+  state.writeRegisterPair(RegisterPair.HL, address - 1);
+  return 8;
+});
 
-export const loadAccumulatorFromIndirectHLIncrement = instruction(
-  ({ cpu, memory }) => {
-    const address = cpu.regs.readPair(RegisterPair.HL);
-    const data = memory.read(address);
-    cpu.regs.write(Register.A, data);
-    cpu.regs.writePair(RegisterPair.HL, wrapIncrementWord(address));
-    return 8;
-  }
-);
+export const loadAccumulatorFromIndirectHLIncrement = instruction((state) => {
+  const address = state.readRegisterPair(RegisterPair.HL);
+  const data = state.readBus(address);
+  state.writeRegister(Register.A, data);
+  state.writeRegisterPair(RegisterPair.HL, wrapIncrementWord(address));
+  return 8;
+});
 
-export const loadIndirectHLDecrementFromAccumulator = instruction(
-  ({ cpu, memory }) => {
-    const address = cpu.regs.readPair(RegisterPair.HL);
-    memory.write(address, cpu.regs.read(Register.A));
-    cpu.regs.writePair(RegisterPair.HL, wrapDecrementWord(address));
-    return 8;
-  }
-);
+export const loadIndirectHLDecrementFromAccumulator = instruction((state) => {
+  const address = state.readRegisterPair(RegisterPair.HL);
+  state.writeBus(address, state.readRegister(Register.A));
+  state.writeRegisterPair(RegisterPair.HL, wrapDecrementWord(address));
+  return 8;
+});
 
-export const loadIndirectHLIncrementFromAccumulator = instruction(
-  ({ cpu, memory }) => {
-    const address = cpu.regs.readPair(RegisterPair.HL);
-    memory.write(address, cpu.regs.read(Register.A));
-    cpu.regs.writePair(RegisterPair.HL, wrapIncrementWord(address));
-    return 8;
-  }
-);
+export const loadIndirectHLIncrementFromAccumulator = instruction((state) => {
+  const address = state.readRegisterPair(RegisterPair.HL);
+  state.writeBus(address, state.readRegister(Register.A));
+  state.writeRegisterPair(RegisterPair.HL, wrapIncrementWord(address));
+  return 8;
+});

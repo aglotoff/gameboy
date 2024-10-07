@@ -7,56 +7,56 @@ import {
   decrementRegisterPair,
   incrementRegisterPair,
 } from "./arithmetic16";
-import { test } from "./test-lib";
+import { testInstruction } from "./test-lib";
 
 describe("16-bit arithmetic instructions", () => {
-  test("INC rr", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.DE, 0x235f);
+  testInstruction("INC rr", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.DE, 0x235f);
 
-    incrementRegisterPair({ cpu, memory }, RegisterPair.DE);
+    incrementRegisterPair(state, RegisterPair.DE);
 
-    expect(cpu.regs.readPair(RegisterPair.DE)).toBe(0x2360);
+    expect(state.readRegisterPair(RegisterPair.DE)).toBe(0x2360);
   });
 
-  test("DEC rr", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.DE, 0x235f);
+  testInstruction("DEC rr", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.DE, 0x235f);
 
-    decrementRegisterPair({ cpu, memory }, RegisterPair.DE);
+    decrementRegisterPair(state, RegisterPair.DE);
 
-    expect(cpu.regs.readPair(RegisterPair.DE)).toBe(0x235e);
+    expect(state.readRegisterPair(RegisterPair.DE)).toBe(0x235e);
   });
 
-  test("ADD HL,rr", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.HL, 0x8a23);
-    cpu.regs.writePair(RegisterPair.BC, 0x0605);
+  testInstruction("ADD HL,rr", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.HL, 0x8a23);
+    state.writeRegisterPair(RegisterPair.BC, 0x0605);
 
-    addRegisterPair({ cpu, memory }, RegisterPair.BC);
+    addRegisterPair(state, RegisterPair.BC);
 
-    expect(cpu.regs.readPair(RegisterPair.HL)).toBe(0x9028);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x9028);
+    expect(state.isFlagSet(Flag.H)).toBe(true);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
 
-    cpu.regs.writePair(RegisterPair.HL, 0x8a23);
+    state.writeRegisterPair(RegisterPair.HL, 0x8a23);
 
-    addRegisterPair({ cpu, memory }, RegisterPair.HL);
+    addRegisterPair(state, RegisterPair.HL);
 
-    expect(cpu.regs.readPair(RegisterPair.HL)).toBe(0x1446);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x1446);
+    expect(state.isFlagSet(Flag.H)).toBe(true);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(true);
   });
 
-  test("ADD SP,e", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.SP, 0xfff8);
-    memory.write(0, 0x2);
+  testInstruction("ADD SP,e", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.SP, 0xfff8);
+    state.writeBus(0, 0x2);
 
-    addToStackPointer({ cpu, memory });
+    addToStackPointer(state);
 
-    expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffa);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffa);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
   });
 });

@@ -35,432 +35,432 @@ import {
   xorIndirectHL,
   xorRegister,
 } from "./arithmetic8";
-import { test } from "./test-lib";
+import { testInstruction } from "./test-lib";
 
 describe("8-bit arithmetic and logical instructions", () => {
-  test("ADD A,r", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x3a);
-    cpu.regs.write(Register.B, 0xc6);
+  testInstruction("ADD A,r", ({ state }) => {
+    state.writeRegister(Register.A, 0x3a);
+    state.writeRegister(Register.B, 0xc6);
 
-    addRegister({ cpu, memory }, Register.B);
+    addRegister(state, Register.B);
 
-    expect(cpu.regs.read(Register.A)).toBe(0);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.readRegister(Register.A)).toBe(0);
+    expect(state.isFlagSet(Flag.Z)).toBe(true);
+    expect(state.isFlagSet(Flag.H)).toBe(true);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(true);
   });
 
-  test("ADD A,(HL)", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x3c);
-    cpu.regs.writePair(RegisterPair.HL, 0x3ab6);
-    memory.write(0x3ab6, 0x12);
+  testInstruction("ADD A,(HL)", ({ state }) => {
+    state.writeRegister(Register.A, 0x3c);
+    state.writeRegisterPair(RegisterPair.HL, 0x3ab6);
+    state.writeBus(0x3ab6, 0x12);
 
-    addIndirectHL({ cpu, memory });
+    addIndirectHL(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x4e);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x4e);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("ADD A,n", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x3c);
-    memory.write(0, 0xff);
+  testInstruction("ADD A,n", ({ state }) => {
+    state.writeRegister(Register.A, 0x3c);
+    state.writeBus(0, 0xff);
 
-    addImmediate({ cpu, memory });
+    addImmediate(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x3b);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.readRegister(Register.A)).toBe(0x3b);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(true);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(true);
   });
 
-  test("ADC A,r", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0xe1);
-    cpu.regs.write(Register.E, 0x0f);
-    cpu.regs.setFlag(Flag.CY, true);
+  testInstruction("ADC A,r", ({ state }) => {
+    state.writeRegister(Register.A, 0xe1);
+    state.writeRegister(Register.E, 0x0f);
+    state.setFlag(Flag.CY, true);
 
-    addRegisterWithCarry({ cpu, memory }, Register.E);
+    addRegisterWithCarry(state, Register.E);
 
-    expect(cpu.regs.read(Register.A)).toBe(0xf1);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0xf1);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(true);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("ADC A,(HL)", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0xe1);
-    cpu.regs.writePair(RegisterPair.HL, 0x8ac5);
-    memory.write(0x8ac5, 0x1e);
-    cpu.regs.setFlag(Flag.CY, true);
+  testInstruction("ADC A,(HL)", ({ state }) => {
+    state.writeRegister(Register.A, 0xe1);
+    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    state.writeBus(0x8ac5, 0x1e);
+    state.setFlag(Flag.CY, true);
 
-    addIndirectHLWithCarry({ cpu, memory });
+    addIndirectHLWithCarry(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x00);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.readRegister(Register.A)).toBe(0x00);
+    expect(state.isFlagSet(Flag.Z)).toBe(true);
+    expect(state.isFlagSet(Flag.H)).toBe(true);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(true);
   });
 
-  test("ADC A,n", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0xe1);
-    memory.write(0, 0x3b);
-    cpu.regs.setFlag(Flag.CY, true);
+  testInstruction("ADC A,n", ({ state }) => {
+    state.writeRegister(Register.A, 0xe1);
+    state.writeBus(0, 0x3b);
+    state.setFlag(Flag.CY, true);
 
-    addImmediateWithCarry({ cpu, memory });
+    addImmediateWithCarry(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x1d);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.readRegister(Register.A)).toBe(0x1d);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(true);
   });
 
-  test("SUB r", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x3e);
-    cpu.regs.write(Register.E, 0x3e);
+  testInstruction("SUB r", ({ state }) => {
+    state.writeRegister(Register.A, 0x3e);
+    state.writeRegister(Register.E, 0x3e);
 
-    subtractRegister({ cpu, memory }, Register.E);
+    subtractRegister(state, Register.E);
 
-    expect(cpu.regs.read(Register.A)).toBe(0);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0);
+    expect(state.isFlagSet(Flag.Z)).toBe(true);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(true);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("SUB (HL)", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x3e);
-    cpu.regs.writePair(RegisterPair.HL, 0x8ac5);
-    memory.write(0x8ac5, 0x40);
+  testInstruction("SUB (HL)", ({ state }) => {
+    state.writeRegister(Register.A, 0x3e);
+    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    state.writeBus(0x8ac5, 0x40);
 
-    subtractIndirectHL({ cpu, memory });
+    subtractIndirectHL(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0xfe);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.readRegister(Register.A)).toBe(0xfe);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(true);
+    expect(state.isFlagSet(Flag.CY)).toBe(true);
   });
 
-  test("SUB n", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x3e);
-    memory.write(0, 0x0f);
+  testInstruction("SUB n", ({ state }) => {
+    state.writeRegister(Register.A, 0x3e);
+    state.writeBus(0, 0x0f);
 
-    subtractImmediate({ cpu, memory });
+    subtractImmediate(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x2f);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x2f);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(true);
+    expect(state.isFlagSet(Flag.N)).toBe(true);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("SBC A,r", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x3b);
-    cpu.regs.write(Register.H, 0x2a);
-    cpu.regs.setFlag(Flag.CY, true);
+  testInstruction("SBC A,r", ({ state }) => {
+    state.writeRegister(Register.A, 0x3b);
+    state.writeRegister(Register.H, 0x2a);
+    state.setFlag(Flag.CY, true);
 
-    subtractRegisterWithCarry({ cpu, memory }, Register.H);
+    subtractRegisterWithCarry(state, Register.H);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x10);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x10);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(true);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("SBC A,(HL)", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x3b);
-    cpu.regs.writePair(RegisterPair.HL, 0x8ac5);
-    memory.write(0x8ac5, 0x4f);
-    cpu.regs.setFlag(Flag.CY, true);
+  testInstruction("SBC A,(HL)", ({ state }) => {
+    state.writeRegister(Register.A, 0x3b);
+    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    state.writeBus(0x8ac5, 0x4f);
+    state.setFlag(Flag.CY, true);
 
-    subtractIndirectHLWithCarry({ cpu, memory });
+    subtractIndirectHLWithCarry(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0xeb);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.readRegister(Register.A)).toBe(0xeb);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(true);
+    expect(state.isFlagSet(Flag.N)).toBe(true);
+    expect(state.isFlagSet(Flag.CY)).toBe(true);
   });
 
-  test("SBC A,n", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x3b);
-    memory.write(0, 0x3a);
-    cpu.regs.setFlag(Flag.CY, true);
+  testInstruction("SBC A,n", ({ state }) => {
+    state.writeRegister(Register.A, 0x3b);
+    state.writeBus(0, 0x3a);
+    state.setFlag(Flag.CY, true);
 
-    subtractImmediateWithCarry({ cpu, memory });
+    subtractImmediateWithCarry(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x00);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x00);
+    expect(state.isFlagSet(Flag.Z)).toBe(true);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(true);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("CP r", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x3c);
-    cpu.regs.write(Register.B, 0x2f);
+  testInstruction("CP r", ({ state }) => {
+    state.writeRegister(Register.A, 0x3c);
+    state.writeRegister(Register.B, 0x2f);
 
-    compareRegister({ cpu, memory }, Register.B);
+    compareRegister(state, Register.B);
 
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(true);
+    expect(state.isFlagSet(Flag.N)).toBe(true);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("CP (HL)", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x3c);
-    cpu.regs.writePair(RegisterPair.HL, 0x3ab6);
-    memory.write(0x3ab6, 0x40);
+  testInstruction("CP (HL)", ({ state }) => {
+    state.writeRegister(Register.A, 0x3c);
+    state.writeRegisterPair(RegisterPair.HL, 0x3ab6);
+    state.writeBus(0x3ab6, 0x40);
 
-    compareIndirectHL({ cpu, memory });
+    compareIndirectHL(state);
 
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(true);
+    expect(state.isFlagSet(Flag.CY)).toBe(true);
   });
 
-  test("CP n", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x3c);
-    memory.write(0, 0x3c);
+  testInstruction("CP n", ({ state }) => {
+    state.writeRegister(Register.A, 0x3c);
+    state.writeBus(0, 0x3c);
 
-    compareImmediate({ cpu, memory });
+    compareImmediate(state);
 
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.isFlagSet(Flag.Z)).toBe(true);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(true);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("INC r", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0xff);
+  testInstruction("INC r", ({ state }) => {
+    state.writeRegister(Register.A, 0xff);
 
-    incrementRegister({ cpu, memory }, Register.A);
+    incrementRegister(state, Register.A);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x00);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x00);
+    expect(state.isFlagSet(Flag.Z)).toBe(true);
+    expect(state.isFlagSet(Flag.H)).toBe(true);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
   });
 
-  test("INC (HL)", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.HL, 0x8ac5);
-    memory.write(0x8ac5, 0x50);
+  testInstruction("INC (HL)", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    state.writeBus(0x8ac5, 0x50);
 
-    incrementIndirectHL({ cpu, memory });
+    incrementIndirectHL(state);
 
-    expect(memory.read(cpu.regs.readPair(RegisterPair.HL))).toBe(0x51);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
+    expect(state.readBus(state.readRegisterPair(RegisterPair.HL))).toBe(0x51);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
   });
 
-  test("DEC r", ({ cpu, memory }) => {
-    cpu.regs.write(Register.L, 0x01);
+  testInstruction("DEC r", ({ state }) => {
+    state.writeRegister(Register.L, 0x01);
 
-    decrementRegister({ cpu, memory }, Register.L);
+    decrementRegister(state, Register.L);
 
-    expect(cpu.regs.read(Register.L)).toBe(0x00);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(true);
+    expect(state.readRegister(Register.L)).toBe(0x00);
+    expect(state.isFlagSet(Flag.Z)).toBe(true);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(true);
   });
 
-  test("DEC (HL)", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.HL, 0xff34);
-    memory.write(0xff34, 0x00);
+  testInstruction("DEC (HL)", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.HL, 0xff34);
+    state.writeBus(0xff34, 0x00);
 
-    decrementIndirectHL({ cpu, memory });
+    decrementIndirectHL(state);
 
-    expect(memory.read(cpu.regs.readPair(RegisterPair.HL))).toBe(0xff);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(true);
+    expect(state.readBus(state.readRegisterPair(RegisterPair.HL))).toBe(0xff);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(true);
+    expect(state.isFlagSet(Flag.N)).toBe(true);
   });
 
-  test("AND r", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x5a);
-    cpu.regs.write(Register.L, 0x3f);
+  testInstruction("AND r", ({ state }) => {
+    state.writeRegister(Register.A, 0x5a);
+    state.writeRegister(Register.L, 0x3f);
 
-    andRegister({ cpu, memory }, Register.L);
+    andRegister(state, Register.L);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x1a);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x1a);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(true);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("AND (HL)", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x5a);
-    cpu.regs.writePair(RegisterPair.HL, 0x8ac5);
-    memory.write(0x8ac5, 0x00);
+  testInstruction("AND (HL)", ({ state }) => {
+    state.writeRegister(Register.A, 0x5a);
+    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    state.writeBus(0x8ac5, 0x00);
 
-    andIndirectHL({ cpu, memory });
+    andIndirectHL(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x00);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x00);
+    expect(state.isFlagSet(Flag.Z)).toBe(true);
+    expect(state.isFlagSet(Flag.H)).toBe(true);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("AND n", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x5a);
-    memory.write(0, 0x38);
+  testInstruction("AND n", ({ state }) => {
+    state.writeRegister(Register.A, 0x5a);
+    state.writeBus(0, 0x38);
 
-    andImmediate({ cpu, memory });
+    andImmediate(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x18);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x18);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(true);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("OR r", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x5a);
+  testInstruction("OR r", ({ state }) => {
+    state.writeRegister(Register.A, 0x5a);
 
-    orRegister({ cpu, memory }, Register.A);
+    orRegister(state, Register.A);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x5a);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x5a);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("OR (HL)", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x5a);
-    cpu.regs.writePair(RegisterPair.HL, 0x8ac2);
-    memory.write(0x8ac2, 0x0f);
+  testInstruction("OR (HL)", ({ state }) => {
+    state.writeRegister(Register.A, 0x5a);
+    state.writeRegisterPair(RegisterPair.HL, 0x8ac2);
+    state.writeBus(0x8ac2, 0x0f);
 
-    orIndirectHL({ cpu, memory });
+    orIndirectHL(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x5f);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x5f);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("OR n", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x5a);
-    memory.write(0, 0x3);
+  testInstruction("OR n", ({ state }) => {
+    state.writeRegister(Register.A, 0x5a);
+    state.writeBus(0, 0x3);
 
-    orImmediate({ cpu, memory });
+    orImmediate(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x5b);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x5b);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("XOR r", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0xff);
+  testInstruction("XOR r", ({ state }) => {
+    state.writeRegister(Register.A, 0xff);
 
-    xorRegister({ cpu, memory }, Register.A);
+    xorRegister(state, Register.A);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x00);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x00);
+    expect(state.isFlagSet(Flag.Z)).toBe(true);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("XOR (HL)", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0xff);
-    cpu.regs.writePair(RegisterPair.HL, 0x8ac5);
-    memory.write(0x8ac5, 0x8a);
+  testInstruction("XOR (HL)", ({ state }) => {
+    state.writeRegister(Register.A, 0xff);
+    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    state.writeBus(0x8ac5, 0x8a);
 
-    xorIndirectHL({ cpu, memory });
+    xorIndirectHL(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x75);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x75);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("XOR n", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0xff);
-    memory.write(0, 0xf);
+  testInstruction("XOR n", ({ state }) => {
+    state.writeRegister(Register.A, 0xff);
+    state.writeBus(0, 0xf);
 
-    xorImmediate({ cpu, memory });
+    xorImmediate(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0xf0);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0xf0);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("CCF", ({ cpu, memory }) => {
-    cpu.regs.setFlag(Flag.CY, true);
+  testInstruction("CCF", ({ state }) => {
+    state.setFlag(Flag.CY, true);
 
-    complementCarryFlag({ cpu, memory });
+    complementCarryFlag(state);
 
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
 
-    complementCarryFlag({ cpu, memory });
+    complementCarryFlag(state);
 
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.isFlagSet(Flag.CY)).toBe(true);
   });
 
-  test("SCF", ({ cpu, memory }) => {
-    cpu.regs.setFlag(Flag.CY, false);
+  testInstruction("SCF", ({ state }) => {
+    state.setFlag(Flag.CY, false);
 
-    setCarryFlag({ cpu, memory });
+    setCarryFlag(state);
 
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.isFlagSet(Flag.CY)).toBe(true);
 
-    setCarryFlag({ cpu, memory });
+    setCarryFlag(state);
 
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.isFlagSet(Flag.CY)).toBe(true);
   });
 
-  test("DAA", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x45);
-    cpu.regs.write(Register.B, 0x38);
+  testInstruction("DAA", ({ state }) => {
+    state.writeRegister(Register.A, 0x45);
+    state.writeRegister(Register.B, 0x38);
 
-    addRegister({ cpu, memory }, Register.B);
+    addRegister(state, Register.B);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x7d);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x7d);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
 
-    decimalAdjustAccumulator({ cpu, memory });
+    decimalAdjustAccumulator(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x83);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x83);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
 
-    subtractRegister({ cpu, memory }, Register.B);
+    subtractRegister(state, Register.B);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x4b);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(true);
+    expect(state.readRegister(Register.A)).toBe(0x4b);
+    expect(state.isFlagSet(Flag.N)).toBe(true);
 
-    decimalAdjustAccumulator({ cpu, memory });
+    decimalAdjustAccumulator(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0x45);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegister(Register.A)).toBe(0x45);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 
-  test("CPL", ({ cpu, memory }) => {
-    cpu.regs.write(Register.A, 0x35);
+  testInstruction("CPL", ({ state }) => {
+    state.writeRegister(Register.A, 0x35);
 
-    complementAccumulator({ cpu, memory });
+    complementAccumulator(state);
 
-    expect(cpu.regs.read(Register.A)).toBe(0xca);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(true);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(true);
+    expect(state.readRegister(Register.A)).toBe(0xca);
+    expect(state.isFlagSet(Flag.H)).toBe(true);
+    expect(state.isFlagSet(Flag.N)).toBe(true);
   });
 });

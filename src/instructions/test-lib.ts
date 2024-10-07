@@ -1,20 +1,22 @@
-import { test as baseTest } from "vitest";
+import { test } from "vitest";
 
-import { RegisterFile } from "../regs";
-import { Memory } from "../memory";
+import { IMemory } from "../memory";
+import { CpuState } from "../cpu-state";
 
-import { CpuState } from "./lib";
+class TestMemory implements IMemory {
+  private ram = new Uint8Array(0x10000);
 
-export const test = baseTest.extend({
-  cpu: async ({}, use: (cpu: CpuState) => Promise<void>) => {
-    await use({
-      regs: new RegisterFile(),
-      ime: false,
-      halted: false,
-      stopped: false,
-    });
-  },
-  memory: async ({}, use: (memory: Memory) => Promise<void>) => {
-    await use(new Memory());
+  public read(address: number) {
+    return this.ram[address];
+  }
+
+  public write(address: number, data: number) {
+    this.ram[address] = data;
+  }
+}
+
+export const testInstruction = test.extend({
+  state: async ({}, use: (state: CpuState) => Promise<void>) => {
+    await use(new CpuState(new TestMemory()));
   },
 });

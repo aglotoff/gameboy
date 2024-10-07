@@ -15,279 +15,279 @@ import {
   returnFromInterruptHandler,
 } from "./flow";
 import { getLSB, getMSB } from "../utils";
-import { test } from "./test-lib";
+import { testInstruction } from "./test-lib";
 
 describe("Control flow instructions", () => {
-  test("JP nn", ({ cpu, memory }) => {
-    memory.write(0x00, getLSB(0x8000));
-    memory.write(0x01, getMSB(0x8000));
+  testInstruction("JP nn", ({ state }) => {
+    state.writeBus(0x00, getLSB(0x8000));
+    state.writeBus(0x01, getMSB(0x8000));
 
-    jump({ cpu, memory });
+    jump(state);
 
-    expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x8000);
+    expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8000);
   });
 
-  test("JP (HL)", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.HL, 0x8000);
+  testInstruction("JP (HL)", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.HL, 0x8000);
 
-    jumpToHL({ cpu, memory });
+    jumpToHL(state);
 
-    expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x8000);
+    expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8000);
   });
 
   describe("JP cc,nn", () => {
-    test("JP NZ, nn", ({ cpu, memory }) => {
-      memory.write(0x00, getLSB(0x8000));
-      memory.write(0x01, getMSB(0x8000));
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("JP NZ, nn", ({ state }) => {
+      state.writeBus(0x00, getLSB(0x8000));
+      state.writeBus(0x01, getMSB(0x8000));
+      state.setFlag(Flag.Z, true);
 
-      jumpConditional({ cpu, memory }, "NZ");
+      jumpConditional(state, "NZ");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x0002);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x0002);
     });
 
-    test("JP Z, nn", ({ cpu, memory }) => {
-      memory.write(0x00, getLSB(0x8000));
-      memory.write(0x01, getMSB(0x8000));
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("JP Z, nn", ({ state }) => {
+      state.writeBus(0x00, getLSB(0x8000));
+      state.writeBus(0x01, getMSB(0x8000));
+      state.setFlag(Flag.Z, true);
 
-      jumpConditional({ cpu, memory }, "Z");
+      jumpConditional(state, "Z");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x8000);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8000);
     });
 
-    test("JP C, nn", ({ cpu, memory }) => {
-      memory.write(0x00, getLSB(0x8000));
-      memory.write(0x01, getMSB(0x8000));
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("JP C, nn", ({ state }) => {
+      state.writeBus(0x00, getLSB(0x8000));
+      state.writeBus(0x01, getMSB(0x8000));
+      state.setFlag(Flag.Z, true);
 
-      jumpConditional({ cpu, memory }, "C");
+      jumpConditional(state, "C");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x0002);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x0002);
     });
 
-    test("JP NC, nn", ({ cpu, memory }) => {
-      memory.write(0x00, getLSB(0x8000));
-      memory.write(0x01, getMSB(0x8000));
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("JP NC, nn", ({ state }) => {
+      state.writeBus(0x00, getLSB(0x8000));
+      state.writeBus(0x01, getMSB(0x8000));
+      state.setFlag(Flag.Z, true);
 
-      jumpConditional({ cpu, memory }, "NC");
+      jumpConditional(state, "NC");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x8000);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8000);
     });
   });
 
-  test("JR e", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.PC, 0x8000);
-    memory.write(0x8000, 0x14);
+  testInstruction("JR e", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.PC, 0x8000);
+    state.writeBus(0x8000, 0x14);
 
-    relativeJump({ cpu, memory });
+    relativeJump(state);
 
-    expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x8015);
+    expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8015);
   });
 
   describe("JR cc,e", () => {
-    test("JR NZ, e", ({ cpu, memory }) => {
-      cpu.regs.writePair(RegisterPair.PC, 0x8000);
-      memory.write(0x8000, 0xfa);
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("JR NZ, e", ({ state }) => {
+      state.writeRegisterPair(RegisterPair.PC, 0x8000);
+      state.writeBus(0x8000, 0xfa);
+      state.setFlag(Flag.Z, true);
 
-      relativeJumpConditional({ cpu, memory }, "NZ");
+      relativeJumpConditional(state, "NZ");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x8001);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8001);
     });
 
-    test("JR Z, e", ({ cpu, memory }) => {
-      cpu.regs.writePair(RegisterPair.PC, 0x8000);
-      memory.write(0x8000, 0xfa);
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("JR Z, e", ({ state }) => {
+      state.writeRegisterPair(RegisterPair.PC, 0x8000);
+      state.writeBus(0x8000, 0xfa);
+      state.setFlag(Flag.Z, true);
 
-      relativeJumpConditional({ cpu, memory }, "Z");
+      relativeJumpConditional(state, "Z");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x7ffb);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x7ffb);
     });
 
-    test("JR C, e", ({ cpu, memory }) => {
-      cpu.regs.writePair(RegisterPair.PC, 0x8000);
-      memory.write(0x8000, 0xfa);
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("JR C, e", ({ state }) => {
+      state.writeRegisterPair(RegisterPair.PC, 0x8000);
+      state.writeBus(0x8000, 0xfa);
+      state.setFlag(Flag.Z, true);
 
-      relativeJumpConditional({ cpu, memory }, "C");
+      relativeJumpConditional(state, "C");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x8001);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8001);
     });
 
-    test("JR NC, e", ({ cpu, memory }) => {
-      cpu.regs.writePair(RegisterPair.PC, 0x8000);
-      memory.write(0x8000, 0xfa);
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("JR NC, e", ({ state }) => {
+      state.writeRegisterPair(RegisterPair.PC, 0x8000);
+      state.writeBus(0x8000, 0xfa);
+      state.setFlag(Flag.Z, true);
 
-      relativeJumpConditional({ cpu, memory }, "NC");
+      relativeJumpConditional(state, "NC");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x7ffb);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x7ffb);
     });
   });
 
-  test("CALL nn", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.PC, 0x8000);
-    cpu.regs.writePair(RegisterPair.SP, 0xfffe);
-    memory.write(0x8000, getLSB(0x1234));
-    memory.write(0x8001, getMSB(0x1234));
+  testInstruction("CALL nn", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.PC, 0x8000);
+    state.writeRegisterPair(RegisterPair.SP, 0xfffe);
+    state.writeBus(0x8000, getLSB(0x1234));
+    state.writeBus(0x8001, getMSB(0x1234));
 
-    callFunction({ cpu, memory });
+    callFunction(state);
 
-    expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x1234);
-    expect(memory.read(0xfffd)).toBe(0x80);
-    expect(memory.read(0xfffc)).toBe(0x02);
-    expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffc);
+    expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x1234);
+    expect(state.readBus(0xfffd)).toBe(0x80);
+    expect(state.readBus(0xfffc)).toBe(0x02);
+    expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
   });
 
   describe("CALL cc, nn", () => {
-    test("CALL NZ, nn", ({ cpu, memory }) => {
-      cpu.regs.writePair(RegisterPair.PC, 0x8000);
-      cpu.regs.writePair(RegisterPair.SP, 0xfffe);
-      memory.write(0x8000, getLSB(0x1234));
-      memory.write(0x8001, getMSB(0x1234));
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("CALL NZ, nn", ({ state }) => {
+      state.writeRegisterPair(RegisterPair.PC, 0x8000);
+      state.writeRegisterPair(RegisterPair.SP, 0xfffe);
+      state.writeBus(0x8000, getLSB(0x1234));
+      state.writeBus(0x8001, getMSB(0x1234));
+      state.setFlag(Flag.Z, true);
 
-      callFunctionConditional({ cpu, memory }, "NZ");
+      callFunctionConditional(state, "NZ");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x8002);
-      expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffe);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8002);
+      expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
     });
 
-    test("CALL Z, nn", ({ cpu, memory }) => {
-      cpu.regs.writePair(RegisterPair.PC, 0x8000);
-      cpu.regs.writePair(RegisterPair.SP, 0xfffe);
-      memory.write(0x8000, getLSB(0x1234));
-      memory.write(0x8001, getMSB(0x1234));
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("CALL Z, nn", ({ state }) => {
+      state.writeRegisterPair(RegisterPair.PC, 0x8000);
+      state.writeRegisterPair(RegisterPair.SP, 0xfffe);
+      state.writeBus(0x8000, getLSB(0x1234));
+      state.writeBus(0x8001, getMSB(0x1234));
+      state.setFlag(Flag.Z, true);
 
-      callFunctionConditional({ cpu, memory }, "Z");
+      callFunctionConditional(state, "Z");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x1234);
-      expect(memory.read(0xfffd)).toBe(0x80);
-      expect(memory.read(0xfffc)).toBe(0x02);
-      expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffc);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x1234);
+      expect(state.readBus(0xfffd)).toBe(0x80);
+      expect(state.readBus(0xfffc)).toBe(0x02);
+      expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
     });
 
-    test("CALL C, nn", ({ cpu, memory }) => {
-      cpu.regs.writePair(RegisterPair.PC, 0x8000);
-      cpu.regs.writePair(RegisterPair.SP, 0xfffe);
-      memory.write(0x8000, getLSB(0x1234));
-      memory.write(0x8001, getMSB(0x1234));
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("CALL C, nn", ({ state }) => {
+      state.writeRegisterPair(RegisterPair.PC, 0x8000);
+      state.writeRegisterPair(RegisterPair.SP, 0xfffe);
+      state.writeBus(0x8000, getLSB(0x1234));
+      state.writeBus(0x8001, getMSB(0x1234));
+      state.setFlag(Flag.Z, true);
 
-      callFunctionConditional({ cpu, memory }, "C");
+      callFunctionConditional(state, "C");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x8002);
-      expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffe);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8002);
+      expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
     });
 
-    test("CALL NC, nn", ({ cpu, memory }) => {
-      cpu.regs.writePair(RegisterPair.PC, 0x8000);
-      cpu.regs.writePair(RegisterPair.SP, 0xfffe);
-      memory.write(0x8000, getLSB(0x1234));
-      memory.write(0x8001, getMSB(0x1234));
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("CALL NC, nn", ({ state }) => {
+      state.writeRegisterPair(RegisterPair.PC, 0x8000);
+      state.writeRegisterPair(RegisterPair.SP, 0xfffe);
+      state.writeBus(0x8000, getLSB(0x1234));
+      state.writeBus(0x8001, getMSB(0x1234));
+      state.setFlag(Flag.Z, true);
 
-      callFunctionConditional({ cpu, memory }, "NC");
+      callFunctionConditional(state, "NC");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x1234);
-      expect(memory.read(0xfffd)).toBe(0x80);
-      expect(memory.read(0xfffc)).toBe(0x02);
-      expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffc);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x1234);
+      expect(state.readBus(0xfffd)).toBe(0x80);
+      expect(state.readBus(0xfffc)).toBe(0x02);
+      expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
     });
   });
 
-  test("RET", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.PC, 0x9000);
-    cpu.regs.writePair(RegisterPair.SP, 0xfffc);
-    memory.write(0xfffd, getMSB(0x8003));
-    memory.write(0xfffc, getLSB(0x8003));
+  testInstruction("RET", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.PC, 0x9000);
+    state.writeRegisterPair(RegisterPair.SP, 0xfffc);
+    state.writeBus(0xfffd, getMSB(0x8003));
+    state.writeBus(0xfffc, getLSB(0x8003));
 
-    returnFromFunction({ cpu, memory });
+    returnFromFunction(state);
 
-    expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x8003);
-    expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffe);
+    expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8003);
+    expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
   });
 
   describe("RET cc", () => {
-    test("RET NZ", ({ cpu, memory }) => {
-      cpu.regs.writePair(RegisterPair.PC, 0x9000);
-      cpu.regs.writePair(RegisterPair.SP, 0xfffc);
-      memory.write(0xfffd, getMSB(0x8003));
-      memory.write(0xfffc, getLSB(0x8003));
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("RET NZ", ({ state }) => {
+      state.writeRegisterPair(RegisterPair.PC, 0x9000);
+      state.writeRegisterPair(RegisterPair.SP, 0xfffc);
+      state.writeBus(0xfffd, getMSB(0x8003));
+      state.writeBus(0xfffc, getLSB(0x8003));
+      state.setFlag(Flag.Z, true);
 
-      returnFromFunctionConditional({ cpu, memory }, "NZ");
+      returnFromFunctionConditional(state, "NZ");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x9000);
-      expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffc);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x9000);
+      expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
     });
 
-    test("RET Z", ({ cpu, memory }) => {
-      cpu.regs.writePair(RegisterPair.PC, 0x9000);
-      cpu.regs.writePair(RegisterPair.SP, 0xfffc);
-      memory.write(0xfffd, getMSB(0x8003));
-      memory.write(0xfffc, getLSB(0x8003));
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("RET Z", ({ state }) => {
+      state.writeRegisterPair(RegisterPair.PC, 0x9000);
+      state.writeRegisterPair(RegisterPair.SP, 0xfffc);
+      state.writeBus(0xfffd, getMSB(0x8003));
+      state.writeBus(0xfffc, getLSB(0x8003));
+      state.setFlag(Flag.Z, true);
 
-      returnFromFunctionConditional({ cpu, memory }, "Z");
+      returnFromFunctionConditional(state, "Z");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x8003);
-      expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffe);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8003);
+      expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
     });
 
-    test("RET C", ({ cpu, memory }) => {
-      cpu.regs.writePair(RegisterPair.PC, 0x9000);
-      cpu.regs.writePair(RegisterPair.SP, 0xfffc);
-      memory.write(0xfffd, getMSB(0x8003));
-      memory.write(0xfffc, getLSB(0x8003));
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("RET C", ({ state }) => {
+      state.writeRegisterPair(RegisterPair.PC, 0x9000);
+      state.writeRegisterPair(RegisterPair.SP, 0xfffc);
+      state.writeBus(0xfffd, getMSB(0x8003));
+      state.writeBus(0xfffc, getLSB(0x8003));
+      state.setFlag(Flag.Z, true);
 
-      returnFromFunctionConditional({ cpu, memory }, "C");
+      returnFromFunctionConditional(state, "C");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x9000);
-      expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffc);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x9000);
+      expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
     });
 
-    test("RET NC", ({ cpu, memory }) => {
-      cpu.regs.writePair(RegisterPair.PC, 0x9000);
-      cpu.regs.writePair(RegisterPair.SP, 0xfffc);
-      memory.write(0xfffd, getMSB(0x8003));
-      memory.write(0xfffc, getLSB(0x8003));
-      cpu.regs.setFlag(Flag.Z, true);
+    testInstruction("RET NC", ({ state }) => {
+      state.writeRegisterPair(RegisterPair.PC, 0x9000);
+      state.writeRegisterPair(RegisterPair.SP, 0xfffc);
+      state.writeBus(0xfffd, getMSB(0x8003));
+      state.writeBus(0xfffc, getLSB(0x8003));
+      state.setFlag(Flag.Z, true);
 
-      returnFromFunctionConditional({ cpu, memory }, "NC");
+      returnFromFunctionConditional(state, "NC");
 
-      expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x8003);
-      expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffe);
+      expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8003);
+      expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
     });
   });
 
-  test("RETI", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.PC, 0x9000);
-    cpu.regs.writePair(RegisterPair.SP, 0xfffc);
-    memory.write(0xfffd, getMSB(0x8001));
-    memory.write(0xfffc, getLSB(0x8001));
+  testInstruction("RETI", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.PC, 0x9000);
+    state.writeRegisterPair(RegisterPair.SP, 0xfffc);
+    state.writeBus(0xfffd, getMSB(0x8001));
+    state.writeBus(0xfffc, getLSB(0x8001));
 
-    returnFromInterruptHandler({ cpu, memory });
+    returnFromInterruptHandler(state);
 
-    expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x8001);
-    expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffe);
-    expect(cpu.ime).toBe(true);
+    expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8001);
+    expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
+    expect(state.getIME()).toBe(true);
   });
 
-  test("RST t", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.PC, 0x8001);
-    cpu.regs.writePair(RegisterPair.SP, 0xfffe);
+  testInstruction("RST t", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.PC, 0x8001);
+    state.writeRegisterPair(RegisterPair.SP, 0xfffe);
 
-    restartFunction({ cpu, memory }, 0x10);
+    restartFunction(state, 0x10);
 
-    expect(cpu.regs.readPair(RegisterPair.PC)).toBe(0x0010);
-    expect(memory.read(0xfffd)).toBe(0x80);
-    expect(memory.read(0xfffc)).toBe(0x01);
-    expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffc);
+    expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x0010);
+    expect(state.readBus(0xfffd)).toBe(0x80);
+    expect(state.readBus(0xfffc)).toBe(0x01);
+    expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
   });
 });

@@ -2,7 +2,7 @@
 // const M_CYCLES_PER_SECOND = T_CYCLES_PER_SECOND / 4;
 // const M_CYCLES_PER_MS = M_CYCLES_PER_SECOND / 1000;
 
-import { interrupts } from "./memory";
+import { InterruptController, InterruptSource } from "./interrupt-controller";
 
 export enum TimerRegister {
   DIV = 0x00,
@@ -17,6 +17,8 @@ export class Timer {
   private counter = 0;
   private modulo = 0;
   private control = 0;
+
+  public constructor(private interruptController: InterruptController) {}
 
   public read(offset: number) {
     switch (offset) {
@@ -59,7 +61,7 @@ export class Timer {
     if (this.tickCount >= this.getFrequency()) {
       if (this.counter == 0xff) {
         this.counter = this.modulo;
-        interrupts.interruptFlag |= 0x4;
+        this.interruptController.requestInterrupt(InterruptSource.Timer);
       } else {
         this.counter += 1;
       }

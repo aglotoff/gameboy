@@ -77,3 +77,15 @@ export function wrapIncrementWord(value: number) {
 export function wrapDecrementWord(value: number) {
   return value == WORD_MIN ? WORD_MAX : value - 1;
 }
+
+export function testBit(value: number, bit: number) {
+  return (value & (1 << bit)) !== 0;
+}
+
+export function resetBit(value: number, bit: number) {
+  return value & ~(1 << bit);
+}
+
+export function setBit(value: number, bit: number) {
+  return value | (1 << bit);
+}

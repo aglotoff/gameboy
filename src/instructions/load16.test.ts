@@ -10,70 +10,70 @@ import {
   popFromStack,
   pushToStack,
 } from "./load16";
-import { test } from "./test-lib";
+import { testInstruction } from "./test-lib";
 
 describe("16-bit load instructions", () => {
-  test("LD dd,nn", ({ cpu, memory }) => {
-    memory.write(0x00, 0x5b);
-    memory.write(0x01, 0x3a);
+  testInstruction("LD dd,nn", ({ state }) => {
+    state.writeBus(0x00, 0x5b);
+    state.writeBus(0x01, 0x3a);
 
-    loadRegisterPair({ cpu, memory }, RegisterPair.HL);
+    loadRegisterPair(state, RegisterPair.HL);
 
-    expect(cpu.regs.read(Register.H)).toBe(0x3a);
-    expect(cpu.regs.read(Register.L)).toBe(0x5b);
+    expect(state.readRegister(Register.H)).toBe(0x3a);
+    expect(state.readRegister(Register.L)).toBe(0x5b);
   });
 
-  test("LD (nn),SP", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.SP, 0xfff8);
-    memory.write(0x00, 0x00);
-    memory.write(0x01, 0xc1);
+  testInstruction("LD (nn),SP", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.SP, 0xfff8);
+    state.writeBus(0x00, 0x00);
+    state.writeBus(0x01, 0xc1);
 
-    loadDirectFromStackPointer({ cpu, memory });
+    loadDirectFromStackPointer(state);
 
-    expect(memory.read(0xc100)).toBe(0xf8);
-    expect(memory.read(0xc101)).toBe(0xff);
+    expect(state.readBus(0xc100)).toBe(0xf8);
+    expect(state.readBus(0xc101)).toBe(0xff);
   });
 
-  test("LD SP,HL", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.HL, 0x3a5b);
+  testInstruction("LD SP,HL", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.HL, 0x3a5b);
 
-    loadStackPointerFromHL({ cpu, memory });
+    loadStackPointerFromHL(state);
 
-    expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0x3a5b);
+    expect(state.readRegisterPair(RegisterPair.SP)).toBe(0x3a5b);
   });
 
-  test("PUSH qq", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.SP, 0xfffe);
-    cpu.regs.writePair(RegisterPair.BC, 0x8ac5);
+  testInstruction("PUSH qq", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.SP, 0xfffe);
+    state.writeRegisterPair(RegisterPair.BC, 0x8ac5);
 
-    pushToStack({ cpu, memory }, RegisterPair.BC);
+    pushToStack(state, RegisterPair.BC);
 
-    expect(memory.read(0xfffd)).toBe(0x8a);
-    expect(memory.read(0xfffc)).toBe(0xc5);
-    expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffc);
+    expect(state.readBus(0xfffd)).toBe(0x8a);
+    expect(state.readBus(0xfffc)).toBe(0xc5);
+    expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
   });
 
-  test("POP qq", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.SP, 0xfffc);
-    memory.write(0xfffc, 0x5f);
-    memory.write(0xfffd, 0x3c);
+  testInstruction("POP qq", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.SP, 0xfffc);
+    state.writeBus(0xfffc, 0x5f);
+    state.writeBus(0xfffd, 0x3c);
 
-    popFromStack({ cpu, memory }, RegisterPair.BC);
+    popFromStack(state, RegisterPair.BC);
 
-    expect(cpu.regs.readPair(RegisterPair.BC)).toBe(0x3c5f);
-    expect(cpu.regs.readPair(RegisterPair.SP)).toBe(0xfffe);
+    expect(state.readRegisterPair(RegisterPair.BC)).toBe(0x3c5f);
+    expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
   });
 
-  test("LDHL SP,e", ({ cpu, memory }) => {
-    cpu.regs.writePair(RegisterPair.SP, 0xfff8);
-    memory.write(0x00, 0x2);
+  testInstruction("LDHL SP,e", ({ state }) => {
+    state.writeRegisterPair(RegisterPair.SP, 0xfff8);
+    state.writeBus(0x00, 0x2);
 
-    loadHLFromAdjustedStackPointer({ cpu, memory });
+    loadHLFromAdjustedStackPointer(state);
 
-    expect(cpu.regs.readPair(RegisterPair.HL)).toBe(0xfffa);
-    expect(cpu.regs.isFlagSet(Flag.Z)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.H)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.N)).toBe(false);
-    expect(cpu.regs.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.readRegisterPair(RegisterPair.HL)).toBe(0xfffa);
+    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.isFlagSet(Flag.H)).toBe(false);
+    expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.isFlagSet(Flag.CY)).toBe(false);
   });
 });

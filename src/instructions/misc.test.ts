@@ -1,34 +1,32 @@
 import { describe, expect } from "vitest";
 
 import { disableInterrupts, enableInterrupts, halt, stop } from "./misc";
-import { test } from "./test-lib";
+import { testInstruction } from "./test-lib";
 
 describe("Miscellaneous instructions", () => {
-  test("HALT", ({ cpu, memory }) => {
-    halt({ cpu, memory });
+  testInstruction("HALT", ({ state }) => {
+    halt(state);
 
-    expect(cpu.halted).toBe(true);
+    expect(state.isHalted()).toBe(true);
   });
 
-  test("STOP", ({ cpu, memory }) => {
-    stop({ cpu, memory });
+  testInstruction("STOP", ({ state }) => {
+    stop(state);
 
-    expect(cpu.stopped).toBe(true);
+    expect(state.isStopped()).toBe(true);
   });
 
-  test("DI", ({ cpu, memory }) => {
-    cpu.ime = true;
+  testInstruction("DI", ({ state }) => {
+    state.setIME(true);
 
-    disableInterrupts({ cpu, memory });
+    disableInterrupts(state);
 
-    expect(cpu.ime).toBe(false);
+    expect(state.getIME()).toBe(false);
   });
 
-  test("EI", ({ cpu, memory }) => {
-    cpu.ime = false;
+  testInstruction("EI", ({ state }) => {
+    enableInterrupts(state);
 
-    enableInterrupts({ cpu, memory });
-
-    expect(cpu.ime).toBe(true);
+    expect(state.getIME()).toBe(true);
   });
 });

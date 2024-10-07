@@ -1,63 +1,62 @@
-import { restartFunction } from "./instructions/flow";
+import { CpuState, pushWord } from "./cpu-state";
 import { getNextInstruction } from "./instructions/optable";
-import { Memory, timer, interrupts } from "./memory";
-import { RegisterFile, RegisterPair } from "./regs";
+import { interruptController } from "./interrupt-controller";
+import { IMemory, timer } from "./memory";
+import { RegisterPair } from "./regs";
+
+let i = 0;
 
 export class Cpu {
-  private state = {
-    regs: new RegisterFile(),
-    ime: false,
-    halted: false,
-    stopped: false,
-  };
+  private state: CpuState;
 
-  public constructor(private memory: Memory) {}
+  public constructor(memory: IMemory) {
+    this.state = new CpuState(memory);
+  }
+
+  private step() {
+    if (interruptController.hasPendingInterrupt()) {
+      this.state.setHalted(false);
+
+      if (this.state.getIME()) {
+        this.state.setIME(false);
+
+        const irq = interruptController.getPendingInterrupt();
+        interruptController.acknowledgeInterrupt(irq);
+
+        const handlerAddress = 0x40 + irq * 8;
+
+        pushWord(this.state, this.state.readRegisterPair(RegisterPair.PC));
+        this.state.writeRegisterPair(RegisterPair.PC, handlerAddress);
+
+        return 5;
+      }
+    }
+
+    if (this.state.isHalted()) {
+      return 1;
+    }
+
+    const instruction = getNextInstruction(this.state);
+    return instruction[1](this.state) / 4;
+  }
+
+  public setPC(address: number) {
+    this.state.writeRegisterPair(RegisterPair.PC, address);
+  }
 
   public async run() {
-    const ctx = {
-      cpu: this.state,
-      memory: this.memory,
-    };
-
     let mCycles = 0;
 
-    this.state.regs.writePair(RegisterPair.PC, 0x100);
+    this.setPC(0x100);
 
     while (true) {
-      let cycles = 0;
+      let stepMCycles = this.step();
 
-      const interruptMask =
-        interrupts.interruptFlag & interrupts.interruptEnable;
-
-      if (interruptMask !== 0) {
-        this.state.halted = false;
-      }
-
-      if (this.state.ime && interruptMask !== 0) {
-        for (let irq = 0; irq < 5; irq++) {
-          if (interruptMask & (1 << irq)) {
-            this.state.ime = false;
-            interrupts.interruptFlag &= ~(1 << irq);
-
-            const handlerAddress = 0x40 + irq * 8;
-            console.log("Call handler ", handlerAddress.toString(16));
-            cycles = restartFunction(ctx, handlerAddress) / 4;
-
-            break;
-          }
-        }
-      } else if (this.state.halted) {
-        cycles = 1;
-      } else {
-        const instruction = getNextInstruction(ctx);
-        cycles = instruction[1](ctx) / 4;
-      }
-
-      for (let i = 0; i < cycles; i++) {
+      for (let i = 0; i < stepMCycles; i++) {
         timer.tick();
       }
 
-      mCycles += cycles;
+      mCycles += stepMCycles;
 
       if (mCycles > 4194) {
         await new Promise((resolve) => {

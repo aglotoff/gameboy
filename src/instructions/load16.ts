@@ -1,12 +1,6 @@
+import { popWord, pushWord } from "../cpu-state";
 import { Flag, RegisterPair } from "../regs";
-import {
-  addSignedByteToWord,
-  wrapDecrementWord,
-  getLSB,
-  getMSB,
-  wrapIncrementWord,
-  makeWord,
-} from "../utils";
+import { addSignedByteToWord, getLSB, getMSB } from "../utils";
 import {
   instruction,
   instructionWithImmediateByte,
@@ -14,68 +8,51 @@ import {
 } from "./lib";
 
 export const loadRegisterPair = instructionWithImmediateWord(
-  ({ cpu }, data, dst: RegisterPair) => {
-    cpu.regs.writePair(dst, data);
+  (state, data, dst: RegisterPair) => {
+    state.writeRegisterPair(dst, data);
     return 12;
   }
 );
 
 export const loadDirectFromStackPointer = instructionWithImmediateWord(
-  ({ cpu, memory }, address) => {
-    const data = cpu.regs.readPair(RegisterPair.SP);
-    memory.write(address, getLSB(data));
-    memory.write(address + 1, getMSB(data));
+  (state, address) => {
+    const data = state.readRegisterPair(RegisterPair.SP);
+    state.writeBus(address, getLSB(data));
+    state.writeBus(address + 1, getMSB(data));
     return 20;
   }
 );
 
-export const loadStackPointerFromHL = instruction(({ cpu }) => {
-  cpu.regs.writePair(RegisterPair.SP, cpu.regs.readPair(RegisterPair.HL));
+export const loadStackPointerFromHL = instruction((state) => {
+  state.writeRegisterPair(
+    RegisterPair.SP,
+    state.readRegisterPair(RegisterPair.HL)
+  );
   return 8;
 });
 
-export const pushToStack = instruction(
-  ({ cpu, memory }, pair: RegisterPair) => {
-    const data = cpu.regs.readPair(pair);
-    let sp = cpu.regs.readPair(RegisterPair.SP);
+export const pushToStack = instruction((state, pair: RegisterPair) => {
+  pushWord(state, state.readRegisterPair(pair));
+  return 16;
+});
 
-    sp = wrapDecrementWord(sp);
-    memory.write(sp, getMSB(data));
-    sp = wrapDecrementWord(sp);
-    memory.write(sp, getLSB(data));
-
-    cpu.regs.writePair(RegisterPair.SP, sp);
-
-    return 16;
-  }
-);
-
-export const popFromStack = instruction(({ cpu, memory }, rr: RegisterPair) => {
-  let sp = cpu.regs.readPair(RegisterPair.SP);
-
-  const lsb = memory.read(sp);
-  sp = wrapIncrementWord(sp);
-  const msb = memory.read(sp);
-  sp = wrapIncrementWord(sp);
-
-  cpu.regs.writePair(rr, makeWord(msb, lsb));
-  cpu.regs.writePair(RegisterPair.SP, sp);
-
+export const popFromStack = instruction((state, rr: RegisterPair) => {
+  state.writeRegisterPair(rr, popWord(state));
   return 12;
 });
 
 export const loadHLFromAdjustedStackPointer = instructionWithImmediateByte(
-  ({ cpu }, e) => {
+  (state, e) => {
     const { result, carryFrom3, carryFrom7 } = addSignedByteToWord(
-      cpu.regs.readPair(RegisterPair.SP),
+      state.readRegisterPair(RegisterPair.SP),
       e
     );
 
-    cpu.regs.writePair(RegisterPair.HL, result);
-    cpu.regs.setFlag(Flag.Z, false);
-    cpu.regs.setFlag(Flag.N, false);
-    cpu.regs.setFlag(Flag.H, carryFrom3);
-    cpu.regs.setFlag(Flag.CY, carryFrom7);
+    state.writeRegisterPair(RegisterPair.HL, result);
+    state.setFlag(Flag.Z, false);
+    state.setFlag(Flag.N, false);
+    state.setFlag(Flag.H, carryFrom3);
+    state.setFlag(Flag.CY, carryFrom7);
 
     return 12;
   }

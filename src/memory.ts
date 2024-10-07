@@ -1,14 +1,21 @@
 import { Timer, TimerRegister } from "./timer";
-import { Interrupts } from "./interrupts";
+import {
+  interruptController,
+  InterruptControllerRegister,
+} from "./interrupt-controller";
 
 let vbank = 0;
 
 let buf = "";
 
-export const timer = new Timer();
-export const interrupts = new Interrupts();
+export const timer = new Timer(interruptController);
 
-export class Memory {
+export interface IMemory {
+  read(address: number): number;
+  write(address: number, data: number): void;
+}
+
+export class Memory implements IMemory {
   private ram = new Uint8Array(0x10000);
 
   public reset() {
@@ -26,10 +33,9 @@ export class Memory {
       case 0xff07:
         return timer.read(TimerRegister.TAC);
       case 0xff0f:
-        console.log("gggg ->", interrupts.interruptFlag);
-        return interrupts.interruptFlag;
+        return interruptController.readRegister(InterruptControllerRegister.IF);
       case 0xffff:
-        return interrupts.interruptEnable;
+        return interruptController.readRegister(InterruptControllerRegister.IE);
     }
 
     if (address === 0xff44) {
@@ -56,10 +62,10 @@ export class Memory {
         timer.write(TimerRegister.TAC, data);
         break;
       case 0xff0f:
-        interrupts.interruptFlag = data & 0x1f;
+        interruptController.writeRegister(InterruptControllerRegister.IF, data);
         break;
       case 0xffff:
-        interrupts.interruptEnable = data & 0x1f;
+        interruptController.writeRegister(InterruptControllerRegister.IE, data);
         break;
     }
 
