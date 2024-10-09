@@ -1,4 +1,4 @@
-import { Condition, CpuState, popWord, pushWord } from "../cpu-state";
+import { Condition, CpuState } from "../cpu-state";
 import { RegisterPair } from "../regs";
 import { addSignedByteToWord, makeWord } from "../utils";
 import {
@@ -7,113 +7,116 @@ import {
   instructionWithImmediateWord,
 } from "./lib";
 
-export const jump = instructionWithImmediateWord((state, address) => {
-  state.writeRegisterPair(RegisterPair.PC, address);
+export const jump = instructionWithImmediateWord(function (address) {
+  this.writeRegisterPair(RegisterPair.PC, address);
   return 16;
 });
 
-export const jumpToHL = instruction((state) => {
-  state.writeRegisterPair(
+export const jumpToHL = instruction(function () {
+  this.writeRegisterPair(
     RegisterPair.PC,
-    state.readRegisterPair(RegisterPair.HL)
+    this.readRegisterPair(RegisterPair.HL)
   );
   return 4;
 });
 
-export const jumpConditional = instructionWithImmediateWord(
-  (state, address, condition: Condition) => {
-    if (!state.checkCondition(condition)) {
-      return 12;
-    }
-
-    state.writeRegisterPair(RegisterPair.PC, address);
-
-    return 16;
+export const jumpConditional = instructionWithImmediateWord(function (
+  address,
+  condition: Condition
+) {
+  if (!this.checkCondition(condition)) {
+    return 12;
   }
-);
 
-export const relativeJump = instructionWithImmediateByte((state, offset) => {
+  this.writeRegisterPair(RegisterPair.PC, address);
+
+  return 16;
+});
+
+export const relativeJump = instructionWithImmediateByte(function (offset) {
   const { result } = addSignedByteToWord(
-    state.readRegisterPair(RegisterPair.PC),
+    this.readRegisterPair(RegisterPair.PC),
     offset
   );
 
-  state.writeRegisterPair(RegisterPair.PC, result);
+  this.writeRegisterPair(RegisterPair.PC, result);
 
   return 12;
 });
 
-export const relativeJumpConditional = instructionWithImmediateByte(
-  (state, offset, condition: Condition) => {
-    if (!state.checkCondition(condition)) {
-      return 8;
-    }
-
-    const { result } = addSignedByteToWord(
-      state.readRegisterPair(RegisterPair.PC),
-      offset
-    );
-
-    state.writeRegisterPair(RegisterPair.PC, result);
-
-    return 12;
+export const relativeJumpConditional = instructionWithImmediateByte(function (
+  offset,
+  condition: Condition
+) {
+  if (!this.checkCondition(condition)) {
+    return 8;
   }
-);
 
-export const callFunction = instructionWithImmediateWord((state, address) => {
-  pushProgramCounter(state);
-  state.writeRegisterPair(RegisterPair.PC, address);
+  const { result } = addSignedByteToWord(
+    this.readRegisterPair(RegisterPair.PC),
+    offset
+  );
+
+  this.writeRegisterPair(RegisterPair.PC, result);
+
+  return 12;
+});
+
+export const callFunction = instructionWithImmediateWord(function (address) {
+  pushProgramCounter.call(this);
+  this.writeRegisterPair(RegisterPair.PC, address);
   return 24;
 });
 
-export const callFunctionConditional = instructionWithImmediateWord(
-  (state, address, condition: Condition) => {
-    if (!state.checkCondition(condition)) {
-      return 12;
-    }
-
-    pushProgramCounter(state);
-    state.writeRegisterPair(RegisterPair.PC, address);
-
-    return 24;
+export const callFunctionConditional = instructionWithImmediateWord(function (
+  address,
+  condition: Condition
+) {
+  if (!this.checkCondition(condition)) {
+    return 12;
   }
-);
 
-export const returnFromFunction = instruction((state) => {
-  popProgramCounter(state);
+  pushProgramCounter.call(this);
+  this.writeRegisterPair(RegisterPair.PC, address);
+
+  return 24;
+});
+
+export const returnFromFunction = instruction(function () {
+  popProgramCounter.call(this);
   return 16;
 });
 
-export const returnFromFunctionConditional = instruction(
-  (state, condition: Condition) => {
-    if (!state.checkCondition(condition)) {
-      return 8;
-    }
-
-    popProgramCounter(state);
-
-    return 20;
+export const returnFromFunctionConditional = instruction(function (
+  condition: Condition
+) {
+  if (!this.checkCondition(condition)) {
+    return 8;
   }
-);
 
-export const returnFromInterruptHandler = instruction((state) => {
-  popProgramCounter(state);
-  state.setIME(true);
+  popProgramCounter.call(this);
+
+  return 20;
+});
+
+export const returnFromInterruptHandler = instruction(function () {
+  popProgramCounter.call(this);
+  this.setIME(true);
   return 16;
 });
 
-function popProgramCounter(state: CpuState) {
-  state.writeRegisterPair(RegisterPair.PC, popWord(state));
+function popProgramCounter(this: CpuState) {
+  this.writeRegisterPair(RegisterPair.PC, this.popWord());
 }
 
-export const restartFunction = instruction((state, address: number) => {
-  pushProgramCounter(state);
+export const restartFunction = instruction(function (address: number) {
+  pushProgramCounter.call(this);
 
-  state.writeRegisterPair(RegisterPair.PC, makeWord(0x00, address));
+  this.writeRegisterPair(RegisterPair.PC, makeWord(0x00, address));
 
   return 16;
 });
 
-function pushProgramCounter(state: CpuState) {
-  pushWord(state, state.readRegisterPair(RegisterPair.PC));
+function pushProgramCounter(this: CpuState) {
+  this.pushWord(this.readRegisterPair(RegisterPair.PC));
 }

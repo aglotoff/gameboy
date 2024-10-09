@@ -1,69 +1,65 @@
-import { CpuState, pushWord } from "./cpu-state";
-import { getNextInstruction } from "./instructions/optable";
+import { CpuState } from "./cpu-state";
+import { getInstruction, getPrefixCBInstruction } from "./instructions";
 import { interruptController } from "./interrupt-controller";
-import { IMemory, timer } from "./memory";
+import { IMemory } from "./memory";
 import { RegisterPair } from "./regs";
 
-let i = 0;
-
-export class Cpu {
-  private state: CpuState;
-
+export class Cpu extends CpuState {
   public constructor(memory: IMemory) {
-    this.state = new CpuState(memory);
+    super(memory);
   }
 
-  private step() {
+  public step() {
     if (interruptController.hasPendingInterrupt()) {
-      this.state.setHalted(false);
+      this.setHalted(false);
 
-      if (this.state.getIME()) {
-        this.state.setIME(false);
+      if (this.getIME()) {
+        this.setIME(false);
 
         const irq = interruptController.getPendingInterrupt();
         interruptController.acknowledgeInterrupt(irq);
 
         const handlerAddress = 0x40 + irq * 8;
 
-        pushWord(this.state, this.state.readRegisterPair(RegisterPair.PC));
-        this.state.writeRegisterPair(RegisterPair.PC, handlerAddress);
+        this.pushWord(this.readRegisterPair(RegisterPair.PC));
+        this.writeRegisterPair(RegisterPair.PC, handlerAddress);
 
-        return 5;
+        return 20;
       }
     }
 
-    if (this.state.isHalted()) {
-      return 1;
+    if (this.isHalted()) {
+      return 4;
     }
 
-    const instruction = getNextInstruction(this.state);
-    return instruction[1](this.state) / 4;
+    const instruction = this.fetchNextInstruction();
+    return instruction[1].call(this);
   }
 
-  public setPC(address: number) {
-    this.state.writeRegisterPair(RegisterPair.PC, address);
+  private fetchNextInstruction() {
+    const opcode = this.fetchImmediateByte();
+
+    if (opcode == 0xcb) {
+      return this.fetchNextPrefixCbInstruction();
+    }
+
+    const instruction = getInstruction(opcode);
+
+    if (typeof instruction === "undefined") {
+      throw new Error(`Invalid opcode ${opcode.toString(16)}`);
+    }
+
+    return instruction;
   }
 
-  public async run() {
-    let mCycles = 0;
+  private fetchNextPrefixCbInstruction() {
+    const opcode = this.fetchImmediateByte();
+    const instruction = getPrefixCBInstruction(opcode);
 
-    this.setPC(0x100);
-
-    while (true) {
-      let stepMCycles = this.step();
-
-      for (let i = 0; i < stepMCycles; i++) {
-        timer.tick();
-      }
-
-      mCycles += stepMCycles;
-
-      if (mCycles > 4194) {
-        await new Promise((resolve) => {
-          setTimeout(resolve, 4);
-        });
-        mCycles = 0;
-      }
+    if (typeof instruction === "undefined") {
+      throw new Error(`Invalid opcode CB ${opcode.toString(16)}`);
     }
+
+    return instruction;
   }
 }

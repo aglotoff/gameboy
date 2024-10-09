@@ -1,43 +1,26 @@
 import { resetBit, setBit, testBit } from "./utils";
 
-export enum InterruptSource {
-  VBlank = 0,
-  LCD = 1,
-  Timer = 2,
-  Serial = 3,
-  Joypad = 4,
-}
-
 const INTERRUPT_SOURCE_MAX = 5;
 const INTERRUPT_SOURCE_MASK = 0x1f;
 
-export enum InterruptControllerRegister {
-  IF,
-  IE,
-}
-
 export class InterruptController {
-  private enabled = 0;
-  private flags = 0;
+  private enableRegister = 0;
+  private flagRegister = 0;
 
-  public readRegister(reg: InterruptControllerRegister) {
-    switch (reg) {
-      case InterruptControllerRegister.IF:
-        return this.flags;
-      case InterruptControllerRegister.IE:
-        return this.enabled;
-    }
+  public getEnableRegister() {
+    return this.enableRegister;
   }
 
-  public writeRegister(reg: InterruptControllerRegister, data: number) {
-    switch (reg) {
-      case InterruptControllerRegister.IF:
-        this.flags = data & INTERRUPT_SOURCE_MASK;
-        break;
-      case InterruptControllerRegister.IE:
-        this.enabled = data & INTERRUPT_SOURCE_MASK;
-        break;
-    }
+  public setEnableRegister(enable: number) {
+    this.enableRegister = enable & INTERRUPT_SOURCE_MASK;
+  }
+
+  public getFlagRegister() {
+    return this.flagRegister;
+  }
+
+  public setFlagRegister(flag: number) {
+    this.flagRegister = flag & INTERRUPT_SOURCE_MASK;
   }
 
   public requestInterrupt(irq: number) {
@@ -45,7 +28,7 @@ export class InterruptController {
       throw new Error(`Bad interrupt source: ${irq}`);
     }
 
-    this.flags = setBit(this.flags, irq);
+    this.flagRegister = setBit(this.flagRegister, irq);
   }
 
   public acknowledgeInterrupt(irq: number) {
@@ -53,7 +36,7 @@ export class InterruptController {
       throw new Error(`Bad interrupt source: ${irq}`);
     }
 
-    this.flags = resetBit(this.flags, irq);
+    this.flagRegister = resetBit(this.flagRegister, irq);
   }
 
   public hasPendingInterrupt() {
@@ -71,7 +54,7 @@ export class InterruptController {
   }
 
   private getPendingBits() {
-    return this.enabled & this.flags;
+    return this.enableRegister & this.flagRegister;
   }
 }
 

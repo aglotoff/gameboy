@@ -31,8 +31,8 @@ describe("8-bit load instructions", () => {
     state.writeRegister(Register.B, 0x3c);
     state.writeRegister(Register.D, 0x5c);
 
-    loadRegisterFromRegister(state, Register.A, Register.B);
-    loadRegisterFromRegister(state, Register.B, Register.D);
+    loadRegisterFromRegister.call(state, Register.A, Register.B);
+    loadRegisterFromRegister.call(state, Register.B, Register.D);
 
     expect(state.readRegister(Register.A)).toBe(0x3c);
     expect(state.readRegister(Register.B)).toBe(0x5c);
@@ -41,7 +41,7 @@ describe("8-bit load instructions", () => {
   testInstruction("LD r,n", ({ state }) => {
     state.writeBus(0, 0x24);
 
-    loadRegisterFromImmediate(state, Register.B);
+    loadRegisterFromImmediate.call(state, Register.B);
 
     expect(state.readRegister(Register.B)).toBe(0x24);
   });
@@ -50,7 +50,7 @@ describe("8-bit load instructions", () => {
     state.writeBus(0x8ac5, 0x5c);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
-    loadRegisterFromIndirectHL(state, Register.H);
+    loadRegisterFromIndirectHL.call(state, Register.H);
 
     expect(state.readRegister(Register.H)).toBe(0x5c);
   });
@@ -59,7 +59,7 @@ describe("8-bit load instructions", () => {
     state.writeRegister(Register.A, 0x3c);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
-    loadIndirectHLFromRegister(state, Register.A);
+    loadIndirectHLFromRegister.call(state, Register.A);
 
     expect(state.readBus(0x8ac5)).toBe(0x3c);
   });
@@ -68,7 +68,7 @@ describe("8-bit load instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeBus(0, 0x3c);
 
-    loadIndirectHLFromImmediateData(state);
+    loadIndirectHLFromImmediateData.call(state);
 
     expect(state.readBus(0x8ac5)).toBe(0x3c);
   });
@@ -77,7 +77,7 @@ describe("8-bit load instructions", () => {
     state.writeRegisterPair(RegisterPair.BC, 0x8ac5);
     state.writeBus(0x8ac5, 0x2f);
 
-    loadAccumulatorFromIndirectBC(state);
+    loadAccumulatorFromIndirectBC.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x2f);
   });
@@ -86,7 +86,7 @@ describe("8-bit load instructions", () => {
     state.writeRegisterPair(RegisterPair.DE, 0x8ac5);
     state.writeBus(0x8ac5, 0x5f);
 
-    loadAccumulatorFromIndirectDE(state);
+    loadAccumulatorFromIndirectDE.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x5f);
   });
@@ -95,7 +95,7 @@ describe("8-bit load instructions", () => {
     state.writeRegisterPair(RegisterPair.BC, 0x205f);
     state.writeRegister(Register.A, 0x56);
 
-    loadIndirectBCFromAccumulator(state);
+    loadIndirectBCFromAccumulator.call(state);
 
     expect(state.readBus(0x205f)).toBe(0x56);
   });
@@ -104,7 +104,7 @@ describe("8-bit load instructions", () => {
     state.writeRegisterPair(RegisterPair.DE, 0x205c);
     state.writeRegister(Register.A, 0xaa);
 
-    loadIndirectDEFromAccumulator(state);
+    loadIndirectDEFromAccumulator.call(state);
 
     expect(state.readBus(0x205c)).toBe(0xaa);
   });
@@ -114,7 +114,7 @@ describe("8-bit load instructions", () => {
     state.writeBus(1, getMSB(0x8000));
     state.writeBus(0x8000, 0x5c);
 
-    loadAccumulatorFromDirectWord(state);
+    loadAccumulatorFromDirectWord.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x5c);
   });
@@ -124,7 +124,7 @@ describe("8-bit load instructions", () => {
     state.writeBus(1, getMSB(0x8000));
     state.writeRegister(Register.A, 0x2f);
 
-    loadDirectWordFromAccumulator(state);
+    loadDirectWordFromAccumulator.call(state);
 
     expect(state.readBus(0x8000)).toBe(0x2f);
   });
@@ -133,7 +133,7 @@ describe("8-bit load instructions", () => {
     state.writeBus(0xff95, 0x2c);
     state.writeRegister(Register.C, 0x95);
 
-    loadAccumulatorFromIndirectC(state);
+    loadAccumulatorFromIndirectC.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x2c);
   });
@@ -142,7 +142,7 @@ describe("8-bit load instructions", () => {
     state.writeRegister(Register.A, 0x5c);
     state.writeRegister(Register.C, 0x9f);
 
-    loadIndirectCFromAccumulator(state);
+    loadIndirectCFromAccumulator.call(state);
 
     expect(state.readBus(0xff9f)).toBe(0x5c);
   });
@@ -151,7 +151,7 @@ describe("8-bit load instructions", () => {
     state.writeBus(0, getLSB(0x34));
     state.writeBus(0xff34, 0x5f);
 
-    loadAccumulatorFromDirectByte(state);
+    loadAccumulatorFromDirectByte.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x5f);
   });
@@ -160,7 +160,7 @@ describe("8-bit load instructions", () => {
     state.writeBus(0, getLSB(0x34));
     state.writeRegister(Register.A, 0x2f);
 
-    loadDirectByteFromAccumulator(state);
+    loadDirectByteFromAccumulator.call(state);
 
     expect(state.readBus(0xff34)).toBe(0x2f);
   });
@@ -169,7 +169,7 @@ describe("8-bit load instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8a5c);
     state.writeBus(0x8a5c, 0x3c);
 
-    loadAccumulatorFromIndirectHLDecrement(state);
+    loadAccumulatorFromIndirectHLDecrement.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x3c);
     expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x8a5b);
@@ -179,7 +179,7 @@ describe("8-bit load instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x1ff);
     state.writeBus(0x1ff, 0x56);
 
-    loadAccumulatorFromIndirectHLIncrement(state);
+    loadAccumulatorFromIndirectHLIncrement.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x56);
     expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x200);
@@ -189,7 +189,7 @@ describe("8-bit load instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x4000);
     state.writeRegister(Register.A, 0x5);
 
-    loadIndirectHLDecrementFromAccumulator(state);
+    loadIndirectHLDecrementFromAccumulator.call(state);
 
     expect(state.readBus(0x4000)).toBe(0x5);
     expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x3fff);
@@ -199,7 +199,7 @@ describe("8-bit load instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0xffff);
     state.writeRegister(Register.A, 0x56);
 
-    loadIndirectHLIncrementFromAccumulator(state);
+    loadIndirectHLIncrementFromAccumulator.call(state);
 
     expect(state.readBus(0xffff)).toBe(0x56);
     expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x0000);

@@ -16,13 +16,14 @@ import {
 } from "./flow";
 import { getLSB, getMSB } from "../utils";
 import { testInstruction } from "./test-lib";
+import { Condition } from "../cpu-state";
 
 describe("Control flow instructions", () => {
   testInstruction("JP nn", ({ state }) => {
     state.writeBus(0x00, getLSB(0x8000));
     state.writeBus(0x01, getMSB(0x8000));
 
-    jump(state);
+    jump.call(state);
 
     expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8000);
   });
@@ -30,7 +31,7 @@ describe("Control flow instructions", () => {
   testInstruction("JP (HL)", ({ state }) => {
     state.writeRegisterPair(RegisterPair.HL, 0x8000);
 
-    jumpToHL(state);
+    jumpToHL.call(state);
 
     expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8000);
   });
@@ -41,7 +42,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0x01, getMSB(0x8000));
       state.setFlag(Flag.Z, true);
 
-      jumpConditional(state, "NZ");
+      jumpConditional.call(state, Condition.NZ);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x0002);
     });
@@ -51,7 +52,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0x01, getMSB(0x8000));
       state.setFlag(Flag.Z, true);
 
-      jumpConditional(state, "Z");
+      jumpConditional.call(state, Condition.Z);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8000);
     });
@@ -61,7 +62,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0x01, getMSB(0x8000));
       state.setFlag(Flag.Z, true);
 
-      jumpConditional(state, "C");
+      jumpConditional.call(state, Condition.C);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x0002);
     });
@@ -71,7 +72,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0x01, getMSB(0x8000));
       state.setFlag(Flag.Z, true);
 
-      jumpConditional(state, "NC");
+      jumpConditional.call(state, Condition.NC);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8000);
     });
@@ -81,7 +82,7 @@ describe("Control flow instructions", () => {
     state.writeRegisterPair(RegisterPair.PC, 0x8000);
     state.writeBus(0x8000, 0x14);
 
-    relativeJump(state);
+    relativeJump.call(state);
 
     expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8015);
   });
@@ -92,7 +93,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0x8000, 0xfa);
       state.setFlag(Flag.Z, true);
 
-      relativeJumpConditional(state, "NZ");
+      relativeJumpConditional.call(state, Condition.NZ);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8001);
     });
@@ -102,7 +103,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0x8000, 0xfa);
       state.setFlag(Flag.Z, true);
 
-      relativeJumpConditional(state, "Z");
+      relativeJumpConditional.call(state, Condition.Z);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x7ffb);
     });
@@ -112,7 +113,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0x8000, 0xfa);
       state.setFlag(Flag.Z, true);
 
-      relativeJumpConditional(state, "C");
+      relativeJumpConditional.call(state, Condition.C);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8001);
     });
@@ -122,7 +123,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0x8000, 0xfa);
       state.setFlag(Flag.Z, true);
 
-      relativeJumpConditional(state, "NC");
+      relativeJumpConditional.call(state, Condition.NC);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x7ffb);
     });
@@ -134,7 +135,7 @@ describe("Control flow instructions", () => {
     state.writeBus(0x8000, getLSB(0x1234));
     state.writeBus(0x8001, getMSB(0x1234));
 
-    callFunction(state);
+    callFunction.call(state);
 
     expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x1234);
     expect(state.readBus(0xfffd)).toBe(0x80);
@@ -150,7 +151,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0x8001, getMSB(0x1234));
       state.setFlag(Flag.Z, true);
 
-      callFunctionConditional(state, "NZ");
+      callFunctionConditional.call(state, Condition.NZ);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8002);
       expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
@@ -163,7 +164,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0x8001, getMSB(0x1234));
       state.setFlag(Flag.Z, true);
 
-      callFunctionConditional(state, "Z");
+      callFunctionConditional.call(state, Condition.Z);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x1234);
       expect(state.readBus(0xfffd)).toBe(0x80);
@@ -178,7 +179,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0x8001, getMSB(0x1234));
       state.setFlag(Flag.Z, true);
 
-      callFunctionConditional(state, "C");
+      callFunctionConditional.call(state, Condition.C);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8002);
       expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
@@ -191,7 +192,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0x8001, getMSB(0x1234));
       state.setFlag(Flag.Z, true);
 
-      callFunctionConditional(state, "NC");
+      callFunctionConditional.call(state, Condition.NC);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x1234);
       expect(state.readBus(0xfffd)).toBe(0x80);
@@ -206,7 +207,7 @@ describe("Control flow instructions", () => {
     state.writeBus(0xfffd, getMSB(0x8003));
     state.writeBus(0xfffc, getLSB(0x8003));
 
-    returnFromFunction(state);
+    returnFromFunction.call(state);
 
     expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8003);
     expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
@@ -220,7 +221,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0xfffc, getLSB(0x8003));
       state.setFlag(Flag.Z, true);
 
-      returnFromFunctionConditional(state, "NZ");
+      returnFromFunctionConditional.call(state, Condition.NZ);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x9000);
       expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
@@ -233,7 +234,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0xfffc, getLSB(0x8003));
       state.setFlag(Flag.Z, true);
 
-      returnFromFunctionConditional(state, "Z");
+      returnFromFunctionConditional.call(state, Condition.Z);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8003);
       expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
@@ -246,7 +247,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0xfffc, getLSB(0x8003));
       state.setFlag(Flag.Z, true);
 
-      returnFromFunctionConditional(state, "C");
+      returnFromFunctionConditional.call(state, Condition.C);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x9000);
       expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
@@ -259,7 +260,7 @@ describe("Control flow instructions", () => {
       state.writeBus(0xfffc, getLSB(0x8003));
       state.setFlag(Flag.Z, true);
 
-      returnFromFunctionConditional(state, "NC");
+      returnFromFunctionConditional.call(state, Condition.NC);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8003);
       expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
@@ -272,7 +273,7 @@ describe("Control flow instructions", () => {
     state.writeBus(0xfffd, getMSB(0x8001));
     state.writeBus(0xfffc, getLSB(0x8001));
 
-    returnFromInterruptHandler(state);
+    returnFromInterruptHandler.call(state);
 
     expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8001);
     expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
@@ -283,7 +284,7 @@ describe("Control flow instructions", () => {
     state.writeRegisterPair(RegisterPair.PC, 0x8001);
     state.writeRegisterPair(RegisterPair.SP, 0xfffe);
 
-    restartFunction(state, 0x10);
+    restartFunction.call(state, 0x10);
 
     expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x0010);
     expect(state.readBus(0xfffd)).toBe(0x80);

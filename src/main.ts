@@ -1,5 +1,6 @@
 import { Cpu } from "./cpu";
-import { Memory } from "./memory";
+import { Memory, timer } from "./memory";
+import { RegisterPair } from "./regs";
 
 const logoBytes = [
   0xce, 0xed, 0x66, 0x66, 0xcc, 0x0d, 0x00, 0x0b, 0x03, 0x73, 0x00, 0x83, 0x00,
@@ -44,9 +45,35 @@ const LOGO_END = 0x0134;
 const TYPE = 0x0147;
 const ROM_SIZE = 0x0148;
 
+let cpu = new Cpu(new Memory());
+
+async function run() {
+  let mCycles = 0;
+
+  cpu.writeRegisterPair(RegisterPair.PC, 0x100);
+
+  while (!cpu.isStopped()) {
+    let stepMCycles = cpu.step();
+
+    for (let i = 0; i < stepMCycles; i++) {
+      timer.tick();
+    }
+
+    mCycles += stepMCycles;
+
+    if (mCycles > 4194) {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 4);
+      });
+      mCycles = 0;
+    }
+  }
+}
+
 async function readImage(file: File) {
+  cpu.stop();
   const memory = new Memory();
-  const cpu = new Cpu(memory);
+  cpu = new Cpu(memory);
 
   const buffer = await file.arrayBuffer();
   const data = new Uint8Array(buffer);
@@ -84,7 +111,7 @@ async function readImage(file: File) {
     memory.write(i, data[i]);
   }
 
-  cpu.run();
+  run();
 }
 
 const displayLogo = (bytes: Uint8Array) => {

@@ -1,18 +1,34 @@
-import { Timer, TimerRegister } from "./timer";
-import {
-  interruptController,
-  InterruptControllerRegister,
-} from "./interrupt-controller";
+import { Timer } from "./timer";
+import { interruptController } from "./interrupt-controller";
 
 let vbank = 0;
 
 let buf = "";
 
-export const timer = new Timer(interruptController);
+export enum InterruptSource {
+  VBlank = 0,
+  LCD = 1,
+  Timer = 2,
+  Serial = 3,
+  Joypad = 4,
+}
+
+export const timer = new Timer(() => {
+  interruptController.requestInterrupt(InterruptSource.Timer);
+});
 
 export interface IMemory {
   read(address: number): number;
   write(address: number, data: number): void;
+}
+
+export enum HWRegister {
+  DIV = 0xff04,
+  TIMA = 0xff05,
+  TMA = 0xff06,
+  TAC = 0xff07,
+  IF = 0xff0f,
+  IE = 0xffff,
 }
 
 export class Memory implements IMemory {
@@ -24,18 +40,18 @@ export class Memory implements IMemory {
 
   public read(address: number) {
     switch (address) {
-      case 0xff04:
-        return timer.read(TimerRegister.DIV);
-      case 0xff05:
-        return timer.read(TimerRegister.TIMA);
-      case 0xff06:
-        return timer.read(TimerRegister.TMA);
-      case 0xff07:
-        return timer.read(TimerRegister.TAC);
-      case 0xff0f:
-        return interruptController.readRegister(InterruptControllerRegister.IF);
-      case 0xffff:
-        return interruptController.readRegister(InterruptControllerRegister.IE);
+      case HWRegister.DIV:
+        return timer.getDividerRegister();
+      case HWRegister.TIMA:
+        return timer.getCounterRegister();
+      case HWRegister.TMA:
+        return timer.getModuloRegister();
+      case HWRegister.TAC:
+        return timer.getControlRegister();
+      case HWRegister.IF:
+        return interruptController.getFlagRegister();
+      case HWRegister.IE:
+        return interruptController.getEnableRegister();
     }
 
     if (address === 0xff44) {
@@ -49,23 +65,23 @@ export class Memory implements IMemory {
 
   public write(address: number, data: number) {
     switch (address) {
-      case 0xff04:
-        timer.write(TimerRegister.DIV, data);
+      case HWRegister.DIV:
+        timer.setDividerRegister(data);
         break;
-      case 0xff05:
-        timer.write(TimerRegister.TIMA, data);
+      case HWRegister.TIMA:
+        timer.setCounterRegister(data);
         break;
-      case 0xff06:
-        timer.write(TimerRegister.TMA, data);
+      case HWRegister.TMA:
+        timer.setModuloRegister(data);
         break;
-      case 0xff07:
-        timer.write(TimerRegister.TAC, data);
+      case HWRegister.TAC:
+        timer.setControlRegister(data);
         break;
-      case 0xff0f:
-        interruptController.writeRegister(InterruptControllerRegister.IF, data);
+      case HWRegister.IF:
+        interruptController.setFlagRegister(data);
         break;
-      case 0xffff:
-        interruptController.writeRegister(InterruptControllerRegister.IE, data);
+      case HWRegister.IE:
+        interruptController.setEnableRegister(data);
         break;
     }
 

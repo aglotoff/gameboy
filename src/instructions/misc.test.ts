@@ -5,13 +5,13 @@ import { testInstruction } from "./test-lib";
 
 describe("Miscellaneous instructions", () => {
   testInstruction("HALT", ({ state }) => {
-    halt(state);
+    halt.call(state);
 
     expect(state.isHalted()).toBe(true);
   });
 
   testInstruction("STOP", ({ state }) => {
-    stop(state);
+    stop.call(state);
 
     expect(state.isStopped()).toBe(true);
   });
@@ -19,13 +19,13 @@ describe("Miscellaneous instructions", () => {
   testInstruction("DI", ({ state }) => {
     state.setIME(true);
 
-    disableInterrupts(state);
+    disableInterrupts.call(state);
 
     expect(state.getIME()).toBe(false);
   });
 
   testInstruction("EI", ({ state }) => {
-    enableInterrupts(state);
+    enableInterrupts.call(state);
 
     expect(state.getIME()).toBe(true);
   });

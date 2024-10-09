@@ -8,7 +8,12 @@ import {
   wrapIncrementWord,
 } from "./utils";
 
-export type Condition = "Z" | "C" | "NZ" | "NC";
+export enum Condition {
+  Z,
+  C,
+  NZ,
+  NC,
+}
 
 export class CpuState {
   private regs = new RegisterFile();
@@ -16,7 +21,7 @@ export class CpuState {
   private halted = false;
   private stopped = false;
 
-  public constructor(private memory: IMemory) {}
+  public constructor(protected memory: IMemory) {}
 
   public readRegister(register: Register) {
     return this.regs.read(register);
@@ -50,19 +55,6 @@ export class CpuState {
     this.memory.write(address, data);
   }
 
-  public checkCondition(condition: Condition) {
-    switch (condition) {
-      case "Z":
-        return this.isFlagSet(Flag.Z);
-      case "C":
-        return this.isFlagSet(Flag.CY);
-      case "NZ":
-        return !this.isFlagSet(Flag.Z);
-      case "NC":
-        return !this.isFlagSet(Flag.CY);
-    }
-  }
-
   public setHalted(halted: boolean) {
     this.halted = halted;
   }
@@ -86,41 +78,54 @@ export class CpuState {
   public getIME() {
     return this.ime;
   }
-}
 
-export function fetchImmediateByte(state: CpuState) {
-  let pc = state.readRegisterPair(RegisterPair.PC);
-  const data = state.readBus(pc);
-  state.writeRegisterPair(RegisterPair.PC, wrapIncrementWord(pc));
-  return data;
-}
+  protected checkCondition(condition: Condition) {
+    switch (condition) {
+      case Condition.Z:
+        return this.isFlagSet(Flag.Z);
+      case Condition.C:
+        return this.isFlagSet(Flag.CY);
+      case Condition.NZ:
+        return !this.isFlagSet(Flag.Z);
+      case Condition.NC:
+        return !this.isFlagSet(Flag.CY);
+    }
+  }
 
-export function fetchImmediateWord(state: CpuState) {
-  let lowByte = fetchImmediateByte(state);
-  let highByte = fetchImmediateByte(state);
-  return makeWord(highByte, lowByte);
-}
+  protected fetchImmediateByte() {
+    let pc = this.readRegisterPair(RegisterPair.PC);
+    const data = this.readBus(pc);
+    this.writeRegisterPair(RegisterPair.PC, wrapIncrementWord(pc));
+    return data;
+  }
 
-export function pushWord(state: CpuState, data: number) {
-  let sp = state.readRegisterPair(RegisterPair.SP);
+  protected fetchImmediateWord() {
+    let lowByte = this.fetchImmediateByte();
+    let highByte = this.fetchImmediateByte();
+    return makeWord(highByte, lowByte);
+  }
 
-  sp = wrapDecrementWord(sp);
-  state.writeBus(sp, getMSB(data));
-  sp = wrapDecrementWord(sp);
-  state.writeBus(sp, getLSB(data));
+  protected pushWord(data: number) {
+    let sp = this.readRegisterPair(RegisterPair.SP);
 
-  state.writeRegisterPair(RegisterPair.SP, sp);
-}
+    sp = wrapDecrementWord(sp);
+    this.writeBus(sp, getMSB(data));
+    sp = wrapDecrementWord(sp);
+    this.writeBus(sp, getLSB(data));
 
-export function popWord(state: CpuState) {
-  let sp = state.readRegisterPair(RegisterPair.SP);
+    this.writeRegisterPair(RegisterPair.SP, sp);
+  }
 
-  const lsb = state.readBus(sp);
-  sp = wrapIncrementWord(sp);
-  const msb = state.readBus(sp);
-  sp = wrapIncrementWord(sp);
+  protected popWord() {
+    let sp = this.readRegisterPair(RegisterPair.SP);
 
-  state.writeRegisterPair(RegisterPair.SP, sp);
+    const lsb = this.readBus(sp);
+    sp = wrapIncrementWord(sp);
+    const msb = this.readBus(sp);
+    sp = wrapIncrementWord(sp);
 
-  return makeWord(msb, lsb);
+    this.writeRegisterPair(RegisterPair.SP, sp);
+
+    return makeWord(msb, lsb);
+  }
 }

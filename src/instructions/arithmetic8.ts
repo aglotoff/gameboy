@@ -3,291 +3,297 @@ import { Flag, Register, RegisterPair } from "../regs";
 import { addBytes, subtractBytes } from "../utils";
 import { instruction, instructionWithImmediateByte } from "./lib";
 
-export const addRegister = instruction((state, reg: Register) => {
-  addToAccumulator(state, state.readRegister(reg));
+export const addRegister = instruction(function (reg: Register) {
+  addToAccumulator.call(this, this.readRegister(reg));
   return 4;
 });
 
-export const addIndirectHL = instruction((state) => {
-  addToAccumulator(
-    state,
-    state.readBus(state.readRegisterPair(RegisterPair.HL))
+export const addIndirectHL = instruction(function () {
+  addToAccumulator.call(
+    this,
+    this.readBus(this.readRegisterPair(RegisterPair.HL))
   );
   return 8;
 });
 
-export const addImmediate = instructionWithImmediateByte((state, value) => {
-  addToAccumulator(state, value);
+export const addImmediate = instructionWithImmediateByte(function (value) {
+  addToAccumulator.call(this, value);
   return 8;
 });
 
-export const addRegisterWithCarry = instruction((state, reg: Register) => {
-  addToAccumulator(state, state.readRegister(reg), true);
+export const addRegisterWithCarry = instruction(function (reg: Register) {
+  addToAccumulator.call(this, this.readRegister(reg), true);
   return 4;
 });
 
-export const addIndirectHLWithCarry = instruction((state) => {
-  addToAccumulator(
-    state,
-    state.readBus(state.readRegisterPair(RegisterPair.HL)),
+export const addIndirectHLWithCarry = instruction(function () {
+  addToAccumulator.call(
+    this,
+    this.readBus(this.readRegisterPair(RegisterPair.HL)),
     true
   );
   return 8;
 });
 
-export const addImmediateWithCarry = instructionWithImmediateByte(
-  (state, value) => {
-    addToAccumulator(state, value, true);
-    return 8;
-  }
-);
+export const addImmediateWithCarry = instructionWithImmediateByte(function (
+  value
+) {
+  addToAccumulator.call(this, value, true);
+  return 8;
+});
 
-function addToAccumulator(state: CpuState, value: number, carry = false) {
+function addToAccumulator(this: CpuState, value: number, carry = false) {
   const { result, carryFrom3, carryFrom7 } = addBytes(
-    state.readRegister(Register.A),
+    this.readRegister(Register.A),
     value,
-    carry && state.isFlagSet(Flag.CY)
+    carry && this.isFlagSet(Flag.CY)
   );
 
-  state.writeRegister(Register.A, result);
-  state.setFlag(Flag.Z, result === 0);
-  state.setFlag(Flag.N, false);
-  state.setFlag(Flag.H, carryFrom3);
-  state.setFlag(Flag.CY, carryFrom7);
+  this.writeRegister(Register.A, result);
+  this.setFlag(Flag.Z, result === 0);
+  this.setFlag(Flag.N, false);
+  this.setFlag(Flag.H, carryFrom3);
+  this.setFlag(Flag.CY, carryFrom7);
 }
 
-export const subtractRegister = instruction((state, reg: Register) => {
-  subtractFromAccumulator(state, state.readRegister(reg));
+export const subtractRegister = instruction(function (reg: Register) {
+  subtractFromAccumulator.call(this, this.readRegister(reg));
   return 4;
 });
 
-export const subtractIndirectHL = instruction((state) => {
-  subtractFromAccumulator(
-    state,
-    state.readBus(state.readRegisterPair(RegisterPair.HL))
+export const subtractIndirectHL = instruction(function () {
+  subtractFromAccumulator.call(
+    this,
+    this.readBus(this.readRegisterPair(RegisterPair.HL))
   );
   return 8;
 });
 
-export const subtractImmediate = instructionWithImmediateByte(
-  (state, value) => {
-    subtractFromAccumulator(state, value);
-    return 8;
-  }
-);
+export const subtractImmediate = instructionWithImmediateByte(function (value) {
+  subtractFromAccumulator.call(this, value);
+  return 8;
+});
 
-export const subtractRegisterWithCarry = instruction((state, reg: Register) => {
-  subtractFromAccumulator(state, state.readRegister(reg), true);
+export const subtractRegisterWithCarry = instruction(function (reg: Register) {
+  subtractFromAccumulator.call(this, this.readRegister(reg), true);
   return 4;
 });
 
-export const subtractIndirectHLWithCarry = instruction((state) => {
-  subtractFromAccumulator(
-    state,
-    state.readBus(state.readRegisterPair(RegisterPair.HL)),
+export const subtractIndirectHLWithCarry = instruction(function () {
+  subtractFromAccumulator.call(
+    this,
+    this.readBus(this.readRegisterPair(RegisterPair.HL)),
     true
   );
   return 8;
 });
 
 export const subtractImmediateWithCarry = instructionWithImmediateByte(
-  (state, value) => {
-    subtractFromAccumulator(state, value, true);
+  function (value) {
+    subtractFromAccumulator.call(this, value, true);
     return 8;
   }
 );
 
-function subtractFromAccumulator(
-  state: CpuState,
-  value: number,
-  carry = false
-) {
+function subtractFromAccumulator(this: CpuState, value: number, carry = false) {
   const { result, borrowTo3, borrowTo7 } = subtractBytes(
-    state.readRegister(Register.A),
+    this.readRegister(Register.A),
     value,
-    carry && state.isFlagSet(Flag.CY)
+    carry && this.isFlagSet(Flag.CY)
   );
 
-  state.writeRegister(Register.A, result);
-  state.setFlag(Flag.Z, result === 0);
-  state.setFlag(Flag.N, true);
-  state.setFlag(Flag.H, borrowTo3);
-  state.setFlag(Flag.CY, borrowTo7);
+  this.writeRegister(Register.A, result);
+  this.setFlag(Flag.Z, result === 0);
+  this.setFlag(Flag.N, true);
+  this.setFlag(Flag.H, borrowTo3);
+  this.setFlag(Flag.CY, borrowTo7);
 }
 
-export const compareRegister = instruction((state, reg: Register) => {
-  compareWithAccumulator(state, state.readRegister(reg));
+export const compareRegister = instruction(function (reg: Register) {
+  compareWithAccumulator.call(this, this.readRegister(reg));
   return 4;
 });
 
-export const compareIndirectHL = instruction((state) => {
-  compareWithAccumulator(
-    state,
-    state.readBus(state.readRegisterPair(RegisterPair.HL))
+export const compareIndirectHL = instruction(function () {
+  compareWithAccumulator.call(
+    this,
+    this.readBus(this.readRegisterPair(RegisterPair.HL))
   );
   return 8;
 });
 
-export const compareImmediate = instructionWithImmediateByte((state, value) => {
-  compareWithAccumulator(state, value);
+export const compareImmediate = instructionWithImmediateByte(function (value) {
+  compareWithAccumulator.call(this, value);
   return 8;
 });
 
-function compareWithAccumulator(state: CpuState, value: number) {
+function compareWithAccumulator(this: CpuState, value: number) {
   const { result, borrowTo3, borrowTo7 } = subtractBytes(
-    state.readRegister(Register.A),
+    this.readRegister(Register.A),
     value
   );
 
-  state.setFlag(Flag.Z, result === 0);
-  state.setFlag(Flag.N, true);
-  state.setFlag(Flag.H, borrowTo3);
-  state.setFlag(Flag.CY, borrowTo7);
+  this.setFlag(Flag.Z, result === 0);
+  this.setFlag(Flag.N, true);
+  this.setFlag(Flag.H, borrowTo3);
+  this.setFlag(Flag.CY, borrowTo7);
 }
 
-export const incrementRegister = instruction((state, reg: Register) => {
-  state.writeRegister(
+export const incrementRegister = instruction(function (reg: Register) {
+  this.writeRegister(
     reg,
-    incrementAndSetFlags(state, state.readRegister(reg))
+    incrementAndSetFlags.call(this, this.readRegister(reg))
   );
   return 4;
 });
 
-export const incrementIndirectHL = instruction((state) => {
-  const address = state.readRegisterPair(RegisterPair.HL);
+export const incrementIndirectHL = instruction(function () {
+  const address = this.readRegisterPair(RegisterPair.HL);
 
-  state.writeBus(address, incrementAndSetFlags(state, state.readBus(address)));
+  this.writeBus(
+    address,
+    incrementAndSetFlags.call(this, this.readBus(address))
+  );
 
   return 12;
 });
 
-function incrementAndSetFlags(state: CpuState, value: number) {
+function incrementAndSetFlags(this: CpuState, value: number) {
   const { result, carryFrom3 } = addBytes(value, 1);
 
-  state.setFlag(Flag.Z, result === 0);
-  state.setFlag(Flag.N, false);
-  state.setFlag(Flag.H, carryFrom3);
+  this.setFlag(Flag.Z, result === 0);
+  this.setFlag(Flag.N, false);
+  this.setFlag(Flag.H, carryFrom3);
 
   return result;
 }
 
-export const decrementRegister = instruction((state, reg: Register) => {
-  state.writeRegister(reg, decrement(state, state.readRegister(reg)));
+export const decrementRegister = instruction(function (reg: Register) {
+  this.writeRegister(reg, decrement.call(this, this.readRegister(reg)));
   return 4;
 });
 
-export const decrementIndirectHL = instruction((state) => {
-  const address = state.readRegisterPair(RegisterPair.HL);
-  state.writeBus(address, decrement(state, state.readBus(address)));
+export const decrementIndirectHL = instruction(function () {
+  const address = this.readRegisterPair(RegisterPair.HL);
+  this.writeBus(address, decrement.call(this, this.readBus(address)));
   return 12;
 });
 
-function decrement(state: CpuState, value: number) {
+function decrement(this: CpuState, value: number) {
   const { result, borrowTo3 } = subtractBytes(value, 1);
 
-  state.setFlag(Flag.Z, result === 0);
-  state.setFlag(Flag.N, true);
-  state.setFlag(Flag.H, borrowTo3);
+  this.setFlag(Flag.Z, result === 0);
+  this.setFlag(Flag.N, true);
+  this.setFlag(Flag.H, borrowTo3);
 
   return result;
 }
 
-export const andRegister = instruction((state, reg: Register) => {
-  andAccumulator(state, state.readRegister(reg));
+export const andRegister = instruction(function (reg: Register) {
+  andAccumulator.call(this, this.readRegister(reg));
   return 4;
 });
 
-export const andIndirectHL = instruction((state) => {
-  andAccumulator(state, state.readBus(state.readRegisterPair(RegisterPair.HL)));
+export const andIndirectHL = instruction(function () {
+  andAccumulator.call(
+    this,
+    this.readBus(this.readRegisterPair(RegisterPair.HL))
+  );
   return 8;
 });
 
-export const andImmediate = instructionWithImmediateByte((state, value) => {
-  andAccumulator(state, value);
+export const andImmediate = instructionWithImmediateByte(function (value) {
+  andAccumulator.call(this, value);
   return 8;
 });
 
-function andAccumulator(state: CpuState, value: number) {
-  const result = state.readRegister(Register.A) & value;
+function andAccumulator(this: CpuState, value: number) {
+  const result = this.readRegister(Register.A) & value;
 
-  state.writeRegister(Register.A, result);
-  state.setFlag(Flag.Z, result === 0);
-  state.setFlag(Flag.N, false);
-  state.setFlag(Flag.H, true);
-  state.setFlag(Flag.CY, false);
+  this.writeRegister(Register.A, result);
+  this.setFlag(Flag.Z, result === 0);
+  this.setFlag(Flag.N, false);
+  this.setFlag(Flag.H, true);
+  this.setFlag(Flag.CY, false);
 }
 
-export const orRegister = instruction((state, reg: Register) => {
-  orAccumulator(state, state.readRegister(reg));
+export const orRegister = instruction(function (reg: Register) {
+  orAccumulator.call(this, this.readRegister(reg));
   return 4;
 });
 
-export const orIndirectHL = instruction((state) => {
-  orAccumulator(state, state.readBus(state.readRegisterPair(RegisterPair.HL)));
+export const orIndirectHL = instruction(function () {
+  orAccumulator.call(
+    this,
+    this.readBus(this.readRegisterPair(RegisterPair.HL))
+  );
   return 8;
 });
 
-export const orImmediate = instructionWithImmediateByte((state, value) => {
-  orAccumulator(state, value);
+export const orImmediate = instructionWithImmediateByte(function (value) {
+  orAccumulator.call(this, value);
   return 8;
 });
 
-function orAccumulator(state: CpuState, value: number) {
-  const result = state.readRegister(Register.A) | value;
+function orAccumulator(this: CpuState, value: number) {
+  const result = this.readRegister(Register.A) | value;
 
-  state.writeRegister(Register.A, result);
-  state.setFlag(Flag.Z, result === 0);
-  state.setFlag(Flag.N, false);
-  state.setFlag(Flag.H, false);
-  state.setFlag(Flag.CY, false);
+  this.writeRegister(Register.A, result);
+  this.setFlag(Flag.Z, result === 0);
+  this.setFlag(Flag.N, false);
+  this.setFlag(Flag.H, false);
+  this.setFlag(Flag.CY, false);
 }
 
-export const xorRegister = instruction((state, reg: Register) => {
-  xorAccumulator(state, state.readRegister(reg));
+export const xorRegister = instruction(function (reg: Register) {
+  xorAccumulator.call(this, this.readRegister(reg));
   return 4;
 });
 
-export const xorIndirectHL = instruction((state) => {
-  xorAccumulator(state, state.readBus(state.readRegisterPair(RegisterPair.HL)));
+export const xorIndirectHL = instruction(function () {
+  xorAccumulator.call(
+    this,
+    this.readBus(this.readRegisterPair(RegisterPair.HL))
+  );
   return 8;
 });
 
-export const xorImmediate = instructionWithImmediateByte((state, value) => {
-  xorAccumulator(state, value);
+export const xorImmediate = instructionWithImmediateByte(function (value) {
+  xorAccumulator.call(this, value);
   return 8;
 });
 
-function xorAccumulator(state: CpuState, value: number) {
-  const result = state.readRegister(Register.A) ^ value;
+function xorAccumulator(this: CpuState, value: number) {
+  const result = this.readRegister(Register.A) ^ value;
 
-  state.writeRegister(Register.A, result);
-  state.setFlag(Flag.Z, result === 0);
-  state.setFlag(Flag.N, false);
-  state.setFlag(Flag.H, false);
-  state.setFlag(Flag.CY, false);
+  this.writeRegister(Register.A, result);
+  this.setFlag(Flag.Z, result === 0);
+  this.setFlag(Flag.N, false);
+  this.setFlag(Flag.H, false);
+  this.setFlag(Flag.CY, false);
 }
 
-export const complementCarryFlag = instruction((state) => {
-  state.setFlag(Flag.N, false);
-  state.setFlag(Flag.H, false);
-  state.setFlag(Flag.CY, !state.isFlagSet(Flag.CY));
+export const complementCarryFlag = instruction(function () {
+  this.setFlag(Flag.N, false);
+  this.setFlag(Flag.H, false);
+  this.setFlag(Flag.CY, !this.isFlagSet(Flag.CY));
 
   return 4;
 });
 
-export const setCarryFlag = instruction((state) => {
-  state.setFlag(Flag.N, false);
-  state.setFlag(Flag.H, false);
-  state.setFlag(Flag.CY, true);
+export const setCarryFlag = instruction(function () {
+  this.setFlag(Flag.N, false);
+  this.setFlag(Flag.H, false);
+  this.setFlag(Flag.CY, true);
 
   return 4;
 });
 
-export const decimalAdjustAccumulator = instruction((state) => {
-  let a = state.readRegister(Register.A);
-  const cy = state.isFlagSet(Flag.CY);
-  const h = state.isFlagSet(Flag.H);
-  const n = state.isFlagSet(Flag.N);
+export const decimalAdjustAccumulator = instruction(function () {
+  let a = this.readRegister(Register.A);
+  const cy = this.isFlagSet(Flag.CY);
+  const h = this.isFlagSet(Flag.H);
+  const n = this.isFlagSet(Flag.N);
 
   let offset = 0;
   let carry = false;
@@ -307,18 +313,18 @@ export const decimalAdjustAccumulator = instruction((state) => {
     a = (a - offset) & 0xff;
   }
 
-  state.writeRegister(Register.A, a);
-  state.setFlag(Flag.Z, a === 0);
-  state.setFlag(Flag.H, false);
-  state.setFlag(Flag.CY, carry);
+  this.writeRegister(Register.A, a);
+  this.setFlag(Flag.Z, a === 0);
+  this.setFlag(Flag.H, false);
+  this.setFlag(Flag.CY, carry);
 
   return 4;
 });
 
-export const complementAccumulator = instruction((state) => {
-  state.writeRegister(Register.A, ~state.readRegister(Register.A));
-  state.setFlag(Flag.N, true);
-  state.setFlag(Flag.H, true);
+export const complementAccumulator = instruction(function () {
+  this.writeRegister(Register.A, ~this.readRegister(Register.A));
+  this.setFlag(Flag.N, true);
+  this.setFlag(Flag.H, true);
 
   return 4;
 });

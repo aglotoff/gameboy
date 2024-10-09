@@ -1,20 +1,32 @@
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 
 import { getLSB, getMSB, makeWord } from "./utils";
 
-test("getLSB", () => {
-  const value = 0x1234;
-  expect(getLSB(value)).toBe(0x34);
-});
+describe("utils", () => {
+  test("getLSB", () => {
+    const value = 0x1234;
+    expect(getLSB(value)).toBe(0x34);
+  });
 
-test("getMSB", () => {
-  const value = 0x1234;
-  expect(getMSB(value)).toBe(0x12);
-});
+  test("getMSB", () => {
+    const value = 0x1234;
+    expect(getMSB(value)).toBe(0x12);
+  });
 
-test("makeWord", () => {
-  const lsb = 0xaf;
-  const msb = 0x18;
+  test("makeWord", () => {
+    const lsb = 0xaf;
+    const msb = 0x18;
 
-  expect(makeWord(msb, lsb)).toBe(0x18af);
+    expect(makeWord(msb, lsb)).toBe(0x18af);
+  });
+
+  test("getLSB, getMSB, and makeWord", () => {
+    const originalWord = 0xd6ac;
+
+    const lsb = getLSB(originalWord);
+    const msb = getMSB(originalWord);
+    const newWord = makeWord(msb, lsb);
+
+    expect(newWord).toBe(originalWord);
+  });
 });

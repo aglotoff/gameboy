@@ -35,7 +35,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
   testInstruction("RLCA", ({ state }) => {
     state.writeRegister(Register.A, 0x85);
 
-    rotateLeftCircularAccumulator(state);
+    rotateLeftCircularAccumulator.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x0b);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
@@ -47,7 +47,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
   testInstruction("RRCA", ({ state }) => {
     state.writeRegister(Register.A, 0x3b);
 
-    rotateRightCircularAccumulator(state);
+    rotateRightCircularAccumulator.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x9d);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
@@ -60,7 +60,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegister(Register.A, 0x95);
     state.setFlag(Flag.CY, true);
 
-    rotateLeftAccumulator(state);
+    rotateLeftAccumulator.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x2b);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
@@ -73,7 +73,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegister(Register.A, 0x81);
     state.setFlag(Flag.CY, false);
 
-    rotateRightAccumulator(state);
+    rotateRightAccumulator.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x40);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
@@ -86,7 +86,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegister(Register.B, 0x85);
     state.setFlag(Flag.CY, false);
 
-    rotateLeftCircularRegister(state, Register.B);
+    rotateLeftCircularRegister.call(state, Register.B);
 
     expect(state.readRegister(Register.B)).toBe(0x0b);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
@@ -100,7 +100,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
 
-    rotateLeftCircularIndirectHL(state);
+    rotateLeftCircularIndirectHL.call(state);
 
     expect(state.readBus(0x8ac5)).toBe(0x00);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
@@ -113,7 +113,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegister(Register.C, 0x01);
     state.setFlag(Flag.CY, false);
 
-    rotateRightCircularRegister(state, Register.C);
+    rotateRightCircularRegister.call(state, Register.C);
 
     expect(state.readRegister(Register.C)).toBe(0x80);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
@@ -127,7 +127,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
 
-    rotateRightCircularIndirectHL(state);
+    rotateRightCircularIndirectHL.call(state);
 
     expect(state.readBus(0x8ac5)).toBe(0x00);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
@@ -140,7 +140,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegister(Register.L, 0x80);
     state.setFlag(Flag.CY, false);
 
-    rotateLeftRegister(state, Register.L);
+    rotateLeftRegister.call(state, Register.L);
 
     expect(state.readRegister(Register.L)).toBe(0x00);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
@@ -154,7 +154,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
 
-    rotateLeftIndirectHL(state);
+    rotateLeftIndirectHL.call(state);
 
     expect(state.readBus(0x8ac5)).toBe(0x22);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
@@ -167,7 +167,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegister(Register.A, 0x01);
     state.setFlag(Flag.CY, false);
 
-    rotateRightRegister(state, Register.A);
+    rotateRightRegister.call(state, Register.A);
 
     expect(state.readRegister(Register.A)).toBe(0x00);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
@@ -181,7 +181,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
 
-    rotateRightIndirectHL(state);
+    rotateRightIndirectHL.call(state);
 
     expect(state.readBus(0x8ac5)).toBe(0x45);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
@@ -194,7 +194,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegister(Register.D, 0x80);
     state.setFlag(Flag.CY, false);
 
-    shiftLeftArithmeticRegister(state, Register.D);
+    shiftLeftArithmeticRegister.call(state, Register.D);
 
     expect(state.readRegister(Register.D)).toBe(0x00);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
@@ -208,7 +208,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
 
-    shiftLeftArithmeticIndirectHL(state);
+    shiftLeftArithmeticIndirectHL.call(state);
 
     expect(state.readBus(0x8ac5)).toBe(0xfe);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
@@ -221,7 +221,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegister(Register.A, 0x8a);
     state.setFlag(Flag.CY, false);
 
-    shiftRightArithmeticRegister(state, Register.A);
+    shiftRightArithmeticRegister.call(state, Register.A);
 
     expect(state.readRegister(Register.A)).toBe(0xc5);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
@@ -235,7 +235,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
 
-    shiftRightArithmeticIndirectHL(state);
+    shiftRightArithmeticIndirectHL.call(state);
 
     expect(state.readBus(0x8ac5)).toBe(0x00);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
@@ -248,7 +248,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegister(Register.A, 0x01);
     state.setFlag(Flag.CY, false);
 
-    shiftRightLogicalRegister(state, Register.A);
+    shiftRightLogicalRegister.call(state, Register.A);
 
     expect(state.readRegister(Register.A)).toBe(0x00);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
@@ -262,7 +262,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
 
-    shiftRightLogicalIndirectHL(state);
+    shiftRightLogicalIndirectHL.call(state);
 
     expect(state.readBus(0x8ac5)).toBe(0x7f);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
@@ -275,7 +275,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegister(Register.A, 0x00);
     state.setFlag(Flag.CY, false);
 
-    swapNibblesRegister(state, Register.A);
+    swapNibblesRegister.call(state, Register.A);
 
     expect(state.readRegister(Register.A)).toBe(0x00);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
@@ -289,7 +289,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
 
-    swapNibblesIndirectHL(state);
+    swapNibblesIndirectHL.call(state);
 
     expect(state.readBus(0x8ac5)).toBe(0x0f);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
@@ -302,7 +302,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     testInstruction("BIT 7, A", ({ state }) => {
       state.writeRegister(Register.A, 0x80);
 
-      testBitRegister(state, 7, Register.A);
+      testBitRegister.call(state, 7, Register.A);
 
       expect(state.isFlagSet(Flag.Z)).toBe(false);
       expect(state.isFlagSet(Flag.H)).toBe(true);
@@ -312,7 +312,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     testInstruction("BIT 4, L", ({ state }) => {
       state.writeRegister(Register.L, 0xef);
 
-      testBitRegister(state, 4, Register.L);
+      testBitRegister.call(state, 4, Register.L);
 
       expect(state.isFlagSet(Flag.Z)).toBe(true);
       expect(state.isFlagSet(Flag.H)).toBe(true);
@@ -325,7 +325,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
       state.writeBus(0x8ac5, 0xfe);
       state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
-      testBitIndirectHL(state, 0);
+      testBitIndirectHL.call(state, 0);
 
       expect(state.isFlagSet(Flag.Z)).toBe(true);
       expect(state.isFlagSet(Flag.H)).toBe(true);
@@ -336,7 +336,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
       state.writeBus(0x8ac5, 0xfe);
       state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
-      testBitIndirectHL(state, 1);
+      testBitIndirectHL.call(state, 1);
 
       expect(state.isFlagSet(Flag.Z)).toBe(false);
       expect(state.isFlagSet(Flag.H)).toBe(true);
@@ -348,7 +348,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     testInstruction("RES 7, A", ({ state }) => {
       state.writeRegister(Register.A, 0x80);
 
-      resetBitRegister(state, 7, Register.A);
+      resetBitRegister.call(state, 7, Register.A);
 
       expect(state.readRegister(Register.A)).toBe(0x00);
     });
@@ -356,7 +356,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     testInstruction("RES 1, L", ({ state }) => {
       state.writeRegister(Register.L, 0x3b);
 
-      resetBitRegister(state, 1, Register.L);
+      resetBitRegister.call(state, 1, Register.L);
 
       expect(state.readRegister(Register.L)).toBe(0x39);
     });
@@ -366,7 +366,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeBus(0x8ac5, 0xff);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
-    resetBitIndirectHL(state, 3);
+    resetBitIndirectHL.call(state, 3);
 
     expect(state.readBus(0x8ac5)).toBe(0xf7);
   });
@@ -375,7 +375,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     testInstruction("SET 2, A", ({ state }) => {
       state.writeRegister(Register.A, 0x80);
 
-      setBitRegister(state, 2, Register.A);
+      setBitRegister.call(state, 2, Register.A);
 
       expect(state.readRegister(Register.A)).toBe(0x84);
     });
@@ -383,7 +383,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     testInstruction("SET 7, L", ({ state }) => {
       state.writeRegister(Register.L, 0x3b);
 
-      setBitRegister(state, 7, Register.L);
+      setBitRegister.call(state, 7, Register.L);
 
       expect(state.readRegister(Register.L)).toBe(0xbb);
     });
@@ -393,7 +393,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     state.writeBus(0x8ac5, 0x00);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
-    setBitIndirectHL(state, 3);
+    setBitIndirectHL.call(state, 3);
 
     expect(state.readBus(0x8ac5)).toBe(0x08);
   });

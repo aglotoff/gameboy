@@ -1,4 +1,3 @@
-import { popWord, pushWord } from "../cpu-state";
 import { Flag, RegisterPair } from "../regs";
 import { addSignedByteToWord, getLSB, getMSB } from "../utils";
 import {
@@ -7,52 +6,53 @@ import {
   instructionWithImmediateWord,
 } from "./lib";
 
-export const loadRegisterPair = instructionWithImmediateWord(
-  (state, data, dst: RegisterPair) => {
-    state.writeRegisterPair(dst, data);
-    return 12;
-  }
-);
+export const loadRegisterPair = instructionWithImmediateWord(function (
+  data,
+  dst: RegisterPair
+) {
+  this.writeRegisterPair(dst, data);
+  return 12;
+});
 
 export const loadDirectFromStackPointer = instructionWithImmediateWord(
-  (state, address) => {
-    const data = state.readRegisterPair(RegisterPair.SP);
-    state.writeBus(address, getLSB(data));
-    state.writeBus(address + 1, getMSB(data));
+  function (address) {
+    const data = this.readRegisterPair(RegisterPair.SP);
+    this.writeBus(address, getLSB(data));
+    this.writeBus(address + 1, getMSB(data));
     return 20;
   }
 );
 
-export const loadStackPointerFromHL = instruction((state) => {
-  state.writeRegisterPair(
+export const loadStackPointerFromHL = instruction(function () {
+  this.writeRegisterPair(
     RegisterPair.SP,
-    state.readRegisterPair(RegisterPair.HL)
+    this.readRegisterPair(RegisterPair.HL)
   );
   return 8;
 });
 
-export const pushToStack = instruction((state, pair: RegisterPair) => {
-  pushWord(state, state.readRegisterPair(pair));
+export const pushToStack = instruction(function (pair: RegisterPair) {
+  this.pushWord(this.readRegisterPair(pair));
   return 16;
 });
 
-export const popFromStack = instruction((state, rr: RegisterPair) => {
-  state.writeRegisterPair(rr, popWord(state));
+export const popFromStack = instruction(function (rr: RegisterPair) {
+  this.writeRegisterPair(rr, this.popWord());
   return 12;
 });
 
 export const loadHLFromAdjustedStackPointer = instructionWithImmediateByte(
-  (state, e) => {
+  function (e) {
     const { result, carryFrom3, carryFrom7 } = addSignedByteToWord(
-      state.readRegisterPair(RegisterPair.SP),
+      this.readRegisterPair(RegisterPair.SP),
       e
     );
 
-    state.writeRegisterPair(RegisterPair.HL, result);
-    state.setFlag(Flag.Z, false);
-    state.setFlag(Flag.N, false);
-    state.setFlag(Flag.H, carryFrom3);
-    state.setFlag(Flag.CY, carryFrom7);
+    this.writeRegisterPair(RegisterPair.HL, result);
+    this.setFlag(Flag.Z, false);
+    this.setFlag(Flag.N, false);
+    this.setFlag(Flag.H, carryFrom3);
+    this.setFlag(Flag.CY, carryFrom7);
 
     return 12;
   }

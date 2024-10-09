@@ -1,87 +1,94 @@
-// const T_CYCLES_PER_SECOND = 4194304;
-// const M_CYCLES_PER_SECOND = T_CYCLES_PER_SECOND / 4;
-// const M_CYCLES_PER_MS = M_CYCLES_PER_SECOND / 1000;
-
-import { InterruptController, InterruptSource } from "./interrupt-controller";
-
-export enum TimerRegister {
-  DIV = 0x00,
-  TIMA = 0x01,
-  TMA = 0x02,
-  TAC = 0x03,
-}
+import { wrapIncrementByte } from "./utils";
 
 export class Timer {
-  private tickCount = 0;
+  private ticksToCounterIncrement = 0;
+  private ticksToDividerIncrement = 0;
 
-  private counter = 0;
-  private modulo = 0;
-  private control = 0;
+  private dividerRegister = 0;
+  private counterRegister = 0;
+  private moduloRegister = 0;
+  private controlRegister = 0;
 
-  public constructor(private interruptController: InterruptController) {}
+  public constructor(private onInterruptRequest: () => void) {}
 
-  public read(offset: number) {
-    switch (offset) {
-      case TimerRegister.DIV:
-        return 0;
-      case TimerRegister.TIMA:
-        return this.counter;
-      case TimerRegister.TMA:
-        return this.modulo;
-      case TimerRegister.TAC:
-        return this.control;
-      default:
-        throw new Error(`Invalid offset ${offset}`);
-    }
+  public getDividerRegister() {
+    return this.dividerRegister;
   }
 
-  public write(offset: number, value: number) {
-    switch (offset) {
-      case TimerRegister.DIV:
-        break;
-      case TimerRegister.TIMA:
-        this.counter = value;
-        break;
-      case TimerRegister.TMA:
-        this.modulo = value;
-        break;
-      case TimerRegister.TAC:
-        this.control = value & 0x7;
-        break;
-      default:
-        throw new Error(`Invalid offset ${offset}`);
-    }
+  public setDividerRegister(_data: number) {
+    this.dividerRegister = 0x00;
+  }
+
+  public getCounterRegister() {
+    return this.counterRegister;
+  }
+
+  public setCounterRegister(data: number) {
+    this.counterRegister = data;
+  }
+
+  public getModuloRegister() {
+    return this.moduloRegister;
+  }
+
+  public setModuloRegister(data: number) {
+    this.moduloRegister = data;
+  }
+
+  public getControlRegister() {
+    return this.controlRegister;
+  }
+
+  public setControlRegister(data: number) {
+    this.controlRegister = data & 0x7;
+    this.ticksToCounterIncrement = this.getCounterFrequency();
   }
 
   public tick() {
-    if (!(this.control & 0x4)) {
-      return;
-    }
+    this.dividerTick();
 
-    if (this.tickCount >= this.getFrequency()) {
-      if (this.counter == 0xff) {
-        this.counter = this.modulo;
-        this.interruptController.requestInterrupt(InterruptSource.Timer);
-      } else {
-        this.counter += 1;
-      }
-
-      this.tickCount = 0;
-    } else {
-      this.tickCount += 1;
+    if (this.isCounterEnabled()) {
+      this.counterTick();
     }
   }
 
-  private getFrequency() {
-    switch (this.control & 0x3) {
+  private dividerTick() {
+    if (this.ticksToDividerIncrement === 0) {
+      this.dividerRegister = wrapIncrementByte(this.dividerRegister);
+      this.ticksToDividerIncrement = 64 * 4;
+    }
+    this.ticksToDividerIncrement -= 1;
+  }
+
+  private isCounterEnabled() {
+    return (this.controlRegister & 0x4) !== 0;
+  }
+
+  private counterTick() {
+    if (this.ticksToCounterIncrement === 0) {
+      if (this.counterRegister == 0xff) {
+        this.counterRegister = this.moduloRegister;
+        this.onInterruptRequest();
+      } else {
+        this.counterRegister += 1;
+      }
+
+      this.ticksToCounterIncrement = this.getCounterFrequency();
+    }
+
+    this.ticksToCounterIncrement -= 1;
+  }
+
+  private getCounterFrequency() {
+    switch (this.controlRegister & 0x3) {
       case 0:
-        return 256;
+        return 256 * 4;
       case 1:
-        return 4;
+        return 4 * 4;
       case 2:
-        return 16;
+        return 16 * 4;
       case 3:
-        return 64;
+        return 64 * 4;
       default:
         return 0;
     }
