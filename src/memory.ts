@@ -1,8 +1,9 @@
 import { Timer } from "./hw/timer";
 import { InterruptController } from "./hw/interrupt-controller";
 import { LCD } from "./hw/lcd";
-import { makeWord } from "./utils";
 import { IBus } from "./cpu";
+import { OAM } from "./hw/oam";
+import { Cartridge } from "./cartridge";
 
 let buf = "";
 
@@ -24,76 +25,40 @@ export enum HWRegister {
   LYC = 0xff45,
   DMA = 0xff46,
   BGP = 0xff47,
-  IE = 0xffff,
+  OBP0 = 0xff48,
+  OPB1 = 0xff49,
+  WY = 0xff4a,
+  WX = 0xff4b,
   KEY1 = 0xff4d,
+  IE = 0xffff,
 }
 
 export class Memory implements IBus {
-  private dmaInProgress = false;
-  private ticksToDMA = 0;
-  private dmaSource = 0;
   private wram = new Uint8Array(0x10000);
-
-  private startDMA(source: number) {
-    this.dmaInProgress = true;
-    this.dmaSource = source;
-    this.ticksToDMA = 160 * 4;
-  }
-
-  public tick() {
-    if (!this.dmaInProgress) {
-      return;
-    }
-
-    if (this.ticksToDMA > 0) {
-      this.ticksToDMA -= 1;
-      return;
-    }
-
-    this.dmaInProgress = false;
-
-    for (let i = 0; i < 160; i++) {
-      const sourceAddress = makeWord(this.dmaSource, i);
-      this.lcd.writeOAM(i, this.read(sourceAddress));
-    }
-  }
 
   public constructor(
     private lcd: LCD,
     private interruptController: InterruptController,
     private timer: Timer,
-    private cartridge: Uint8Array
+    private cartridge: Cartridge,
+    private oam: OAM
   ) {}
 
   // private ramEnabled = false;
-  private romBankNumber = 1;
 
   // private externalRAM = new Uint8Array(0x2000);
 
-  public read(address: number) {
-    if (address >= 0x8000 && address <= 0x9fff) {
+  public read(address: number): number {
+    if (address <= 0x7fff) {
+      return this.cartridge.readROM(address);
+    }
+
+    if (address <= 0x9fff) {
       return this.lcd.readVRAM(address - 0x8000);
     }
 
     if (address >= 0xfe00 && address <= 0xfe9f) {
-      if (this.dmaInProgress) {
-        return 0xff;
-      }
-      return this.lcd.readOAM(address - 0xfe00);
-    }
-
-    if (address <= 0x3fff) {
-      return this.cartridge[address];
-    }
-
-    if (address <= 0x7fff) {
-      console.log(
-        "Reading",
-        (address + (this.romBankNumber - 1) * 0x4000).toString(16),
-        this.cartridge.length.toString(16),
-        this.cartridge[address + (this.romBankNumber - 1) * 0x4000]
-      );
-      return this.cartridge[address + (this.romBankNumber - 1) * 0x4000];
+      return this.oam.read(address - 0xfe00);
     }
 
     if (address >= 0xc000 && address <= 0xdfff) {
@@ -105,7 +70,7 @@ export class Memory implements IBus {
     if ((address >= 0xff00 && address <= 0xff80) || address == 0xffff) {
       switch (address) {
         case HWRegister.DMA:
-          return this.dmaSource;
+          return this.oam.getDMASource();
         case HWRegister.DIV:
           return this.timer.getDividerRegister();
         case HWRegister.TIMA:
@@ -128,6 +93,14 @@ export class Memory implements IBus {
           return this.lcd.getViewportXPositionRegister();
         case HWRegister.BGP:
           return this.lcd.getBGPaletteDataRegister();
+        case HWRegister.WY:
+          return this.lcd.getWindowYPositionRegister();
+        case HWRegister.WX:
+          return this.lcd.getWindowXPositionRegister();
+        case HWRegister.OBP0:
+          return this.lcd.getObjPalette0DataRegister();
+        case HWRegister.OPB1:
+          return this.lcd.getObjPalette1DataRegister();
         case HWRegister.IF:
           return this.interruptController.getFlagRegister();
         case HWRegister.IE:
@@ -136,8 +109,8 @@ export class Memory implements IBus {
           console.log("TODO: read KEY1");
           return 0xff;
         default:
-          console.log("Reading " + address.toString(16));
-          // throw new Error("Reading " + address.toString(16));
+          //console.log("Reading " + address.toString(16));
+          throw new Error("Reading " + address.toString(16));
           return 0xff;
       }
     }
@@ -146,35 +119,16 @@ export class Memory implements IBus {
   }
 
   public write(address: number, data: number) {
-    if (address <= 0x1fff) {
-      if ((data & 0xf) === 0xa) {
-        console.log("Enable RAM", data.toString(16));
-        //this.ramEnabled = true;
-      } else {
-        console.log("Disable RAM", data.toString(16));
-        //this.ramEnabled = false;
-      }
-    } else if (address <= 0x3fff) {
-      console.log("Set bank number", data.toString(16));
-
-      this.romBankNumber = data ? data & 0x1f : 0x1;
-    } else if (address <= 0x7fff) {
-      console.log(
-        "Writing cartridge data",
-        address.toString(16),
-        data.toString(16)
-      );
-      //this.cartridge[address + this.romBankNumber * 0x4000] = data;
-    } else if (address >= 0x8000 && address <= 0x9fff) {
+    if (address <= 0x7fff) {
+      this.cartridge.writeROM(address, data);
+    } else if (address <= 0x9fff) {
       this.lcd.writeVRAM(address - 0x8000, data);
     } else if (address >= 0xc000 && address <= 0xdfff) {
       this.wram[address] = data;
     } else if (address >= 0xff80 && address <= 0xfffe) {
       this.wram[address] = data;
     } else if (address >= 0xfe00 && address <= 0xfe9f) {
-      if (!this.dmaInProgress) {
-        this.lcd.writeOAM(address - 0xfe00, data);
-      }
+      this.oam.write(address - 0xfe00, data);
     } else if ((address >= 0xff00 && address <= 0xff80) || address == 0xffff) {
       switch (address) {
         case 0xff01:
@@ -191,7 +145,7 @@ export class Memory implements IBus {
           console.log("TODO: SC");
           break;
         case HWRegister.DMA:
-          this.startDMA(data);
+          this.oam.startDMA(data);
           break;
         case HWRegister.DIV:
           this.timer.setDividerRegister(data);
@@ -232,6 +186,18 @@ export class Memory implements IBus {
         case HWRegister.BGP:
           this.lcd.setBGPaletteDataRegister(data);
           break;
+        case HWRegister.WY:
+          this.lcd.setWindowYPositionRegister(data);
+          break;
+        case HWRegister.WX:
+          this.lcd.setWindowXPositionRegister(data);
+          break;
+        case HWRegister.OBP0:
+          this.lcd.setObjPalett0DataRegister(data);
+          break;
+        case HWRegister.OPB1:
+          this.lcd.setObjPalett1DataRegister(data);
+          break;
         case HWRegister.IF:
           this.interruptController.setFlagRegister(data);
           break;
@@ -239,8 +205,8 @@ export class Memory implements IBus {
           this.interruptController.setEnableRegister(data);
           break;
         default:
-          console.log("Writing " + address.toString(16));
-          // throw new Error();
+          //console.log();
+          throw new Error("Writing " + address.toString(16));
           break;
       }
     } else {

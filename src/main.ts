@@ -3,6 +3,8 @@ import { InterruptController } from "./hw/interrupt-controller";
 import { LCD } from "./hw/lcd";
 import { Memory } from "./memory";
 import { Timer } from "./hw/timer";
+import { OAM } from "./hw/oam";
+import { Cartridge } from "./cartridge";
 
 const canvas = document.createElement("canvas");
 canvas.width = 160 * 2;
@@ -49,11 +51,6 @@ const cartridgeTypes: Partial<Record<number, string>> = {
   [0xff]: "HuC1+RAM+BATTERY",
 };
 
-const LOGO_BASE = 0x0104;
-const LOGO_END = 0x0134;
-const TYPE = 0x0147;
-const ROM_SIZE = 0x0148;
-
 export enum InterruptSource {
   VBlank = 0,
   LCD = 1,
@@ -61,12 +58,6 @@ export enum InterruptSource {
   Serial = 3,
   Joypad = 4,
 }
-
-const interruptController = new InterruptController();
-
-const timer = new Timer(() => {
-  interruptController.requestInterrupt(InterruptSource.Timer);
-});
 
 const canvas2 = document.createElement("canvas");
 canvas2.width = 16 * 16;
@@ -77,12 +68,17 @@ canvas2.style.right = "10px";
 canvas2.style.border = "1px solid gray";
 const context2 = canvas2.getContext("2d")!;
 
-const lcd = new LCD(context, context2);
-let memory = new Memory(lcd, interruptController, timer, new Uint8Array(0));
+interface Emulator {
+  cpu: Cpu;
+  oam: OAM;
+  timer: Timer;
+  interruptController: InterruptController;
+  lcd: LCD;
+}
 
-let cpu = new Cpu(memory, interruptController);
+let current: Emulator | null = null;
 
-async function run() {
+async function run({ cpu, oam, lcd, timer }: Emulator) {
   let mCycles = 0;
 
   cpu.writeRegisterPair(RegisterPair.PC, 0x100);
@@ -91,7 +87,7 @@ async function run() {
     let stepMCycles = cpu.step();
 
     for (let i = 0; i < stepMCycles; i++) {
-      memory.tick();
+      oam.tick();
       timer.tick();
       lcd.tick();
     }
@@ -110,15 +106,49 @@ async function run() {
 }
 
 async function readImage(file: File) {
-  cpu.stop();
+  if (current) {
+    current.cpu.stop();
+  }
 
   const buffer = await file.arrayBuffer();
-  const data = new Uint8Array(buffer);
 
-  memory = new Memory(lcd, interruptController, timer, data);
-  cpu = new Cpu(memory, interruptController);
+  const cartridge = new Cartridge(buffer);
 
-  const logoData = data.slice(LOGO_BASE, LOGO_END);
+  const interruptController = new InterruptController();
+
+  const oam = new OAM({
+    readCallback: (address): number => memory.read(address),
+  });
+
+  const lcd = new LCD(
+    context,
+    context2,
+    oam,
+    () => {
+      interruptController.requestInterrupt(InterruptSource.VBlank);
+    },
+    () => {
+      interruptController.requestInterrupt(InterruptSource.LCD);
+    }
+  );
+
+  const timer = new Timer(() => {
+    interruptController.requestInterrupt(InterruptSource.Timer);
+  });
+
+  const memory = new Memory(lcd, interruptController, timer, cartridge, oam);
+
+  const cpu = new Cpu(memory, interruptController);
+
+  current = {
+    interruptController,
+    oam,
+    lcd,
+    cpu,
+    timer,
+  };
+
+  const logoData = cartridge.getLogo();
 
   displayLogo(logoData);
 
@@ -128,30 +158,18 @@ async function readImage(file: File) {
     }
   });
 
-  const title = String.fromCharCode(...data.slice(0x0134, 0x143));
-
-  const type = data[TYPE];
+  const type = cartridge.getType();
   const typeName = cartridgeTypes[type];
 
   if (!typeName) {
     throw new Error("Unsupported cartridge type " + type);
   }
 
-  console.log(`Title: ${title}`);
+  console.log(`Title: ${cartridge.getTitle()}`);
   console.log(`Type: ${typeName}`);
+  console.log(`ROM Size: ${cartridge.getROMSize()}`);
 
-  const romSize = 32 * 1024 * (1 << data[ROM_SIZE]);
-  if (romSize !== data.length) {
-    throw new Error("Bad ROM size");
-  }
-
-  console.log(romSize);
-
-  // for (let i = 0; i < Math.min(0x8000, romSize); i++) {
-  //   memory.write(i, data[i]);
-  // }
-
-  run();
+  run(current);
 }
 
 const displayLogo = (bytes: Uint8Array) => {
