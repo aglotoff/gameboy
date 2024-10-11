@@ -1,12 +1,11 @@
-import { IMemory } from "./memory";
-import { Flag, Register, RegisterFile, RegisterPair } from "./regs";
+import { Flag, Register, RegisterFile, RegisterPair } from "./register";
 import {
   getLSB,
   getMSB,
   makeWord,
   wrapDecrementWord,
   wrapIncrementWord,
-} from "./utils";
+} from "../utils";
 
 export enum Condition {
   Z,
@@ -15,13 +14,18 @@ export enum Condition {
   NC,
 }
 
+export interface IBus {
+  read(address: number): number;
+  write(address: number, data: number): void;
+}
+
 export class CpuState {
   private regs = new RegisterFile();
   private ime = false;
   private halted = false;
   private stopped = false;
 
-  public constructor(protected memory: IMemory) {}
+  public constructor(protected memory: IBus) {}
 
   public readRegister(register: Register) {
     return this.regs.read(register);
@@ -79,7 +83,7 @@ export class CpuState {
     return this.ime;
   }
 
-  protected checkCondition(condition: Condition) {
+  public checkCondition(condition: Condition) {
     switch (condition) {
       case Condition.Z:
         return this.isFlagSet(Flag.Z);
@@ -92,20 +96,20 @@ export class CpuState {
     }
   }
 
-  protected fetchImmediateByte() {
+  public fetchImmediateByte() {
     let pc = this.readRegisterPair(RegisterPair.PC);
     const data = this.readBus(pc);
     this.writeRegisterPair(RegisterPair.PC, wrapIncrementWord(pc));
     return data;
   }
 
-  protected fetchImmediateWord() {
+  public fetchImmediateWord() {
     let lowByte = this.fetchImmediateByte();
     let highByte = this.fetchImmediateByte();
     return makeWord(highByte, lowByte);
   }
 
-  protected pushWord(data: number) {
+  public pushWord(data: number) {
     let sp = this.readRegisterPair(RegisterPair.SP);
 
     sp = wrapDecrementWord(sp);
@@ -116,7 +120,7 @@ export class CpuState {
     this.writeRegisterPair(RegisterPair.SP, sp);
   }
 
-  protected popWord() {
+  public popWord() {
     let sp = this.readRegisterPair(RegisterPair.SP);
 
     const lsb = this.readBus(sp);

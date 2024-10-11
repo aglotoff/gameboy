@@ -1,7 +1,8 @@
 import { Condition, CpuState } from "../cpu-state";
-import { RegisterPair } from "../regs";
-import { addSignedByteToWord, makeWord } from "../utils";
+import { RegisterPair } from "../register";
+import { makeWord } from "../../utils";
 import {
+  addSignedByteToWord,
   instruction,
   instructionWithImmediateByte,
   instructionWithImmediateWord,

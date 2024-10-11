@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest";
 
-import { Flag, Register, RegisterPair } from "../regs";
+import { Flag, Register, RegisterPair } from "../register";
 import {
   rotateLeftCircularAccumulator,
   rotateRightCircularAccumulator,

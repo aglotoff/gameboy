@@ -1,7 +1,7 @@
 import { describe, expect } from "vitest";
 
-import { Register, RegisterPair } from "../regs";
-import { getLSB, getMSB } from "../utils";
+import { Register, RegisterPair } from "../register";
+import { getLSB, getMSB } from "../../utils";
 
 import {
   loadIndirectHLFromImmediateData,

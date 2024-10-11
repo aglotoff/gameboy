@@ -1,4 +1,4 @@
-import { getLSB, getMSB, makeWord } from "./utils";
+import { getLSB, getMSB, makeWord, resetBit, setBit, testBit } from "../utils";
 
 export enum Register {
   A = 0,
@@ -26,13 +26,6 @@ export enum RegisterPair {
   PC = 5,
 }
 
-export enum Flag {
-  Z = 7,
-  N = 6,
-  H = 5,
-  CY = 4,
-}
-
 const pairToRegisters: Record<RegisterPair, [Register, Register]> = {
   [RegisterPair.AF]: [Register.A, Register.F],
   [RegisterPair.BC]: [Register.B, Register.C],
@@ -42,45 +35,50 @@ const pairToRegisters: Record<RegisterPair, [Register, Register]> = {
   [RegisterPair.PC]: [Register.PC_H, Register.PC_L],
 };
 
+export enum Flag {
+  Z = 7,
+  N = 6,
+  H = 5,
+  CY = 4,
+}
+
+const FLAG_MASK = 0xf0;
+
 export class RegisterFile {
   private registers = new Uint8Array(14);
 
-  reset() {
-    this.registers = new Uint8Array(14);
-  }
-
-  read(register: Register) {
+  public read(register: Register) {
     return this.registers[register];
   }
 
-  write(register: Register, value: number) {
+  public write(register: Register, value: number) {
     if (register === Register.F) {
-      this.registers[register] = value & 0xf0;
+      this.registers[register] = value & FLAG_MASK;
     } else {
       this.registers[register] = value;
     }
   }
 
-  readPair(pair: RegisterPair) {
+  public readPair(pair: RegisterPair) {
     const [high, low] = pairToRegisters[pair];
     return makeWord(this.read(high), this.read(low));
   }
 
-  writePair(pair: RegisterPair, value: number) {
+  public writePair(pair: RegisterPair, value: number) {
     const [high, low] = pairToRegisters[pair];
     this.write(high, getMSB(value));
     this.write(low, getLSB(value));
   }
 
-  isFlagSet(flag: Flag) {
-    return !!(this.registers[Register.F] & (1 << flag));
+  public isFlagSet(flag: Flag) {
+    return testBit(this.registers[Register.F], flag);
   }
 
-  setFlag(flag: Flag, value: boolean) {
+  public setFlag(flag: Flag, value: boolean) {
     if (value) {
-      this.registers[Register.F] |= 1 << flag;
+      this.registers[Register.F] = setBit(this.registers[Register.F], flag);
     } else {
-      this.registers[Register.F] &= ~(1 << flag);
+      this.registers[Register.F] = resetBit(this.registers[Register.F], flag);
     }
   }
 }

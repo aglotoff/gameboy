@@ -1,7 +1,11 @@
 import { CpuState } from "../cpu-state";
-import { Flag, Register, RegisterPair } from "../regs";
-import { addBytes, subtractBytes } from "../utils";
-import { instruction, instructionWithImmediateByte } from "./lib";
+import { Flag, Register, RegisterPair } from "../register";
+import {
+  addBytes,
+  instruction,
+  instructionWithImmediateByte,
+  subtractBytes,
+} from "./lib";
 
 export const addRegister = instruction(function (reg: Register) {
   addToAccumulator.call(this, this.readRegister(reg));

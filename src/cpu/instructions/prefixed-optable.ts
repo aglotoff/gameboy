@@ -1,4 +1,4 @@
-import { Register } from "../regs";
+import { Register } from "../register";
 
 import {
   resetBitIndirectHL,

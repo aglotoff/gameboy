@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest";
 
-import { Flag, RegisterPair } from "../regs";
+import { Flag, RegisterPair } from "../register";
 import {
   callFunction,
   callFunctionConditional,
@@ -14,7 +14,7 @@ import {
   returnFromFunctionConditional,
   returnFromInterruptHandler,
 } from "./flow";
-import { getLSB, getMSB } from "../utils";
+import { getLSB, getMSB } from "../../utils";
 import { testInstruction } from "./test-lib";
 import { Condition } from "../cpu-state";
 

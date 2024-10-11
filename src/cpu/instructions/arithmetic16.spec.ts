@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest";
 
-import { Flag, RegisterPair } from "../regs";
+import { Flag, RegisterPair } from "../register";
 import {
   addRegisterPair,
   addToStackPointer,

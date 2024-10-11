@@ -1,4 +1,4 @@
-import { wrapIncrementByte } from "./utils";
+import { wrapIncrementByte } from "../utils";
 
 export class Timer {
   private ticksToCounterIncrement = 0;

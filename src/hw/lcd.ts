@@ -1,4 +1,4 @@
-import { testBit } from "./utils";
+import { testBit } from "../utils";
 
 export enum OAMFlags {
   PaletteNumber = 1 << 4,
@@ -103,13 +103,13 @@ export class LCD {
     return testBit(this.controlRegister, 7);
   }
 
-  private getWindowTileMapArea() {
-    return testBit(this.controlRegister, 6) ? 0x400 : 0;
-  }
+  // private getWindowTileMapArea() {
+  //   return testBit(this.controlRegister, 6) ? 0x400 : 0;
+  // }
 
-  private isWindowEnabled() {
-    return testBit(this.controlRegister, 5);
-  }
+  // private isWindowEnabled() {
+  //   return testBit(this.controlRegister, 5);
+  // }
 
   private getBGAndWindowTileDataArea() {
     return (testBit(this.controlRegister, 4) ? 0x8000 : 0x8800) - VRAM_BASE;
@@ -119,17 +119,17 @@ export class LCD {
     return (testBit(this.controlRegister, 3) ? 0x9c00 : 0x9800) - VRAM_BASE;
   }
 
-  private getObjSize() {
-    return testBit(this.controlRegister, 2) ? 2 : 1;
-  }
+  // private getObjSize() {
+  //   return testBit(this.controlRegister, 2) ? 2 : 1;
+  // }
 
-  private isObjEnabled() {
-    return testBit(this.controlRegister, 1);
-  }
+  // private isObjEnabled() {
+  //   return testBit(this.controlRegister, 1);
+  // }
 
-  private isBGAndWindowEnabled() {
-    return testBit(this.controlRegister, 0);
-  }
+  // private isBGAndWindowEnabled() {
+  //   return testBit(this.controlRegister, 0);
+  // }
 
   public getViewportYPositionRegister() {
     return this.viewportY;

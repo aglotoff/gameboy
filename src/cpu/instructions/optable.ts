@@ -1,5 +1,5 @@
 import { Condition } from "../cpu-state";
-import { RegisterPair, Register } from "../regs";
+import { RegisterPair, Register } from "../register";
 
 import {
   addRegisterPair,

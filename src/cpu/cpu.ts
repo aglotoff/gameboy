@@ -1,12 +1,11 @@
-import { CpuState } from "./cpu-state";
+import { CpuState, IBus } from "./cpu-state";
 import { getInstruction, getPrefixCBInstruction } from "./instructions";
-import { InterruptController } from "./interrupt-controller";
-import { IMemory } from "./memory";
-import { RegisterPair } from "./regs";
+import { InterruptController } from "../hw/interrupt-controller";
+import { RegisterPair } from "./register";
 
 export class Cpu extends CpuState {
   public constructor(
-    memory: IMemory,
+    memory: IBus,
     private interruptController: InterruptController
   ) {
     super(memory);

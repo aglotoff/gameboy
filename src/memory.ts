@@ -1,14 +1,10 @@
-import { Timer } from "./timer";
-import { InterruptController } from "./interrupt-controller";
-import { LCD } from "./lcd";
+import { Timer } from "./hw/timer";
+import { InterruptController } from "./hw/interrupt-controller";
+import { LCD } from "./hw/lcd";
 import { makeWord } from "./utils";
+import { IBus } from "./cpu";
 
 let buf = "";
-
-export interface IMemory {
-  read(address: number): number;
-  write(address: number, data: number): void;
-}
 
 export enum HWRegister {
   JOYP = 0xff00,
@@ -32,7 +28,7 @@ export enum HWRegister {
   KEY1 = 0xff4d,
 }
 
-export class Memory implements IMemory {
+export class Memory implements IBus {
   private dmaInProgress = false;
   private ticksToDMA = 0;
   private dmaSource = 0;
@@ -69,10 +65,10 @@ export class Memory implements IMemory {
     private cartridge: Uint8Array
   ) {}
 
-  private ramEnabled = false;
+  // private ramEnabled = false;
   private romBankNumber = 1;
 
-  private externalRAM = new Uint8Array(0x2000);
+  // private externalRAM = new Uint8Array(0x2000);
 
   public read(address: number) {
     if (address >= 0x8000 && address <= 0x9fff) {
@@ -153,10 +149,10 @@ export class Memory implements IMemory {
     if (address <= 0x1fff) {
       if ((data & 0xf) === 0xa) {
         console.log("Enable RAM", data.toString(16));
-        this.ramEnabled = true;
+        //this.ramEnabled = true;
       } else {
         console.log("Disable RAM", data.toString(16));
-        this.ramEnabled = false;
+        //this.ramEnabled = false;
       }
     } else if (address <= 0x3fff) {
       console.log("Set bank number", data.toString(16));

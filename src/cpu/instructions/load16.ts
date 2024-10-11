@@ -1,6 +1,7 @@
-import { Flag, RegisterPair } from "../regs";
-import { addSignedByteToWord, getLSB, getMSB } from "../utils";
+import { Flag, RegisterPair } from "../register";
+import { getLSB, getMSB } from "../../utils";
 import {
+  addSignedByteToWord,
   instruction,
   instructionWithImmediateByte,
   instructionWithImmediateWord,

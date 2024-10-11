@@ -1,9 +1,8 @@
-import { Cpu } from "./cpu";
-import { InterruptController } from "./interrupt-controller";
-import { LCD } from "./lcd";
+import { Cpu, RegisterPair } from "./cpu";
+import { InterruptController } from "./hw/interrupt-controller";
+import { LCD } from "./hw/lcd";
 import { Memory } from "./memory";
-import { RegisterPair } from "./regs";
-import { Timer } from "./timer";
+import { Timer } from "./hw/timer";
 
 const canvas = document.createElement("canvas");
 canvas.width = 160 * 2;

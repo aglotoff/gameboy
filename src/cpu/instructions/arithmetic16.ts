@@ -1,6 +1,11 @@
-import { RegisterPair, Flag } from "../regs";
-import { wrapIncrementWord, addWords, addSignedByteToWord } from "../utils";
-import { instruction, instructionWithImmediateByte } from "./lib";
+import { RegisterPair, Flag } from "../register";
+import { wrapIncrementWord } from "../../utils";
+import {
+  addSignedByteToWord,
+  addWords,
+  instruction,
+  instructionWithImmediateByte,
+} from "./lib";
 
 export const incrementRegisterPair = instruction(function (pair: RegisterPair) {
   this.writeRegisterPair(pair, wrapIncrementWord(this.readRegisterPair(pair)));

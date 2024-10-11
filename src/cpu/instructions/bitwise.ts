@@ -1,5 +1,5 @@
-import { Flag, Register, RegisterPair } from "../regs";
-import { resetBit, setBit, testBit } from "../utils";
+import { Flag, Register, RegisterPair } from "../register";
+import { resetBit, setBit, testBit } from "../../utils";
 import { instruction } from "./lib";
 
 export const rotateLeftCircularAccumulator = instruction(function () {

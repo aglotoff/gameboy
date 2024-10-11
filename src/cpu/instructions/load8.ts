@@ -1,5 +1,5 @@
-import { Register, RegisterPair } from "../regs";
-import { wrapDecrementWord, wrapIncrementWord } from "../utils";
+import { Register, RegisterPair } from "../register";
+import { wrapDecrementWord, wrapIncrementWord } from "../../utils";
 import {
   instruction,
   instructionWithImmediateByte,

@@ -1,9 +1,8 @@
 import { test } from "vitest";
 
-import { IMemory } from "../memory";
-import { CpuState } from "../cpu-state";
+import { CpuState, IBus } from "../cpu-state";
 
-class TestMemory implements IMemory {
+class TestMemory implements IBus {
   private ram = new Uint8Array(0x10000);
 
   public read(address: number) {

@@ -1,4 +1,4 @@
-import { resetBit, setBit, testBit } from "./utils";
+import { resetBit, setBit, testBit } from "../utils";
 
 const INTERRUPT_SOURCE_MAX = 5;
 const INTERRUPT_SOURCE_MASK = 0x1f;
