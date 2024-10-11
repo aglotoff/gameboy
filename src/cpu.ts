@@ -1,23 +1,26 @@
 import { CpuState } from "./cpu-state";
 import { getInstruction, getPrefixCBInstruction } from "./instructions";
-import { interruptController } from "./interrupt-controller";
+import { InterruptController } from "./interrupt-controller";
 import { IMemory } from "./memory";
 import { RegisterPair } from "./regs";
 
 export class Cpu extends CpuState {
-  public constructor(memory: IMemory) {
+  public constructor(
+    memory: IMemory,
+    private interruptController: InterruptController
+  ) {
     super(memory);
   }
 
   public step() {
-    if (interruptController.hasPendingInterrupt()) {
+    if (this.interruptController.hasPendingInterrupt()) {
       this.setHalted(false);
 
       if (this.getIME()) {
         this.setIME(false);
 
-        const irq = interruptController.getPendingInterrupt();
-        interruptController.acknowledgeInterrupt(irq);
+        const irq = this.interruptController.getPendingInterrupt();
+        this.interruptController.acknowledgeInterrupt(irq);
 
         const handlerAddress = 0x40 + irq * 8;
 

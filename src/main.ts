@@ -1,6 +1,16 @@
 import { Cpu } from "./cpu";
-import { Memory, timer } from "./memory";
+import { InterruptController } from "./interrupt-controller";
+import { LCD } from "./lcd";
+import { Memory } from "./memory";
 import { RegisterPair } from "./regs";
+import { Timer } from "./timer";
+
+const canvas = document.createElement("canvas");
+canvas.width = 160 * 2;
+canvas.height = 144 * 2;
+canvas.style.margin = "20px auto";
+canvas.style.border = "1px solid gray";
+const context = canvas.getContext("2d")!;
 
 const logoBytes = [
   0xce, 0xed, 0x66, 0x66, 0xcc, 0x0d, 0x00, 0x0b, 0x03, 0x73, 0x00, 0x83, 0x00,
@@ -45,7 +55,33 @@ const LOGO_END = 0x0134;
 const TYPE = 0x0147;
 const ROM_SIZE = 0x0148;
 
-let cpu = new Cpu(new Memory());
+export enum InterruptSource {
+  VBlank = 0,
+  LCD = 1,
+  Timer = 2,
+  Serial = 3,
+  Joypad = 4,
+}
+
+const interruptController = new InterruptController();
+
+const timer = new Timer(() => {
+  interruptController.requestInterrupt(InterruptSource.Timer);
+});
+
+const canvas2 = document.createElement("canvas");
+canvas2.width = 16 * 16;
+canvas2.height = 32 * 16;
+canvas2.style.position = "fixed";
+canvas2.style.top = "10px";
+canvas2.style.right = "10px";
+canvas2.style.border = "1px solid gray";
+const context2 = canvas2.getContext("2d")!;
+
+const lcd = new LCD(context, context2);
+let memory = new Memory(lcd, interruptController, timer, new Uint8Array(0));
+
+let cpu = new Cpu(memory, interruptController);
 
 async function run() {
   let mCycles = 0;
@@ -56,7 +92,9 @@ async function run() {
     let stepMCycles = cpu.step();
 
     for (let i = 0; i < stepMCycles; i++) {
+      memory.tick();
       timer.tick();
+      lcd.tick();
     }
 
     mCycles += stepMCycles;
@@ -68,15 +106,18 @@ async function run() {
       mCycles = 0;
     }
   }
+
+  console.log("STOPPED");
 }
 
 async function readImage(file: File) {
   cpu.stop();
-  const memory = new Memory();
-  cpu = new Cpu(memory);
 
   const buffer = await file.arrayBuffer();
   const data = new Uint8Array(buffer);
+
+  memory = new Memory(lcd, interruptController, timer, data);
+  cpu = new Cpu(memory, interruptController);
 
   const logoData = data.slice(LOGO_BASE, LOGO_END);
 
@@ -107,9 +148,9 @@ async function readImage(file: File) {
 
   console.log(romSize);
 
-  for (let i = 0; i < Math.min(0x8000, romSize); i++) {
-    memory.write(i, data[i]);
-  }
+  // for (let i = 0; i < Math.min(0x8000, romSize); i++) {
+  //   memory.write(i, data[i]);
+  // }
 
   run();
 }
@@ -142,16 +183,10 @@ const displayLogo = (bytes: Uint8Array) => {
   }
 };
 
-const canvas = document.createElement("canvas");
-canvas.width = 160 * 2;
-canvas.height = 144 * 2;
-canvas.style.margin = "20px auto";
-canvas.style.border = "1px solid gray";
-const context = canvas.getContext("2d")!;
-
 const app = document.getElementById("app");
 if (app != null) {
   app.appendChild(canvas);
+  app.appendChild(canvas2);
 }
 
 const fileSelector = document.getElementById("file-selector");

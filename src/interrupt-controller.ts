@@ -57,5 +57,3 @@ export class InterruptController {
     return this.enableRegister & this.flagRegister;
   }
 }
-
-export const interruptController = new InterruptController();
