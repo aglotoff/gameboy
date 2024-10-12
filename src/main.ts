@@ -5,11 +5,14 @@ import { Memory } from "./memory";
 import { Timer } from "./hw/timer";
 import { OAM } from "./hw/oam";
 import { Cartridge } from "./cartridge";
+import { ActionButton, DirectionButton, Joypad } from "./hw/joypad";
+
+import "./style.css";
 
 const canvas = document.createElement("canvas");
 canvas.width = 160 * 2;
 canvas.height = 144 * 2;
-canvas.style.margin = "20px auto";
+canvas.style.margin = "0 0 32px";
 canvas.style.border = "1px solid gray";
 const context = canvas.getContext("2d")!;
 
@@ -66,6 +69,7 @@ canvas2.style.position = "fixed";
 canvas2.style.top = "10px";
 canvas2.style.right = "10px";
 canvas2.style.border = "1px solid gray";
+canvas2.style.visibility = "hidden";
 const context2 = canvas2.getContext("2d")!;
 
 interface Emulator {
@@ -78,36 +82,113 @@ interface Emulator {
 
 let current: Emulator | null = null;
 
+const joypad = new Joypad(() => {
+  if (current) {
+    current.interruptController.requestInterrupt(InterruptSource.Joypad);
+  }
+});
+
+window.addEventListener(
+  "keydown",
+  (e) => {
+    switch (e.key) {
+      case "z":
+        joypad.pressActionButton(ActionButton.A);
+        break;
+      case "x":
+        joypad.pressActionButton(ActionButton.B);
+        break;
+      case " ":
+        joypad.pressActionButton(ActionButton.Select);
+        break;
+      case "Enter":
+        joypad.pressActionButton(ActionButton.Start);
+        break;
+      case "ArrowUp":
+        joypad.pressDirectionButton(DirectionButton.Up);
+        break;
+      case "ArrowDown":
+        joypad.pressDirectionButton(DirectionButton.Down);
+        break;
+      case "ArrowLeft":
+        joypad.pressDirectionButton(DirectionButton.Left);
+        break;
+      case "ArrowRight":
+        joypad.pressDirectionButton(DirectionButton.Right);
+        break;
+    }
+  },
+  false
+);
+
+window.addEventListener(
+  "keyup",
+  (e) => {
+    switch (e.key) {
+      case "z":
+        joypad.releaseActionButton(ActionButton.A);
+        break;
+      case "x":
+        joypad.releaseActionButton(ActionButton.B);
+        break;
+      case " ":
+        joypad.releaseActionButton(ActionButton.Select);
+        break;
+      case "Enter":
+        joypad.releaseActionButton(ActionButton.Start);
+        break;
+      case "ArrowUp":
+        joypad.releaseDirectionButton(DirectionButton.Up);
+        break;
+      case "ArrowDown":
+        joypad.releaseDirectionButton(DirectionButton.Down);
+        break;
+      case "ArrowLeft":
+        joypad.releaseDirectionButton(DirectionButton.Left);
+        break;
+      case "ArrowRight":
+        joypad.releaseDirectionButton(DirectionButton.Right);
+        break;
+    }
+  },
+  false
+);
+
+let timeout = 0;
+
 async function run({ cpu, oam, lcd, timer }: Emulator) {
-  let mCycles = 0;
+  let total = 0;
+
+  timeout = setInterval(() => {
+    let tCycles = 0;
+
+    while (tCycles < 69905) {
+      if (cpu.isStopped()) {
+        clearInterval(timeout);
+        console.log("STOPPED");
+        return;
+      }
+
+      let stepMCycles = cpu.step();
+
+      for (let i = 0; i < stepMCycles; i++) {
+        oam.tick();
+        timer.tick();
+        lcd.tick();
+      }
+
+      tCycles += stepMCycles;
+      total += stepMCycles;
+    }
+  }, 16);
 
   cpu.writeRegisterPair(RegisterPair.PC, 0x100);
-
-  while (!cpu.isStopped()) {
-    let stepMCycles = cpu.step();
-
-    for (let i = 0; i < stepMCycles; i++) {
-      oam.tick();
-      timer.tick();
-      lcd.tick();
-    }
-
-    mCycles += stepMCycles;
-
-    if (mCycles > 4194) {
-      await new Promise((resolve) => {
-        setTimeout(resolve, 4);
-      });
-      mCycles = 0;
-    }
-  }
-
-  console.log("STOPPED");
 }
 
 async function readImage(file: File) {
   if (current) {
     current.cpu.stop();
+    clearInterval(timeout);
   }
 
   const buffer = await file.arrayBuffer();
@@ -136,7 +217,14 @@ async function readImage(file: File) {
     interruptController.requestInterrupt(InterruptSource.Timer);
   });
 
-  const memory = new Memory(lcd, interruptController, timer, cartridge, oam);
+  const memory = new Memory(
+    lcd,
+    interruptController,
+    timer,
+    cartridge,
+    oam,
+    joypad
+  );
 
   const cpu = new Cpu(memory, interruptController);
 
@@ -202,7 +290,7 @@ const displayLogo = (bytes: Uint8Array) => {
 
 const app = document.getElementById("app");
 if (app != null) {
-  app.appendChild(canvas);
+  app.insertBefore(canvas, app.firstChild);
   app.appendChild(canvas2);
 }
 

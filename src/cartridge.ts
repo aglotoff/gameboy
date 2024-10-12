@@ -34,6 +34,19 @@ export class Cartridge {
     return this.rom[address + (this.romBankNumber - 1) * 0x4000];
   }
 
+  private ram = new Uint8Array(0x2000);
+
+  public readRAM(offset: number) {
+    //throw new Error("Not Supp");
+    //return 0xff;
+    return this.ram[offset];
+  }
+
+  public writeRAM(offset: number, data: number) {
+    // throw new Error("Not supp");
+    this.ram[offset] = data;
+  }
+
   public writeROM(address: number, data: number) {
     if (address <= 0x1fff) {
       if ((data & 0xf) === 0xa) {
@@ -44,7 +57,7 @@ export class Cartridge {
         //this.ramEnabled = false;
       }
     } else if (address <= 0x3fff) {
-      console.log("Set bank number", data.toString(16));
+      // console.log("Set bank number", data.toString(16));
 
       this.romBankNumber = data ? data & 0x1f : 0x1;
     } else if (address <= 0x7fff) {

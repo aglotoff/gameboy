@@ -4,16 +4,37 @@ import { LCD } from "./hw/lcd";
 import { IBus } from "./cpu";
 import { OAM } from "./hw/oam";
 import { Cartridge } from "./cartridge";
+import { Joypad } from "./hw/joypad";
 
 let buf = "";
 
 export enum HWRegister {
   JOYP = 0xff00,
+  SB = 0xff01,
+  SC = 0xff02,
   DIV = 0xff04,
   TIMA = 0xff05,
   TMA = 0xff06,
   TAC = 0xff07,
   IF = 0xff0f,
+  NR10 = 0xff10,
+  NR11 = 0xff11,
+  NR12 = 0xff12,
+  NR13 = 0xff13,
+  NR14 = 0xff14,
+  NR21 = 0xff16,
+  NR22 = 0xff17,
+  NR23 = 0xff18,
+  NR24 = 0xff19,
+  NR30 = 0xff1a,
+  NR31 = 0xff1b,
+  NR32 = 0xff1c,
+  NR33 = 0xff1d,
+  NR34 = 0xff1e,
+  NR41 = 0xff20,
+  NR42 = 0xff21,
+  NR43 = 0xff22,
+  NR44 = 0xff23,
   NR50 = 0xff24,
   NR51 = 0xff25,
   NR52 = 0xff26,
@@ -29,7 +50,6 @@ export enum HWRegister {
   OPB1 = 0xff49,
   WY = 0xff4a,
   WX = 0xff4b,
-  KEY1 = 0xff4d,
   IE = 0xffff,
 }
 
@@ -41,34 +61,61 @@ export class Memory implements IBus {
     private interruptController: InterruptController,
     private timer: Timer,
     private cartridge: Cartridge,
-    private oam: OAM
+    private oam: OAM,
+    private joypad: Joypad
   ) {}
 
-  // private ramEnabled = false;
-
-  // private externalRAM = new Uint8Array(0x2000);
-
   public read(address: number): number {
+    // 16 KiB ROM bank 00
+    if (address <= 0x3fff) {
+      return this.cartridge.readROM(address);
+    }
+
+    // 16 KiB ROM Bank 01–NN
     if (address <= 0x7fff) {
       return this.cartridge.readROM(address);
     }
 
+    // 8 KiB Video RAM (VRAM)
     if (address <= 0x9fff) {
       return this.lcd.readVRAM(address - 0x8000);
     }
 
-    if (address >= 0xfe00 && address <= 0xfe9f) {
+    // 8 KiB External RAM
+    if (address <= 0xbfff) {
+      return this.cartridge.readRAM(address - 0xa000);
+    }
+
+    // 4 KiB Work RAM (WRAM)
+    if (address <= 0xcfff) {
+      return this.wram[address];
+    }
+
+    // 4 KiB Work RAM (WRAM)
+    if (address <= 0xdfff) {
+      return this.wram[address];
+    }
+
+    // Echo RAM
+    if (address <= 0xfdff) {
+      return this.wram[address - 0x2000];
+    }
+
+    // Object attribute memory (OAM)
+    if (address <= 0xfe9f) {
       return this.oam.read(address - 0xfe00);
     }
 
-    if (address >= 0xc000 && address <= 0xdfff) {
-      return this.wram[address];
-    } else if (address >= 0xff80 && address <= 0xfffe) {
-      return this.wram[address];
+    // Not Usable
+    if (address <= 0xfeff) {
+      return 0xff;
     }
 
-    if ((address >= 0xff00 && address <= 0xff80) || address == 0xffff) {
+    // I/O Registers
+    if (address <= 0xff7f || address === 0xffff) {
       switch (address) {
+        case HWRegister.JOYP:
+          return this.joypad.readRegister();
         case HWRegister.DMA:
           return this.oam.getDMASource();
         case HWRegister.DIV:
@@ -105,33 +152,50 @@ export class Memory implements IBus {
           return this.interruptController.getFlagRegister();
         case HWRegister.IE:
           return this.interruptController.getEnableRegister();
-        case HWRegister.KEY1:
-          console.log("TODO: read KEY1");
-          return 0xff;
         default:
-          //console.log("Reading " + address.toString(16));
-          throw new Error("Reading " + address.toString(16));
+          console.log("READ", address.toString(16));
           return 0xff;
       }
     }
 
-    throw new Error("Reading! " + address.toString(16));
+    // High RAM
+    return this.wram[address];
   }
 
   public write(address: number, data: number) {
-    if (address <= 0x7fff) {
+    if (address <= 0x3fff) {
+      // 16 KiB ROM bank 00
+      this.cartridge.writeROM(address, data);
+    } else if (address <= 0x7fff) {
+      // 16 KiB ROM Bank 01–NN
       this.cartridge.writeROM(address, data);
     } else if (address <= 0x9fff) {
+      // 8 KiB Video RAM (VRAM)
       this.lcd.writeVRAM(address - 0x8000, data);
-    } else if (address >= 0xc000 && address <= 0xdfff) {
+    } else if (address <= 0xbfff) {
+      // 8 KiB External RAM
+      this.cartridge.writeRAM(address - 0xa000, data);
+    } else if (address <= 0xcfff) {
+      // 4 KiB Work RAM (WRAM)
       this.wram[address] = data;
-    } else if (address >= 0xff80 && address <= 0xfffe) {
+    } else if (address <= 0xdfff) {
+      // 4 KiB Work RAM (WRAM)
       this.wram[address] = data;
-    } else if (address >= 0xfe00 && address <= 0xfe9f) {
+    } else if (address <= 0xfdff) {
+      // Echo RAM
+      this.wram[address - 0x2000] = data;
+    } else if (address <= 0xfe9f) {
+      // Object attribute memory (OAM)
       this.oam.write(address - 0xfe00, data);
-    } else if ((address >= 0xff00 && address <= 0xff80) || address == 0xffff) {
+    } else if (address <= 0xfeff) {
+      // Not Usable
+    } else if (address <= 0xff7f || address === 0xffff) {
+      // I/O Registers
       switch (address) {
-        case 0xff01:
+        case HWRegister.JOYP:
+          this.joypad.writeRegister(data);
+          break;
+        case HWRegister.SB:
           if (data == 10) {
             if (buf.length > 0) {
               console.log(buf);
@@ -140,9 +204,6 @@ export class Memory implements IBus {
           } else {
             buf += String.fromCharCode(data);
           }
-          break;
-        case 0xff02:
-          console.log("TODO: SC");
           break;
         case HWRegister.DMA:
           this.oam.startDMA(data);
@@ -158,15 +219,6 @@ export class Memory implements IBus {
           break;
         case HWRegister.TAC:
           this.timer.setControlRegister(data);
-          break;
-        case HWRegister.NR50:
-          console.log("TODO: NR50");
-          break;
-        case HWRegister.NR51:
-          console.log("TODO: NR51");
-          break;
-        case HWRegister.NR52:
-          console.log("TODO: NR52");
           break;
         case HWRegister.LCDC:
           this.lcd.setControlRegister(data);
@@ -204,13 +256,38 @@ export class Memory implements IBus {
         case HWRegister.IE:
           this.interruptController.setEnableRegister(data);
           break;
+        case HWRegister.NR10:
+        case HWRegister.NR11:
+        case HWRegister.NR12:
+        case HWRegister.NR13:
+        case HWRegister.NR14:
+        case HWRegister.NR21:
+        case HWRegister.NR22:
+        case HWRegister.NR23:
+        case HWRegister.NR24:
+        case HWRegister.NR30:
+        case HWRegister.NR31:
+        case HWRegister.NR32:
+        case HWRegister.NR33:
+        case HWRegister.NR34:
+        case HWRegister.NR41:
+        case HWRegister.NR42:
+        case HWRegister.NR43:
+        case HWRegister.NR44:
+        case HWRegister.NR50:
+        case HWRegister.NR51:
+        case HWRegister.NR52:
+        case 0xff15:
+        case 0xff1f:
+          // TODO
+          break;
         default:
-          //console.log();
-          throw new Error("Writing " + address.toString(16));
+          console.log("WRITE", address.toString(16));
           break;
       }
     } else {
-      throw new Error("Writing " + address.toString(16));
+      // High RAM
+      this.wram[address] = data;
     }
   }
 }

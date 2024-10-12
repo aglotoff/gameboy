@@ -18,6 +18,19 @@ const VRAM_SIZE = 0x2000;
 
 const palette = [0xe0f8d0ff, 0x88c070ff, 0x346856ff, 0x081820ff];
 
+interface OAMEntry {
+  y: number;
+  x: number;
+  tileIndex: number;
+  attributes: number;
+}
+
+interface Pixel {
+  color: number;
+  palette: number;
+  bgPriority?: boolean;
+}
+
 export class LCD {
   private controlRegister = 0;
   private lyCompareRegister = 0;
@@ -36,7 +49,7 @@ export class LCD {
   private bgPalette = 0;
   private objPalette0 = 0;
   private objPalette1 = 0;
-  private objectsPerLine = [] as number[];
+  private objectsPerLine = [] as OAMEntry[];
   private windowLineCounter = 0;
   private inWindow = false;
 
@@ -94,7 +107,7 @@ export class LCD {
   }
 
   public getStatusRegister() {
-    return this.statusRegister;
+    return this.statusRegister | this.mode;
   }
 
   public setStatusRegister(data: number) {
@@ -192,29 +205,25 @@ export class LCD {
     this.objPalette1 = data;
   }
 
-  private getBGColor(id: number) {
-    return palette[(this.bgPalette >> (id * 2)) & 0x3];
+  // private getBGColor(id: number) {
+  //   return this.getPaletteColor(this.bgPalette, id);
+  // }
+
+  private getPaletteColor(p: number, id: number) {
+    return palette[(p >> (id * 2)) & 0x3];
   }
 
-  private getObj0Color(id: number) {
-    return palette[(this.objPalette0 >> (id * 2)) & 0x3];
-  }
+  // public displayTile(tileNumber: number, x: number, y: number) {
+  //   for (let line = 0; line < 8; line++) {
+  //     for (let pixel = 0; pixel < 8; pixel++) {
+  //       const id = this.getTilePixelId(tileNumber, pixel, line, false);
 
-  private getObj1Color(id: number) {
-    return palette[(this.objPalette1 >> (id * 2)) & 0x3];
-  }
-
-  public displayTile(tileNumber: number, x: number, y: number) {
-    for (let line = 0; line < 8; line++) {
-      for (let pixel = 0; pixel < 8; pixel++) {
-        const id = this.getTilePixelId(tileNumber, pixel, line, false);
-
-        this.debugContext.fillStyle =
-          "#" + ("00000000" + this.getBGColor(id).toString(16)).slice(-8);
-        this.debugContext.fillRect(x + pixel * 2, y + line * 2, 2, 2);
-      }
-    }
-  }
+  //       this.debugContext.fillStyle =
+  //         "#" + ("00000000" + this.getBGColor(id).toString(16)).slice(-8);
+  //       this.debugContext.fillRect(x + pixel * 2, y + line * 2, 2, 2);
+  //     }
+  //   }
+  // }
 
   private getTilePixelId(
     tileNumber: number,
@@ -249,6 +258,11 @@ export class LCD {
     if (this.scanline < 144) {
       if (this.dot === 0) {
         this.mode = 2;
+        this.objectsPerLine = [];
+      } else if (this.dot < 80) {
+        if (this.dot % 2 === 1) {
+          this.oamScan();
+        }
       } else if (this.dot === 80) {
         this.mode = 3;
       } else if (this.dot === 252) {
@@ -276,8 +290,6 @@ export class LCD {
   }
 
   private updateScanline() {
-    this.objectsPerLine = this.updateObjectsPerLine();
-
     this.inWindow = false;
 
     if (
@@ -291,24 +303,35 @@ export class LCD {
     }
 
     for (let i = 0; i < CANVAS_WIDTH; i++) {
-      let pixel = this.getBGColor(0);
-      let colorId = 0;
+      let bgPixel: Pixel = { color: 0, palette: this.bgPalette };
+      let objPixel: Pixel | null = null;
 
       if (this.isBGAndWindowEnabled()) {
-        colorId = this.getBGPixel(i, this.scanline);
-        pixel = this.getBGColor(colorId);
+        bgPixel = this.getBGPixel(i, this.scanline);
 
         if (this.inWindow && i >= this.windowX - 7) {
-          colorId = this.getWindowPixel(i, this.windowLineCounter);
-          pixel = this.getBGColor(colorId);
+          bgPixel = this.getWindowPixel(i, this.windowLineCounter);
         }
       }
 
       if (this.isObjEnabled()) {
-        const objColor = this.getObjPixel(i, this.scanline, colorId);
-        if (objColor) {
-          pixel = objColor;
+        objPixel = this.getObjPixel(i, this.scanline);
+      }
+
+      let pixel = 0x00000000;
+
+      if (objPixel) {
+        if (
+          objPixel.color != 0x00 &&
+          objPixel.bgPriority &&
+          bgPixel.color !== 0
+        ) {
+          pixel = this.getPaletteColor(this.bgPalette, bgPixel.color);
+        } else {
+          pixel = this.getPaletteColor(objPixel.palette, objPixel.color);
         }
+      } else {
+        pixel = this.getPaletteColor(this.bgPalette, bgPixel.color);
       }
 
       this.setPixel(i, this.scanline, pixel);
@@ -319,7 +342,7 @@ export class LCD {
     }
   }
 
-  private getBGPixel(x: number, y: number) {
+  private getBGPixel(x: number, y: number): Pixel {
     const mapBase = this.getBGTileMapArea();
 
     const top = (this.viewportY + y) % 256;
@@ -330,12 +353,12 @@ export class LCD {
 
     const tileNumber = this.vram[mapBase + tileY * 32 + tileX];
 
-    const colorId = this.getTilePixelId(tileNumber, left % 8, top % 8, false);
+    const color = this.getTilePixelId(tileNumber, left % 8, top % 8, false);
 
-    return colorId;
+    return { color, palette: this.bgPalette };
   }
 
-  private getWindowPixel(x: number, y: number) {
+  private getWindowPixel(x: number, y: number): Pixel {
     const mapBase = this.getWindowTileMapArea();
 
     const top = y;
@@ -346,36 +369,47 @@ export class LCD {
 
     const tileNumber = this.vram[mapBase + tileY * 32 + tileX];
 
-    const colorId = this.getTilePixelId(tileNumber, left % 8, top % 8, false);
+    const color = this.getTilePixelId(tileNumber, left % 8, top % 8, false);
 
-    return colorId;
+    return { color, palette: this.bgPalette };
   }
 
-  private updateObjectsPerLine() {
-    const res = [] as number[];
-
-    for (let i = 0; i < 40 && res.length < 10; i++) {
-      const objY = this.oam.read(i * 4 + 0) - 16;
-
-      if (this.scanline < objY || this.scanline >= objY + this.getObjSize()) {
-        continue;
-      }
-
-      res.push(i);
+  private oamScan() {
+    if (this.objectsPerLine.length === 10) {
+      return;
     }
 
-    return res;
+    let entryIndex = Math.floor(this.dot / 2);
+
+    const objX = this.oam.read(entryIndex * 4 + 1);
+
+    if (objX === 0) {
+      return;
+    }
+
+    const objY = this.oam.read(entryIndex * 4 + 0) - 16;
+
+    if (this.scanline < objY || this.scanline >= objY + this.getObjSize()) {
+      return;
+    }
+
+    this.objectsPerLine.push({
+      y: objY + 16,
+      x: objX,
+      tileIndex: this.oam.read(entryIndex * 4 + 2),
+      attributes: this.oam.read(entryIndex * 4 + 3),
+    });
   }
 
-  private getObjPixel(x: number, y: number, bgColorId: number) {
-    let color = 0x00000000;
+  private getObjPixel(x: number, y: number) {
+    let pixel: Pixel | null = null;
     let minX = 0xfff;
 
     const size = this.getObjSize();
 
-    for (let i of this.objectsPerLine) {
-      const objY = this.oam.read(i * 4 + 0) - 16;
-      const objX = this.oam.read(i * 4 + 1) - 8;
+    for (let obj of this.objectsPerLine) {
+      const objY = obj.y - 16;
+      const objX = obj.x - 8;
 
       if (x < objX || x >= objX + 8 || y < objY || y >= objY + size) {
         continue;
@@ -385,46 +419,42 @@ export class LCD {
         continue;
       }
 
-      minX = objX;
-
-      const flags = this.oam.read(i * 4 + 3);
-
-      const flipX = testBit(flags, 5);
-      const flipY = testBit(flags, 6);
+      const flipX = testBit(obj.attributes, 5);
+      const flipY = testBit(obj.attributes, 6);
 
       const tileX = Math.floor(x - objX);
       const tileY = Math.floor(y - objY);
 
-      const tileNumber = this.oam.read(i * 4 + 2);
-
       const left = flipX ? 7 - tileX : tileX;
       const top = flipY ? size - 1 - tileY : tileY;
 
-      const colorId = this.getTilePixelId(
+      const color = this.getTilePixelId(
         size === 16
           ? top >= 8
-            ? tileNumber | 0x01
-            : tileNumber & 0xfe
-          : tileNumber,
+            ? obj.tileIndex | 0x01
+            : obj.tileIndex & 0xfe
+          : obj.tileIndex,
         left,
         top % 8,
         true
       );
 
-      if (colorId) {
-        if (flags & 0x80 && bgColorId) {
-          color = this.getBGColor(bgColorId);
-        } else if (flags & 0x10) {
-          color = this.getObj1Color(colorId);
-        } else {
-          color = this.getObj0Color(colorId);
-        }
+      if (color == 0x00) {
+        continue;
       }
+
+      minX = objX;
+
+      pixel = {
+        color,
+        bgPriority: testBit(obj.attributes, 7),
+        palette: testBit(obj.attributes, 4)
+          ? this.objPalette1
+          : this.objPalette0,
+      };
     }
 
-    return color;
-
-    //return this.getTilePixelId(tileNumber, left % 8, top % 8);
+    return pixel;
   }
 
   private setPixel(x: number, y: number, color: number) {
@@ -443,11 +473,11 @@ export class LCD {
   }
 
   private render() {
-    for (let y = 0; y < 24; y++) {
-      for (let x = 0; x < 16; x++) {
-        this.displayTile(y * 16 + x, x * 16, y * 16);
-      }
-    }
+    // for (let y = 0; y < 24; y++) {
+    //   for (let x = 0; x < 16; x++) {
+    //     this.displayTile(y * 16 + x, x * 16, y * 16);
+    //   }
+    // }
 
     this.context.putImageData(this.imageData, 0, 0);
   }
