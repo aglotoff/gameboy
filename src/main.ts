@@ -87,14 +87,14 @@ const joypad = new Joypad();
 window.addEventListener(
   "keydown",
   (e) => {
-    switch (e.key) {
-      case "z":
+    switch (e.code) {
+      case "KeyZ":
         joypad.pressActionButton(ActionButton.A);
         break;
-      case "x":
+      case "KeyX":
         joypad.pressActionButton(ActionButton.B);
         break;
-      case " ":
+      case "Space":
         joypad.pressActionButton(ActionButton.Select);
         break;
       case "Enter":
@@ -120,14 +120,14 @@ window.addEventListener(
 window.addEventListener(
   "keyup",
   (e) => {
-    switch (e.key) {
-      case "z":
+    switch (e.code) {
+      case "KeyZ":
         joypad.releaseActionButton(ActionButton.A);
         break;
-      case "x":
+      case "KeyX":
         joypad.releaseActionButton(ActionButton.B);
         break;
-      case " ":
+      case "Space":
         joypad.releaseActionButton(ActionButton.Select);
         break;
       case "Enter":
