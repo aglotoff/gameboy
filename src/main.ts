@@ -155,6 +155,8 @@ let timeout = 0;
 async function run({ cpu, oam, lcd, timer }: Emulator) {
   let total = 0;
 
+  (fileSelector as HTMLInputElement).disabled = true;
+
   timeout = setInterval(() => {
     let tCycles = 0;
 
