@@ -25,7 +25,7 @@ export class Joypad {
 
   private selectedButtons = 0;
 
-  public constructor(private onPress: () => void) {}
+  public constructor() {}
 
   writeRegister(data: number) {
     this.selectedButtons = data & 0x30;

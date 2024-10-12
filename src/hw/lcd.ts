@@ -1,4 +1,4 @@
-import { setBit, testBit } from "../utils";
+import { resetBit, setBit, testBit } from "../utils";
 import { OAM } from "./oam";
 
 export enum OAMFlags {
@@ -55,7 +55,7 @@ export class LCD {
 
   public constructor(
     private context: CanvasRenderingContext2D,
-    private debugContext: CanvasRenderingContext2D,
+    //private debugContext: CanvasRenderingContext2D,
     private oam: OAM,
     private onVBlank: () => void,
     private onStat: () => void
@@ -111,10 +111,10 @@ export class LCD {
   }
 
   public setStatusRegister(data: number) {
-    if ((data & ~0b1000000) !== 0) {
+    if ((data & ~0b1000111) !== 0) {
       throw new Error("Not implemented " + data.toString(2));
     }
-    this.statusRegister = data;
+    this.statusRegister = data & 0xf8;
   }
 
   private isEnabled() {
@@ -282,9 +282,10 @@ export class LCD {
       this.scanline = (this.scanline + 1) % SCANLINES_PER_FRAME;
 
       if (this.scanline === this.lyCompareRegister) {
-        this.onStat();
-
         this.statusRegister = setBit(this.statusRegister, 2);
+        this.onStat();
+      } else {
+        this.statusRegister = resetBit(this.statusRegister, 2);
       }
     }
   }

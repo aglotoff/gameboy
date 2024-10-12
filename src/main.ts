@@ -70,7 +70,7 @@ canvas2.style.top = "10px";
 canvas2.style.right = "10px";
 canvas2.style.border = "1px solid gray";
 canvas2.style.visibility = "hidden";
-const context2 = canvas2.getContext("2d")!;
+// const context2 = canvas2.getContext("2d")!;
 
 interface Emulator {
   cpu: Cpu;
@@ -82,11 +82,7 @@ interface Emulator {
 
 let current: Emulator | null = null;
 
-const joypad = new Joypad(() => {
-  if (current) {
-    current.interruptController.requestInterrupt(InterruptSource.Joypad);
-  }
-});
+const joypad = new Joypad();
 
 window.addEventListener(
   "keydown",
@@ -203,7 +199,7 @@ async function readImage(file: File) {
 
   const lcd = new LCD(
     context,
-    context2,
+    // context2,
     oam,
     () => {
       interruptController.requestInterrupt(InterruptSource.VBlank);
