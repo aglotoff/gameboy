@@ -51,7 +51,7 @@ export class LCD {
   private objPalette1 = 0;
   private objectsPerLine = [] as OAMEntry[];
   private windowLineCounter = 0;
-  private inWindow = false;
+  private windowTriggered = false;
 
   public constructor(
     private context: CanvasRenderingContext2D,
@@ -205,49 +205,8 @@ export class LCD {
     this.objPalette1 = data;
   }
 
-  // private getBGColor(id: number) {
-  //   return this.getPaletteColor(this.bgPalette, id);
-  // }
-
   private getPaletteColor(p: number, id: number) {
     return palette[(p >> (id * 2)) & 0x3];
-  }
-
-  // public displayTile(tileNumber: number, x: number, y: number) {
-  //   for (let line = 0; line < 8; line++) {
-  //     for (let pixel = 0; pixel < 8; pixel++) {
-  //       const id = this.getTilePixelId(tileNumber, pixel, line, false);
-
-  //       this.debugContext.fillStyle =
-  //         "#" + ("00000000" + this.getBGColor(id).toString(16)).slice(-8);
-  //       this.debugContext.fillRect(x + pixel * 2, y + line * 2, 2, 2);
-  //     }
-  //   }
-  // }
-
-  private getTilePixelId(
-    tileNumber: number,
-    x: number,
-    y: number,
-    obj: boolean
-  ) {
-    const dataBase = obj ? 0 : this.getBGAndWindowTileDataArea();
-
-    let off = 0;
-
-    if (dataBase === 0) {
-      off = tileNumber * 16;
-    } else {
-      off = dataBase + ((128 + tileNumber) % 256) * 16;
-    }
-
-    const firstByte = this.vram[off + y * 2];
-    const secondByte = this.vram[off + y * 2 + 1];
-
-    const lsb = (firstByte >> (7 - x)) & 0x1;
-    const msb = (secondByte >> (7 - x)) & 0x1;
-
-    return (msb << 1) | lsb;
   }
 
   public tick() {
@@ -264,10 +223,39 @@ export class LCD {
           this.oamScan();
         }
       } else if (this.dot === 80) {
+        // Begin mode 3
         this.mode = 3;
-      } else if (this.dot === 252) {
-        this.mode = 0;
+
+        this.windowTriggered = false;
+
+        if (
+          !this.windowTriggered &&
+          this.isWindowEnabled() &&
+          this.isBGAndWindowEnabled() &&
+          this.windowX <= 166 &&
+          this.windowY <= 143 &&
+          this.scanline >= this.windowY
+        ) {
+          this.windowTriggered = true;
+        }
+
+        this.bgXCounter = 0;
+        this.bgPixelsToSkip = this.viewportX % 8;
+        this.xPosition = 0;
+        this.pixelFetcherBgStep = 0;
+        this.pixelFetcherObjStep = 0;
+        this.pixelFetcherInWindow = false;
+        this.fifoEnabled = true;
+        this.backgroundFIFO.splice(0);
+        this.objectFIFO.splice(0);
+        this.currentObject = null;
+      } else if (this.xPosition < 160) {
+        this.backgroundPixelFetcher();
+        this.objectPixelFetcher();
+        this.tryPushPixel();
+      } else if (this.mode !== 0) {
         this.updateScanline();
+        this.mode = 0;
       }
     } else if (this.scanline === 144 && this.dot === 0) {
       this.mode = 1;
@@ -291,92 +279,333 @@ export class LCD {
   }
 
   private updateScanline() {
-    this.inWindow = false;
-
-    if (
-      this.isWindowEnabled() &&
-      this.isBGAndWindowEnabled() &&
-      this.windowX <= 166 &&
-      this.windowY <= 143 &&
-      this.scanline >= this.windowY
-    ) {
-      this.inWindow = true;
-    }
-
-    for (let i = 0; i < CANVAS_WIDTH; i++) {
-      let bgPixel: Pixel = { color: 0, palette: this.bgPalette };
-      let objPixel: Pixel | null = null;
-
-      if (this.isBGAndWindowEnabled()) {
-        bgPixel = this.getBGPixel(i, this.scanline);
-
-        if (this.inWindow && i >= this.windowX - 7) {
-          bgPixel = this.getWindowPixel(i, this.windowLineCounter);
-        }
-      }
-
-      if (this.isObjEnabled()) {
-        objPixel = this.getObjPixel(i, this.scanline);
-      }
-
-      let pixel = 0x00000000;
-
-      if (objPixel) {
-        if (
-          objPixel.color != 0x00 &&
-          objPixel.bgPriority &&
-          bgPixel.color !== 0
-        ) {
-          pixel = this.getPaletteColor(this.bgPalette, bgPixel.color);
-        } else {
-          pixel = this.getPaletteColor(objPixel.palette, objPixel.color);
-        }
-      } else {
-        pixel = this.getPaletteColor(this.bgPalette, bgPixel.color);
-      }
-
-      this.setPixel(i, this.scanline, pixel);
-    }
-
-    if (this.inWindow) {
+    if (this.windowTriggered) {
       this.windowLineCounter++;
     }
   }
 
-  private getBGPixel(x: number, y: number): Pixel {
-    const mapBase = this.getBGTileMapArea();
+  private backgroundFIFO = [] as Pixel[];
+  private objectFIFO = [] as Pixel[];
+  private bgPixelsToSkip = 0;
+  private fifoEnabled = false;
+  private xPosition = 0;
 
-    const top = (this.viewportY + y) % 256;
-    const left = (this.viewportX + x) % 256;
+  private bgXCounter = 0;
+  private pixelFetcherBgTileNo = 0;
+  private pixelFetcherBgDataLow = 0;
+  private pixelFetcherBgDataHigh = 0;
+  private pixelFetcherBgStep = 0;
+  private pixelFetcherInWindow = false;
+  private pixelFetcherObjTileNo = 0;
+  private pixelFetcherObjDataLow = 0;
+  private pixelFetcherObjDataHigh = 0;
+  private pixelFetcherObjStep = 0;
 
-    const tileX = Math.floor(left / 8);
-    const tileY = Math.floor(top / 8);
+  private backgroundPixelFetcher() {
+    if (this.xPosition >= 160) {
+      return;
+    }
 
-    const tileNumber = this.vram[mapBase + tileY * 32 + tileX];
+    switch (this.pixelFetcherBgStep) {
+      case 0:
+        if (
+          (this.pixelFetcherObjStep >= 1 && this.pixelFetcherObjStep <= 6) ||
+          this.backgroundFIFO.length > 0 ||
+          this.currentObject
+        ) {
+          return;
+        }
+        break;
+      case 1:
+        this.pixelFetcherBgTileNo = this.pixelFetcherInWindow
+          ? this.fetchWindowTileNo()
+          : this.fetchBackgroundTileNo();
+        break;
+      case 3:
+        this.pixelFetcherBgDataLow = this.pixelFetcherInWindow
+          ? this.fetchWindowTileDataLow(this.pixelFetcherBgTileNo)
+          : this.fetchBackgroundTileDataLow(this.pixelFetcherBgTileNo);
+        break;
+      case 5:
+        this.pixelFetcherBgDataHigh = this.pixelFetcherInWindow
+          ? this.fetchWindowTileDataHigh(this.pixelFetcherBgTileNo)
+          : this.fetchBackgroundTileDataHigh(this.pixelFetcherBgTileNo);
 
-    const color = this.getTilePixelId(tileNumber, left % 8, top % 8, false);
+        break;
+    }
 
-    return { color, palette: this.bgPalette };
+    this.pixelFetcherBgStep += 1;
+
+    if (this.pixelFetcherBgStep > 7 && this.backgroundFIFO.length === 0) {
+      for (let i = 0; i < 8; i++) {
+        if (this.isBGAndWindowEnabled()) {
+          const lsb =
+            (this.pixelFetcherBgDataLow >> (7 - (this.bgXCounter % 8))) & 0x1;
+          const msb =
+            (this.pixelFetcherBgDataHigh >> (7 - (this.bgXCounter % 8))) & 0x1;
+
+          const color = (msb << 1) | lsb;
+
+          this.backgroundFIFO.unshift({ color, palette: this.bgPalette });
+        } else {
+          this.backgroundFIFO.push({ color: 0, palette: this.bgPalette });
+        }
+
+        this.bgXCounter += 1;
+      }
+
+      this.pixelFetcherBgStep = 0;
+    }
   }
 
-  private getWindowPixel(x: number, y: number): Pixel {
-    const mapBase = this.getWindowTileMapArea();
+  private currentObject: OAMEntry | null = null;
 
-    const top = y;
-    const left = x - this.windowX + 7;
+  private objectPixelFetcher() {
+    if (this.xPosition >= 160) {
+      return;
+    }
 
-    const tileX = Math.floor(left / 8);
+    switch (this.pixelFetcherObjStep) {
+      case 0:
+        if (
+          (this.pixelFetcherBgStep >= 1 && this.pixelFetcherBgStep < 6) ||
+          this.backgroundFIFO.length === 0 ||
+          this.bgPixelsToSkip > 0
+        ) {
+          return;
+        }
+
+        if (this.currentObject == null) {
+          this.currentObject = this.getCurrentObject();
+          if (this.currentObject == null) {
+            this.fifoEnabled = true;
+            return;
+          } else {
+            this.fifoEnabled = false;
+          }
+        }
+
+        break;
+
+      case 1:
+        this.pixelFetcherObjTileNo = this.fetchObjectTileNo(
+          this.currentObject!
+        );
+        break;
+      case 3:
+        this.pixelFetcherObjDataLow = this.fetchObjectTileDataLow(
+          this.currentObject!,
+          this.pixelFetcherObjTileNo
+        );
+        break;
+      case 5:
+        this.pixelFetcherObjDataHigh = this.fetchObjectTileDataHigh(
+          this.currentObject!,
+          this.pixelFetcherObjTileNo
+        );
+        break;
+    }
+
+    this.pixelFetcherObjStep += 1;
+
+    if (this.pixelFetcherObjStep > 7 && this.backgroundFIFO.length > 0) {
+      const firstIdx = this.xPosition - (this.currentObject!.x - 8);
+
+      for (let i = firstIdx; i < 8; i++) {
+        const color = this.fetchObjectColor(
+          this.currentObject!,
+          this.pixelFetcherObjDataLow,
+          this.pixelFetcherObjDataHigh,
+          i
+        );
+
+        const pixel = {
+          color,
+          bgPriority: testBit(this.currentObject!.attributes, 7),
+          palette: testBit(this.currentObject!.attributes, 4)
+            ? this.objPalette1
+            : this.objPalette0,
+        };
+
+        if (i - firstIdx < this.objectFIFO.length) {
+          const oldPixel =
+            this.objectFIFO[this.objectFIFO.length - i + firstIdx - 1]!;
+          if (oldPixel.color === 0) {
+            this.objectFIFO[this.objectFIFO.length - i + firstIdx - 1] = pixel;
+          }
+        } else {
+          this.objectFIFO.unshift(pixel);
+        }
+      }
+
+      this.pixelFetcherObjStep = 0;
+
+      this.currentObject = this.getCurrentObject();
+      if (this.currentObject == null) {
+        this.fifoEnabled = true;
+      }
+    }
+  }
+
+  private getCurrentObject() {
+    const objSize = this.getObjSize();
+    let minObj: OAMEntry | null = null;
+
+    for (let obj of this.objectsPerLine) {
+      const objY = obj.y - 16;
+      const objX = obj.x - 8;
+
+      if (
+        this.xPosition < objX ||
+        this.xPosition >= objX + 8 ||
+        this.scanline < objY ||
+        this.scanline >= objY + objSize
+      ) {
+        continue;
+      }
+
+      if (minObj === null || minObj.x > obj.x) {
+        minObj = obj;
+      }
+    }
+
+    if (minObj != null) {
+      this.objectsPerLine.splice(this.objectsPerLine.indexOf(minObj), 1);
+    }
+
+    return minObj;
+  }
+
+  private tryPushPixel() {
+    if (!this.fifoEnabled || this.backgroundFIFO.length === 0) {
+      return;
+    }
+
+    const bgPixel = this.backgroundFIFO.pop()!;
+
+    if (this.bgPixelsToSkip > 0) {
+      this.bgPixelsToSkip -= 1;
+      return;
+    }
+
+    if (
+      !this.pixelFetcherInWindow &&
+      this.windowTriggered &&
+      this.isWindowEnabled() &&
+      this.xPosition >= this.windowX - 7
+    ) {
+      this.pixelFetcherInWindow = true;
+      this.bgXCounter = 0;
+      this.pixelFetcherBgStep = 0;
+      this.backgroundFIFO.splice(0);
+      return;
+    }
+
+    const objPixel = this.objectFIFO.pop();
+
+    let mergedPixel = 0x00000000;
+
+    if (objPixel && objPixel.color != 0) {
+      if (objPixel.bgPriority && bgPixel.color !== 0) {
+        mergedPixel = this.getPaletteColor(this.bgPalette, bgPixel.color);
+      } else {
+        mergedPixel = this.getPaletteColor(objPixel.palette, objPixel.color);
+      }
+    } else {
+      mergedPixel = this.getPaletteColor(this.bgPalette, bgPixel.color);
+    }
+
+    this.pushPixel(mergedPixel);
+
+    this.xPosition += 1;
+  }
+
+  private pushPixel(pixel: number) {
+    this.setPixel(this.xPosition, this.scanline, pixel);
+  }
+
+  private fetchBackgroundTileNo() {
+    const top = (this.viewportY + this.scanline) % 256;
+    const left = this.bgXCounter % 256;
+
+    const tileX = (Math.floor(left / 8) + Math.floor(this.viewportX / 8)) % 32;
     const tileY = Math.floor(top / 8);
 
-    const tileNumber = this.vram[mapBase + tileY * 32 + tileX];
+    const pos = (tileY * 32 + tileX) % 1024;
 
-    const color = this.getTilePixelId(tileNumber, left % 8, top % 8, false);
+    return this.vram[this.getBGTileMapArea() + pos];
+  }
 
-    return { color, palette: this.bgPalette };
+  private fetchWindowTileNo() {
+    const top = this.windowLineCounter;
+    const left = this.bgXCounter % 256;
+
+    const tileX = Math.floor(left / 8) % 32;
+    const tileY = Math.floor(top / 8);
+
+    const pos = (tileY * 32 + tileX) % 1024;
+
+    return this.vram[this.getWindowTileMapArea() + pos];
+  }
+
+  private fetchBackgroundTileDataLow(tileNo: number) {
+    const dataBase = this.getBGAndWindowTileDataArea();
+
+    let off = 0;
+
+    if (dataBase === 0) {
+      off = tileNo * 16;
+    } else {
+      off = dataBase + ((128 + tileNo) % 256) * 16;
+    }
+
+    return this.vram[off + ((this.scanline + this.viewportY) % 8) * 2];
+  }
+
+  private fetchBackgroundTileDataHigh(tileNo: number) {
+    const dataBase = this.getBGAndWindowTileDataArea();
+
+    let off = 0;
+
+    if (dataBase === 0) {
+      off = tileNo * 16;
+    } else {
+      off = dataBase + ((128 + tileNo) % 256) * 16;
+    }
+
+    return this.vram[off + ((this.scanline + this.viewportY) % 8) * 2 + 1];
+  }
+
+  private fetchWindowTileDataLow(tileNo: number) {
+    const dataBase = this.getBGAndWindowTileDataArea();
+
+    let off = 0;
+
+    if (dataBase === 0) {
+      off = tileNo * 16;
+    } else {
+      off = dataBase + ((128 + tileNo) % 256) * 16;
+    }
+
+    return this.vram[off + (this.windowLineCounter % 8) * 2];
+  }
+
+  private fetchWindowTileDataHigh(tileNo: number) {
+    const dataBase = this.getBGAndWindowTileDataArea();
+
+    let off = 0;
+
+    if (dataBase === 0) {
+      off = tileNo * 16;
+    } else {
+      off = dataBase + ((128 + tileNo) % 256) * 16;
+    }
+
+    return this.vram[off + (this.windowLineCounter % 8) * 2 + 1];
   }
 
   private oamScan() {
-    if (this.objectsPerLine.length === 10) {
+    if (this.objectsPerLine.length === 10 || !this.isObjEnabled()) {
       return;
     }
 
@@ -402,61 +631,112 @@ export class LCD {
     });
   }
 
-  private getObjPixel(x: number, y: number) {
-    let pixel: Pixel | null = null;
-    let minX = 0xfff;
-
+  private fetchObjectTileNo(obj: OAMEntry) {
     const size = this.getObjSize();
 
-    for (let obj of this.objectsPerLine) {
-      const objY = obj.y - 16;
-      const objX = obj.x - 8;
+    const objY = obj.y - 16;
 
-      if (x < objX || x >= objX + 8 || y < objY || y >= objY + size) {
-        continue;
-      }
+    const flipY = testBit(obj.attributes, 6);
 
-      if (objX >= minX) {
-        continue;
-      }
+    const tileY = Math.floor(this.scanline - objY);
 
-      const flipX = testBit(obj.attributes, 5);
-      const flipY = testBit(obj.attributes, 6);
+    const top = flipY ? size - 1 - tileY : tileY;
 
-      const tileX = Math.floor(x - objX);
-      const tileY = Math.floor(y - objY);
-
-      const left = flipX ? 7 - tileX : tileX;
-      const top = flipY ? size - 1 - tileY : tileY;
-
-      const color = this.getTilePixelId(
-        size === 16
-          ? top >= 8
-            ? obj.tileIndex | 0x01
-            : obj.tileIndex & 0xfe
-          : obj.tileIndex,
-        left,
-        top % 8,
-        true
-      );
-
-      if (color == 0x00) {
-        continue;
-      }
-
-      minX = objX;
-
-      pixel = {
-        color,
-        bgPriority: testBit(obj.attributes, 7),
-        palette: testBit(obj.attributes, 4)
-          ? this.objPalette1
-          : this.objPalette0,
-      };
-    }
-
-    return pixel;
+    return size === 16
+      ? top >= 8
+        ? obj.tileIndex | 0x01
+        : obj.tileIndex & 0xfe
+      : obj.tileIndex;
   }
+
+  private fetchObjectTileDataLow(obj: OAMEntry, tileNo: number) {
+    const size = this.getObjSize();
+    const objY = obj.y - 16;
+
+    const flipY = testBit(obj.attributes, 6);
+    const tileY = Math.floor(this.scanline - objY);
+    const top = flipY ? size - 1 - tileY : tileY;
+
+    const off = tileNo * 16;
+    return this.vram[off + (top % 8) * 2];
+  }
+
+  private fetchObjectTileDataHigh(obj: OAMEntry, tileNo: number) {
+    const size = this.getObjSize();
+
+    const objY = obj.y - 16;
+
+    const flipY = testBit(obj.attributes, 6);
+    const tileY = Math.floor(this.scanline - objY);
+
+    const top = flipY ? size - 1 - tileY : tileY;
+
+    const off = tileNo * 16;
+    return this.vram[off + (top % 8) * 2 + 1];
+  }
+
+  private fetchObjectColor(
+    obj: OAMEntry,
+    firstByte: number,
+    secondByte: number,
+    tileX: number
+  ) {
+    const flipX = testBit(obj.attributes, 5);
+
+    // const objX = obj.x - 8;
+
+    // const tileX = Math.floor(i - objX);
+
+    const left = flipX ? 7 - tileX : tileX;
+
+    const lsb = (firstByte >> (7 - left)) & 0x1;
+    const msb = (secondByte >> (7 - left)) & 0x1;
+
+    return (msb << 1) | lsb;
+  }
+
+  // private getObjPixel(x: number, y: number) {
+  //   let pixel: Pixel | null = null;
+  //   let minX = 0xfff;
+
+  //   const size = this.getObjSize();
+
+  //   for (let obj of this.objectsPerLine) {
+  //     const objY = obj.y - 16;
+  //     const objX = obj.x - 8;
+
+  //     if (x < objX || x >= objX + 8 || y < objY || y >= objY + size) {
+  //       continue;
+  //     }
+
+  //     if (objX >= minX) {
+  //       continue;
+  //     }
+
+  //     const tileNo = this.fetchObjectTileNo(obj);
+
+  //     const firstByte = this.fetchObjectTileDataLow(obj, tileNo);
+  //     const secondByte = this.fetchObjectTileDataHigh(obj, tileNo);
+
+  //     const color = this.fetchObjectColor(obj, firstByte, secondByte);
+
+  //     if (color == 0x00) {
+  //       continue;
+  //     }
+
+  //     minX = objX;
+
+  //     pixel = {
+  //       color,
+  //       bgPriority: testBit(obj.attributes, 7),
+  //       palette: testBit(obj.attributes, 4)
+  //         ? this.objPalette1
+  //         : this.objPalette0,
+  //     };
+  //   }
+
+  //   return pixel;
+  // }
 
   private setPixel(x: number, y: number, color: number) {
     this.setImagePixel(x * 2, y * 2, color);
@@ -474,12 +754,6 @@ export class LCD {
   }
 
   private render() {
-    // for (let y = 0; y < 24; y++) {
-    //   for (let x = 0; x < 16; x++) {
-    //     this.displayTile(y * 16 + x, x * 16, y * 16);
-    //   }
-    // }
-
     this.context.putImageData(this.imageData, 0, 0);
   }
 }
