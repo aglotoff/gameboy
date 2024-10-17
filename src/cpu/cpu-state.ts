@@ -26,10 +26,15 @@ export class CpuState {
   private stopped = false;
   private elapsedCycles = 0;
 
-  public constructor(protected memory: IBus) {}
+  public constructor(protected memory: IBus, private onCycle: () => void) {}
 
   public cycle() {
     this.elapsedCycles += 1;
+    this.onCycle();
+  }
+
+  public resetCycle() {
+    this.elapsedCycles = 0;
   }
 
   public getElapsedCycles() {

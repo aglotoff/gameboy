@@ -6,9 +6,10 @@ import { RegisterPair } from "./register";
 export class Cpu extends CpuState {
   public constructor(
     memory: IBus,
-    private interruptController: InterruptController
+    private interruptController: InterruptController,
+    onCycle: () => void
   ) {
-    super(memory);
+    super(memory, onCycle);
   }
 
   public step() {
@@ -26,11 +27,16 @@ export class Cpu extends CpuState {
         this.pushWord(this.readRegisterPair(RegisterPair.PC));
         this.writeRegisterPair(RegisterPair.PC, handlerAddress);
 
+        for (let i = 0; i < 5; i++) {
+          this.cycle();
+        }
+
         return 20;
       }
     }
 
     if (this.isHalted()) {
+      this.cycle();
       return 4;
     }
 

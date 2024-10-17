@@ -152,31 +152,20 @@ window.addEventListener(
 
 let timeout = 0;
 
-async function run({ cpu, oam, lcd, timer }: Emulator) {
-  let total = 0;
-
+async function run({ cpu }: Emulator) {
   (fileSelector as HTMLInputElement).disabled = true;
 
   timeout = setInterval(() => {
-    let tCycles = 0;
+    cpu.resetCycle();
 
-    while (tCycles < 69905) {
+    while (cpu.getElapsedCycles() < 17477) {
       if (cpu.isStopped()) {
         clearInterval(timeout);
         console.log("STOPPED");
         return;
       }
 
-      let stepMCycles = cpu.step();
-
-      for (let i = 0; i < stepMCycles; i++) {
-        oam.tick();
-        timer.tick();
-        lcd.tick();
-      }
-
-      tCycles += stepMCycles;
-      total += stepMCycles;
+      cpu.step();
     }
   }, 16);
 
@@ -224,7 +213,13 @@ async function readImage(file: File) {
     joypad
   );
 
-  const cpu = new Cpu(memory, interruptController);
+  const cpu = new Cpu(memory, interruptController, () => {
+    for (let i = 0; i < 4; i++) {
+      oam.tick();
+      timer.tick();
+      lcd.tick();
+    }
+  });
 
   current = {
     interruptController,
