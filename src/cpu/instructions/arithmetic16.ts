@@ -9,12 +9,12 @@ import {
 
 export const incrementRegisterPair = instruction(function (pair: RegisterPair) {
   this.writeRegisterPair(pair, wrapIncrementWord(this.readRegisterPair(pair)));
-  return 8;
+  return 4;
 });
 
 export const decrementRegisterPair = instruction(function (pair: RegisterPair) {
   this.writeRegisterPair(pair, this.readRegisterPair(pair) - 1);
-  return 8;
+  return 4;
 });
 
 export const addRegisterPair = instruction(function (pair: RegisterPair) {
@@ -28,7 +28,7 @@ export const addRegisterPair = instruction(function (pair: RegisterPair) {
   this.setFlag(Flag.H, carryFrom11);
   this.setFlag(Flag.CY, carryFrom15);
 
-  return 8;
+  return 4;
 });
 
 export const addToStackPointer = instructionWithImmediateByte(function (e) {
@@ -43,5 +43,5 @@ export const addToStackPointer = instructionWithImmediateByte(function (e) {
   this.setFlag(Flag.H, carryFrom3);
   this.setFlag(Flag.CY, carryFrom7);
 
-  return 16;
+  return 8;
 });

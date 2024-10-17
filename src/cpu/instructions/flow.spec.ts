@@ -26,6 +26,7 @@ describe("Control flow instructions", () => {
     jump.call(state);
 
     expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8000);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("JP (HL)", ({ state }) => {
@@ -34,6 +35,7 @@ describe("Control flow instructions", () => {
     jumpToHL.call(state);
 
     expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8000);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   describe("JP cc,nn", () => {
@@ -45,6 +47,7 @@ describe("Control flow instructions", () => {
       jumpConditional.call(state, Condition.NZ);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x0002);
+      expect(state.getElapsedCycles()).toBe(3);
     });
 
     testInstruction("JP Z, nn", ({ state }) => {
@@ -55,6 +58,7 @@ describe("Control flow instructions", () => {
       jumpConditional.call(state, Condition.Z);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8000);
+      expect(state.getElapsedCycles()).toBe(4);
     });
 
     testInstruction("JP C, nn", ({ state }) => {
@@ -65,6 +69,7 @@ describe("Control flow instructions", () => {
       jumpConditional.call(state, Condition.C);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x0002);
+      expect(state.getElapsedCycles()).toBe(3);
     });
 
     testInstruction("JP NC, nn", ({ state }) => {
@@ -75,6 +80,7 @@ describe("Control flow instructions", () => {
       jumpConditional.call(state, Condition.NC);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8000);
+      expect(state.getElapsedCycles()).toBe(4);
     });
   });
 
@@ -85,6 +91,7 @@ describe("Control flow instructions", () => {
     relativeJump.call(state);
 
     expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8015);
+    expect(state.getElapsedCycles()).toBe(3);
   });
 
   describe("JR cc,e", () => {
@@ -96,6 +103,7 @@ describe("Control flow instructions", () => {
       relativeJumpConditional.call(state, Condition.NZ);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8001);
+      expect(state.getElapsedCycles()).toBe(2);
     });
 
     testInstruction("JR Z, e", ({ state }) => {
@@ -106,6 +114,7 @@ describe("Control flow instructions", () => {
       relativeJumpConditional.call(state, Condition.Z);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x7ffb);
+      expect(state.getElapsedCycles()).toBe(3);
     });
 
     testInstruction("JR C, e", ({ state }) => {
@@ -116,6 +125,7 @@ describe("Control flow instructions", () => {
       relativeJumpConditional.call(state, Condition.C);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8001);
+      expect(state.getElapsedCycles()).toBe(2);
     });
 
     testInstruction("JR NC, e", ({ state }) => {
@@ -126,6 +136,7 @@ describe("Control flow instructions", () => {
       relativeJumpConditional.call(state, Condition.NC);
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x7ffb);
+      expect(state.getElapsedCycles()).toBe(3);
     });
   });
 
@@ -141,6 +152,7 @@ describe("Control flow instructions", () => {
     expect(state.readBus(0xfffd)).toBe(0x80);
     expect(state.readBus(0xfffc)).toBe(0x02);
     expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
+    expect(state.getElapsedCycles()).toBe(6);
   });
 
   describe("CALL cc, nn", () => {
@@ -155,6 +167,7 @@ describe("Control flow instructions", () => {
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8002);
       expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
+      expect(state.getElapsedCycles()).toBe(3);
     });
 
     testInstruction("CALL Z, nn", ({ state }) => {
@@ -170,6 +183,7 @@ describe("Control flow instructions", () => {
       expect(state.readBus(0xfffd)).toBe(0x80);
       expect(state.readBus(0xfffc)).toBe(0x02);
       expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
+      expect(state.getElapsedCycles()).toBe(6);
     });
 
     testInstruction("CALL C, nn", ({ state }) => {
@@ -183,6 +197,7 @@ describe("Control flow instructions", () => {
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8002);
       expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
+      expect(state.getElapsedCycles()).toBe(3);
     });
 
     testInstruction("CALL NC, nn", ({ state }) => {
@@ -198,6 +213,7 @@ describe("Control flow instructions", () => {
       expect(state.readBus(0xfffd)).toBe(0x80);
       expect(state.readBus(0xfffc)).toBe(0x02);
       expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
+      expect(state.getElapsedCycles()).toBe(6);
     });
   });
 
@@ -211,6 +227,7 @@ describe("Control flow instructions", () => {
 
     expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8003);
     expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   describe("RET cc", () => {
@@ -225,6 +242,7 @@ describe("Control flow instructions", () => {
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x9000);
       expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
+      expect(state.getElapsedCycles()).toBe(2);
     });
 
     testInstruction("RET Z", ({ state }) => {
@@ -238,6 +256,7 @@ describe("Control flow instructions", () => {
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8003);
       expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
+      expect(state.getElapsedCycles()).toBe(5);
     });
 
     testInstruction("RET C", ({ state }) => {
@@ -251,6 +270,7 @@ describe("Control flow instructions", () => {
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x9000);
       expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
+      expect(state.getElapsedCycles()).toBe(2);
     });
 
     testInstruction("RET NC", ({ state }) => {
@@ -264,6 +284,7 @@ describe("Control flow instructions", () => {
 
       expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8003);
       expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
+      expect(state.getElapsedCycles()).toBe(5);
     });
   });
 
@@ -278,6 +299,7 @@ describe("Control flow instructions", () => {
     expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8001);
     expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
     expect(state.getIME()).toBe(true);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("RST t", ({ state }) => {
@@ -290,5 +312,6 @@ describe("Control flow instructions", () => {
     expect(state.readBus(0xfffd)).toBe(0x80);
     expect(state.readBus(0xfffc)).toBe(0x01);
     expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 });

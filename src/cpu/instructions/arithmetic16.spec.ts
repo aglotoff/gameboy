@@ -16,6 +16,7 @@ describe("16-bit arithmetic instructions", () => {
     incrementRegisterPair.call(state, RegisterPair.DE);
 
     expect(state.readRegisterPair(RegisterPair.DE)).toBe(0x2360);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("DEC rr", ({ state }) => {
@@ -24,6 +25,7 @@ describe("16-bit arithmetic instructions", () => {
     decrementRegisterPair.call(state, RegisterPair.DE);
 
     expect(state.readRegisterPair(RegisterPair.DE)).toBe(0x235e);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("ADD HL,rr", ({ state }) => {
@@ -36,6 +38,7 @@ describe("16-bit arithmetic instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(true);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
 
     state.writeRegisterPair(RegisterPair.HL, 0x8a23);
 
@@ -45,6 +48,7 @@ describe("16-bit arithmetic instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(true);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("ADD SP,e", ({ state }) => {
@@ -58,5 +62,6 @@ describe("16-bit arithmetic instructions", () => {
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 });

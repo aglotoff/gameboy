@@ -49,6 +49,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(true);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("ADD A,(HL)", ({ state }) => {
@@ -63,6 +64,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("ADD A,n", ({ state }) => {
@@ -76,6 +78,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(true);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("ADC A,r", ({ state }) => {
@@ -90,6 +93,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(true);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("ADC A,(HL)", ({ state }) => {
@@ -105,6 +109,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(true);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("ADC A,n", ({ state }) => {
@@ -119,6 +124,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("SUB r", ({ state }) => {
@@ -132,6 +138,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(true);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("SUB (HL)", ({ state }) => {
@@ -146,6 +153,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(true);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("SUB n", ({ state }) => {
@@ -159,6 +167,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(true);
     expect(state.isFlagSet(Flag.N)).toBe(true);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("SBC A,r", ({ state }) => {
@@ -173,6 +182,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(true);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("SBC A,(HL)", ({ state }) => {
@@ -188,6 +198,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(true);
     expect(state.isFlagSet(Flag.N)).toBe(true);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("SBC A,n", ({ state }) => {
@@ -202,6 +213,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(true);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("CP r", ({ state }) => {
@@ -214,6 +226,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(true);
     expect(state.isFlagSet(Flag.N)).toBe(true);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("CP (HL)", ({ state }) => {
@@ -227,6 +240,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(true);
     expect(state.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("CP n", ({ state }) => {
@@ -239,6 +253,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(true);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("INC r", ({ state }) => {
@@ -250,6 +265,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(true);
     expect(state.isFlagSet(Flag.H)).toBe(true);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("INC (HL)", ({ state }) => {
@@ -262,6 +278,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(3);
   });
 
   testInstruction("DEC r", ({ state }) => {
@@ -273,6 +290,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(true);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(true);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("DEC (HL)", ({ state }) => {
@@ -285,6 +303,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(true);
     expect(state.isFlagSet(Flag.N)).toBe(true);
+    expect(state.getElapsedCycles()).toBe(3);
   });
 
   testInstruction("AND r", ({ state }) => {
@@ -298,6 +317,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(true);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("AND (HL)", ({ state }) => {
@@ -312,6 +332,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(true);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("AND n", ({ state }) => {
@@ -325,6 +346,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(true);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("OR r", ({ state }) => {
@@ -337,6 +359,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("OR (HL)", ({ state }) => {
@@ -351,6 +374,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("OR n", ({ state }) => {
@@ -364,6 +388,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("XOR r", ({ state }) => {
@@ -376,6 +401,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("XOR (HL)", ({ state }) => {
@@ -390,6 +416,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("XOR n", ({ state }) => {
@@ -403,6 +430,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("CCF", ({ state }) => {
@@ -411,10 +439,12 @@ describe("8-bit arithmetic and logical instructions", () => {
     complementCarryFlag.call(state);
 
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(1);
 
     complementCarryFlag.call(state);
 
     expect(state.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("SCF", ({ state }) => {
@@ -423,10 +453,12 @@ describe("8-bit arithmetic and logical instructions", () => {
     setCarryFlag.call(state);
 
     expect(state.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.getElapsedCycles()).toBe(1);
 
     setCarryFlag.call(state);
 
     expect(state.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("DAA", ({ state }) => {
@@ -437,21 +469,25 @@ describe("8-bit arithmetic and logical instructions", () => {
 
     expect(state.readRegister(Register.A)).toBe(0x7d);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(1);
 
     decimalAdjustAccumulator.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x83);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
 
     subtractRegister.call(state, Register.B);
 
     expect(state.readRegister(Register.A)).toBe(0x4b);
     expect(state.isFlagSet(Flag.N)).toBe(true);
+    expect(state.getElapsedCycles()).toBe(3);
 
     decimalAdjustAccumulator.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x45);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("CPL", ({ state }) => {
@@ -462,5 +498,6 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.readRegister(Register.A)).toBe(0xca);
     expect(state.isFlagSet(Flag.H)).toBe(true);
     expect(state.isFlagSet(Flag.N)).toBe(true);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 });

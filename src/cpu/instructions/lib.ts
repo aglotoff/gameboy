@@ -8,14 +8,28 @@ export type OpTable = Partial<
 export function instruction<T extends unknown[]>(
   cb: (this: CpuState, ...args: T) => number
 ) {
-  return cb;
+  return function (this: CpuState, ...args: T) {
+    const cycles = cb.call(this, ...args);
+
+    for (let i = 0; i < cycles / 4 + 1; i++) {
+      this.cycle();
+    }
+
+    return cycles + 4;
+  };
 }
 
 export function instructionWithImmediateByte<T extends unknown[]>(
   cb: (this: CpuState, byte: number, ...args: T) => number
 ) {
   return function (this: CpuState, ...args: T) {
-    return cb.call(this, this.fetchImmediateByte(), ...args);
+    const cycles = cb.call(this, this.fetchImmediateByte(), ...args);
+
+    for (let i = 0; i < cycles / 4 + 2; i++) {
+      this.cycle();
+    }
+
+    return cycles + 8;
   };
 }
 
@@ -23,7 +37,13 @@ export function instructionWithImmediateWord<T extends unknown[]>(
   cb: (this: CpuState, word: number, ...args: T) => number
 ) {
   return function (this: CpuState, ...args: T) {
-    return cb.call(this, this.fetchImmediateWord(), ...args);
+    const cycles = cb.call(this, this.fetchImmediateWord(), ...args);
+
+    for (let i = 0; i < cycles / 4 + 3; i++) {
+      this.cycle();
+    }
+
+    return cycles + 12;
   };
 }
 

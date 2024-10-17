@@ -42,6 +42,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("RRCA", ({ state }) => {
@@ -54,6 +55,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("RLA", ({ state }) => {
@@ -67,6 +69,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("RRA", ({ state }) => {
@@ -80,6 +83,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("RLC r", ({ state }) => {
@@ -93,6 +97,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("RLC (HL)", ({ state }) => {
@@ -107,6 +112,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(true);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("RRC r", ({ state }) => {
@@ -120,6 +126,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("RRC (HL)", ({ state }) => {
@@ -134,6 +141,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(true);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("RL r", ({ state }) => {
@@ -147,6 +155,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(true);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("RL (HL)", ({ state }) => {
@@ -161,6 +170,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("RR r", ({ state }) => {
@@ -174,6 +184,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(true);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("RR (HL)", ({ state }) => {
@@ -188,6 +199,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("SLA r", ({ state }) => {
@@ -201,6 +213,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(true);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("SLA (HL)", ({ state }) => {
@@ -215,6 +228,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("SRA r", ({ state }) => {
@@ -228,6 +242,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("SRA (HL)", ({ state }) => {
@@ -242,6 +257,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(true);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("SRL r", ({ state }) => {
@@ -255,6 +271,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(true);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("SRL (HL)", ({ state }) => {
@@ -269,6 +286,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("SWAP r", ({ state }) => {
@@ -282,6 +300,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(true);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("SWAP (HL)", ({ state }) => {
@@ -296,6 +315,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   describe("BIT b, r", () => {
@@ -307,6 +327,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
       expect(state.isFlagSet(Flag.Z)).toBe(false);
       expect(state.isFlagSet(Flag.H)).toBe(true);
       expect(state.isFlagSet(Flag.N)).toBe(false);
+      expect(state.getElapsedCycles()).toBe(2);
     });
 
     testInstruction("BIT 4, L", ({ state }) => {
@@ -317,6 +338,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
       expect(state.isFlagSet(Flag.Z)).toBe(true);
       expect(state.isFlagSet(Flag.H)).toBe(true);
       expect(state.isFlagSet(Flag.N)).toBe(false);
+      expect(state.getElapsedCycles()).toBe(2);
     });
   });
 
@@ -330,6 +352,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
       expect(state.isFlagSet(Flag.Z)).toBe(true);
       expect(state.isFlagSet(Flag.H)).toBe(true);
       expect(state.isFlagSet(Flag.N)).toBe(false);
+      expect(state.getElapsedCycles()).toBe(3);
     });
 
     testInstruction("BIT 1, (HL)", ({ state }) => {
@@ -341,6 +364,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
       expect(state.isFlagSet(Flag.Z)).toBe(false);
       expect(state.isFlagSet(Flag.H)).toBe(true);
       expect(state.isFlagSet(Flag.N)).toBe(false);
+      expect(state.getElapsedCycles()).toBe(3);
     });
   });
 
@@ -351,6 +375,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
       resetBitRegister.call(state, 7, Register.A);
 
       expect(state.readRegister(Register.A)).toBe(0x00);
+      expect(state.getElapsedCycles()).toBe(2);
     });
 
     testInstruction("RES 1, L", ({ state }) => {
@@ -359,6 +384,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
       resetBitRegister.call(state, 1, Register.L);
 
       expect(state.readRegister(Register.L)).toBe(0x39);
+      expect(state.getElapsedCycles()).toBe(2);
     });
   });
 
@@ -369,6 +395,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     resetBitIndirectHL.call(state, 3);
 
     expect(state.readBus(0x8ac5)).toBe(0xf7);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   describe("SET b, r", () => {
@@ -378,6 +405,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
       setBitRegister.call(state, 2, Register.A);
 
       expect(state.readRegister(Register.A)).toBe(0x84);
+      expect(state.getElapsedCycles()).toBe(2);
     });
 
     testInstruction("SET 7, L", ({ state }) => {
@@ -386,6 +414,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
       setBitRegister.call(state, 7, Register.L);
 
       expect(state.readRegister(Register.L)).toBe(0xbb);
+      expect(state.getElapsedCycles()).toBe(2);
     });
   });
 
@@ -396,5 +425,6 @@ describe("Rotate, shift, and bit operation instructions", () => {
     setBitIndirectHL.call(state, 3);
 
     expect(state.readBus(0x8ac5)).toBe(0x08);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 });

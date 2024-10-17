@@ -9,7 +9,7 @@ import {
 
 export const addRegister = instruction(function (reg: Register) {
   addToAccumulator.call(this, this.readRegister(reg));
-  return 4;
+  return 0;
 });
 
 export const addIndirectHL = instruction(function () {
@@ -17,17 +17,17 @@ export const addIndirectHL = instruction(function () {
     this,
     this.readBus(this.readRegisterPair(RegisterPair.HL))
   );
-  return 8;
+  return 4;
 });
 
 export const addImmediate = instructionWithImmediateByte(function (value) {
   addToAccumulator.call(this, value);
-  return 8;
+  return 0;
 });
 
 export const addRegisterWithCarry = instruction(function (reg: Register) {
   addToAccumulator.call(this, this.readRegister(reg), true);
-  return 4;
+  return 0;
 });
 
 export const addIndirectHLWithCarry = instruction(function () {
@@ -36,14 +36,14 @@ export const addIndirectHLWithCarry = instruction(function () {
     this.readBus(this.readRegisterPair(RegisterPair.HL)),
     true
   );
-  return 8;
+  return 4;
 });
 
 export const addImmediateWithCarry = instructionWithImmediateByte(function (
   value
 ) {
   addToAccumulator.call(this, value, true);
-  return 8;
+  return 0;
 });
 
 function addToAccumulator(this: CpuState, value: number, carry = false) {
@@ -62,7 +62,7 @@ function addToAccumulator(this: CpuState, value: number, carry = false) {
 
 export const subtractRegister = instruction(function (reg: Register) {
   subtractFromAccumulator.call(this, this.readRegister(reg));
-  return 4;
+  return 0;
 });
 
 export const subtractIndirectHL = instruction(function () {
@@ -70,17 +70,17 @@ export const subtractIndirectHL = instruction(function () {
     this,
     this.readBus(this.readRegisterPair(RegisterPair.HL))
   );
-  return 8;
+  return 4;
 });
 
 export const subtractImmediate = instructionWithImmediateByte(function (value) {
   subtractFromAccumulator.call(this, value);
-  return 8;
+  return 0;
 });
 
 export const subtractRegisterWithCarry = instruction(function (reg: Register) {
   subtractFromAccumulator.call(this, this.readRegister(reg), true);
-  return 4;
+  return 0;
 });
 
 export const subtractIndirectHLWithCarry = instruction(function () {
@@ -89,13 +89,13 @@ export const subtractIndirectHLWithCarry = instruction(function () {
     this.readBus(this.readRegisterPair(RegisterPair.HL)),
     true
   );
-  return 8;
+  return 4;
 });
 
 export const subtractImmediateWithCarry = instructionWithImmediateByte(
   function (value) {
     subtractFromAccumulator.call(this, value, true);
-    return 8;
+    return 0;
   }
 );
 
@@ -115,7 +115,7 @@ function subtractFromAccumulator(this: CpuState, value: number, carry = false) {
 
 export const compareRegister = instruction(function (reg: Register) {
   compareWithAccumulator.call(this, this.readRegister(reg));
-  return 4;
+  return 0;
 });
 
 export const compareIndirectHL = instruction(function () {
@@ -123,12 +123,12 @@ export const compareIndirectHL = instruction(function () {
     this,
     this.readBus(this.readRegisterPair(RegisterPair.HL))
   );
-  return 8;
+  return 4;
 });
 
 export const compareImmediate = instructionWithImmediateByte(function (value) {
   compareWithAccumulator.call(this, value);
-  return 8;
+  return 0;
 });
 
 function compareWithAccumulator(this: CpuState, value: number) {
@@ -148,7 +148,7 @@ export const incrementRegister = instruction(function (reg: Register) {
     reg,
     incrementAndSetFlags.call(this, this.readRegister(reg))
   );
-  return 4;
+  return 0;
 });
 
 export const incrementIndirectHL = instruction(function () {
@@ -159,7 +159,7 @@ export const incrementIndirectHL = instruction(function () {
     incrementAndSetFlags.call(this, this.readBus(address))
   );
 
-  return 12;
+  return 8;
 });
 
 function incrementAndSetFlags(this: CpuState, value: number) {
@@ -174,13 +174,13 @@ function incrementAndSetFlags(this: CpuState, value: number) {
 
 export const decrementRegister = instruction(function (reg: Register) {
   this.writeRegister(reg, decrement.call(this, this.readRegister(reg)));
-  return 4;
+  return 0;
 });
 
 export const decrementIndirectHL = instruction(function () {
   const address = this.readRegisterPair(RegisterPair.HL);
   this.writeBus(address, decrement.call(this, this.readBus(address)));
-  return 12;
+  return 8;
 });
 
 function decrement(this: CpuState, value: number) {
@@ -195,7 +195,7 @@ function decrement(this: CpuState, value: number) {
 
 export const andRegister = instruction(function (reg: Register) {
   andAccumulator.call(this, this.readRegister(reg));
-  return 4;
+  return 0;
 });
 
 export const andIndirectHL = instruction(function () {
@@ -203,12 +203,12 @@ export const andIndirectHL = instruction(function () {
     this,
     this.readBus(this.readRegisterPair(RegisterPair.HL))
   );
-  return 8;
+  return 4;
 });
 
 export const andImmediate = instructionWithImmediateByte(function (value) {
   andAccumulator.call(this, value);
-  return 8;
+  return 0;
 });
 
 function andAccumulator(this: CpuState, value: number) {
@@ -223,7 +223,7 @@ function andAccumulator(this: CpuState, value: number) {
 
 export const orRegister = instruction(function (reg: Register) {
   orAccumulator.call(this, this.readRegister(reg));
-  return 4;
+  return 0;
 });
 
 export const orIndirectHL = instruction(function () {
@@ -231,12 +231,12 @@ export const orIndirectHL = instruction(function () {
     this,
     this.readBus(this.readRegisterPair(RegisterPair.HL))
   );
-  return 8;
+  return 4;
 });
 
 export const orImmediate = instructionWithImmediateByte(function (value) {
   orAccumulator.call(this, value);
-  return 8;
+  return 0;
 });
 
 function orAccumulator(this: CpuState, value: number) {
@@ -251,7 +251,7 @@ function orAccumulator(this: CpuState, value: number) {
 
 export const xorRegister = instruction(function (reg: Register) {
   xorAccumulator.call(this, this.readRegister(reg));
-  return 4;
+  return 0;
 });
 
 export const xorIndirectHL = instruction(function () {
@@ -259,12 +259,12 @@ export const xorIndirectHL = instruction(function () {
     this,
     this.readBus(this.readRegisterPair(RegisterPair.HL))
   );
-  return 8;
+  return 4;
 });
 
 export const xorImmediate = instructionWithImmediateByte(function (value) {
   xorAccumulator.call(this, value);
-  return 8;
+  return 0;
 });
 
 function xorAccumulator(this: CpuState, value: number) {
@@ -282,7 +282,7 @@ export const complementCarryFlag = instruction(function () {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, !this.isFlagSet(Flag.CY));
 
-  return 4;
+  return 0;
 });
 
 export const setCarryFlag = instruction(function () {
@@ -290,7 +290,7 @@ export const setCarryFlag = instruction(function () {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, true);
 
-  return 4;
+  return 0;
 });
 
 export const decimalAdjustAccumulator = instruction(function () {
@@ -322,7 +322,7 @@ export const decimalAdjustAccumulator = instruction(function () {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 4;
+  return 0;
 });
 
 export const complementAccumulator = instruction(function () {
@@ -330,5 +330,5 @@ export const complementAccumulator = instruction(function () {
   this.setFlag(Flag.N, true);
   this.setFlag(Flag.H, true);
 
-  return 4;
+  return 0;
 });

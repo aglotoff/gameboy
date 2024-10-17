@@ -11,7 +11,7 @@ export const rotateLeftCircularAccumulator = instruction(function () {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 4;
+  return 0;
 });
 
 export const rotateLeftCircularRegister = instruction(function (reg: Register) {
@@ -23,7 +23,7 @@ export const rotateLeftCircularRegister = instruction(function (reg: Register) {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 8;
+  return 4;
 });
 
 export const rotateLeftCircularIndirectHL = instruction(function () {
@@ -37,7 +37,7 @@ export const rotateLeftCircularIndirectHL = instruction(function () {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 16;
+  return 12;
 });
 
 function rotateLeftCircular(value: number) {
@@ -56,7 +56,7 @@ export const rotateRightCircularAccumulator = instruction(function () {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 4;
+  return 0;
 });
 
 export const rotateRightCircularRegister = instruction(function (
@@ -70,7 +70,7 @@ export const rotateRightCircularRegister = instruction(function (
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 8;
+  return 4;
 });
 
 export const rotateRightCircularIndirectHL = instruction(function () {
@@ -84,7 +84,7 @@ export const rotateRightCircularIndirectHL = instruction(function () {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 16;
+  return 12;
 });
 
 function rotateRightCircular(value: number) {
@@ -106,7 +106,7 @@ export const rotateLeftAccumulator = instruction(function () {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 4;
+  return 0;
 });
 
 export const rotateLeftRegister = instruction(function (reg: Register) {
@@ -121,7 +121,7 @@ export const rotateLeftRegister = instruction(function (reg: Register) {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 8;
+  return 4;
 });
 
 export const rotateLeftIndirectHL = instruction(function () {
@@ -138,7 +138,7 @@ export const rotateLeftIndirectHL = instruction(function () {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 16;
+  return 12;
 });
 
 function rotateLeft(value: number, carry: boolean) {
@@ -160,7 +160,7 @@ export const rotateRightAccumulator = instruction(function () {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 4;
+  return 0;
 });
 
 export const rotateRightRegister = instruction(function (reg: Register) {
@@ -175,7 +175,7 @@ export const rotateRightRegister = instruction(function (reg: Register) {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 8;
+  return 4;
 });
 
 export const rotateRightIndirectHL = instruction(function () {
@@ -192,7 +192,7 @@ export const rotateRightIndirectHL = instruction(function () {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 16;
+  return 12;
 });
 
 function rotateRight(value: number, carry: boolean) {
@@ -213,7 +213,7 @@ export const shiftLeftArithmeticRegister = instruction(function (
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 8;
+  return 4;
 });
 
 export const shiftLeftArithmeticIndirectHL = instruction(function () {
@@ -227,7 +227,7 @@ export const shiftLeftArithmeticIndirectHL = instruction(function () {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 16;
+  return 12;
 });
 
 function shiftLeftArithmetic(value: number) {
@@ -248,7 +248,7 @@ export const shiftRightArithmeticRegister = instruction(function (
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 8;
+  return 4;
 });
 
 export const shiftRightArithmeticIndirectHL = instruction(function () {
@@ -262,7 +262,7 @@ export const shiftRightArithmeticIndirectHL = instruction(function () {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 16;
+  return 12;
 });
 
 function shiftRightArithmetic(value: number) {
@@ -281,7 +281,7 @@ export const shiftRightLogicalRegister = instruction(function (reg: Register) {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 8;
+  return 4;
 });
 
 export const shiftRightLogicalIndirectHL = instruction(function () {
@@ -295,7 +295,7 @@ export const shiftRightLogicalIndirectHL = instruction(function () {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 16;
+  return 12;
 });
 
 function shiftRightLogical(value: number) {
@@ -314,7 +314,7 @@ export const swapNibblesRegister = instruction(function (reg: Register) {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, false);
 
-  return 8;
+  return 4;
 });
 
 export const swapNibblesIndirectHL = instruction(function () {
@@ -328,7 +328,7 @@ export const swapNibblesIndirectHL = instruction(function () {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, false);
 
-  return 16;
+  return 12;
 });
 
 function swapNibbles(value: number) {
@@ -343,7 +343,7 @@ export const testBitRegister = instruction(function (
   this.setFlag(Flag.N, false);
   this.setFlag(Flag.H, true);
 
-  return 8;
+  return 4;
 });
 
 export const testBitIndirectHL = instruction(function (bit: number) {
@@ -353,7 +353,7 @@ export const testBitIndirectHL = instruction(function (bit: number) {
   this.setFlag(Flag.N, false);
   this.setFlag(Flag.H, true);
 
-  return 12;
+  return 8;
 });
 
 export const resetBitRegister = instruction(function (
@@ -361,13 +361,13 @@ export const resetBitRegister = instruction(function (
   reg: Register
 ) {
   this.writeRegister(reg, resetBit(this.readRegister(reg), bit));
-  return 8;
+  return 4;
 });
 
 export const resetBitIndirectHL = instruction(function (bit: number) {
   const address = this.readRegisterPair(RegisterPair.HL);
   this.writeBus(address, resetBit(this.readBus(address), bit));
-  return 16;
+  return 12;
 });
 
 export const setBitRegister = instruction(function (
@@ -375,11 +375,11 @@ export const setBitRegister = instruction(function (
   reg: Register
 ) {
   this.writeRegister(reg, setBit(this.readRegister(reg), bit));
-  return 8;
+  return 4;
 });
 
 export const setBitIndirectHL = instruction(function (bit: number) {
   const address = this.readRegisterPair(RegisterPair.HL);
   this.writeBus(address, setBit(this.readBus(address), bit));
-  return 16;
+  return 12;
 });

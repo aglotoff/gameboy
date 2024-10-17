@@ -153,7 +153,7 @@ export class Memory implements IBus {
         case HWRegister.IE:
           return this.interruptController.getEnableRegister();
         default:
-          console.log("READ", address.toString(16));
+          //console.log("READ", address.toString(16));
           return 0xff;
       }
     }
@@ -282,7 +282,7 @@ export class Memory implements IBus {
           // TODO
           break;
         default:
-          console.log("WRITE", address.toString(16));
+          //console.log("WRITE", address.toString(16));
           break;
       }
     } else {

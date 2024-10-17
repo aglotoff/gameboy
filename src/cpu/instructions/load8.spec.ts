@@ -36,6 +36,7 @@ describe("8-bit load instructions", () => {
 
     expect(state.readRegister(Register.A)).toBe(0x3c);
     expect(state.readRegister(Register.B)).toBe(0x5c);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("LD r,n", ({ state }) => {
@@ -44,6 +45,7 @@ describe("8-bit load instructions", () => {
     loadRegisterFromImmediate.call(state, Register.B);
 
     expect(state.readRegister(Register.B)).toBe(0x24);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("LD r,(HL)", ({ state }) => {
@@ -53,6 +55,7 @@ describe("8-bit load instructions", () => {
     loadRegisterFromIndirectHL.call(state, Register.H);
 
     expect(state.readRegister(Register.H)).toBe(0x5c);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("LD (HL),r", ({ state }) => {
@@ -62,6 +65,7 @@ describe("8-bit load instructions", () => {
     loadIndirectHLFromRegister.call(state, Register.A);
 
     expect(state.readBus(0x8ac5)).toBe(0x3c);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("LD (HL),n", ({ state }) => {
@@ -71,6 +75,7 @@ describe("8-bit load instructions", () => {
     loadIndirectHLFromImmediateData.call(state);
 
     expect(state.readBus(0x8ac5)).toBe(0x3c);
+    expect(state.getElapsedCycles()).toBe(3);
   });
 
   testInstruction("LD A,(BC)", ({ state }) => {
@@ -80,6 +85,7 @@ describe("8-bit load instructions", () => {
     loadAccumulatorFromIndirectBC.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x2f);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("LD A,(DE)", ({ state }) => {
@@ -89,6 +95,7 @@ describe("8-bit load instructions", () => {
     loadAccumulatorFromIndirectDE.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x5f);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("LD (BC),A", ({ state }) => {
@@ -98,6 +105,7 @@ describe("8-bit load instructions", () => {
     loadIndirectBCFromAccumulator.call(state);
 
     expect(state.readBus(0x205f)).toBe(0x56);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("LD (DE),A", ({ state }) => {
@@ -107,6 +115,7 @@ describe("8-bit load instructions", () => {
     loadIndirectDEFromAccumulator.call(state);
 
     expect(state.readBus(0x205c)).toBe(0xaa);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("LD A,(nn)", ({ state }) => {
@@ -117,6 +126,7 @@ describe("8-bit load instructions", () => {
     loadAccumulatorFromDirectWord.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x5c);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("LD (nn),A", ({ state }) => {
@@ -127,6 +137,7 @@ describe("8-bit load instructions", () => {
     loadDirectWordFromAccumulator.call(state);
 
     expect(state.readBus(0x8000)).toBe(0x2f);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("LD A,(C)", ({ state }) => {
@@ -136,6 +147,7 @@ describe("8-bit load instructions", () => {
     loadAccumulatorFromIndirectC.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x2c);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("LD (C),A", ({ state }) => {
@@ -145,6 +157,7 @@ describe("8-bit load instructions", () => {
     loadIndirectCFromAccumulator.call(state);
 
     expect(state.readBus(0xff9f)).toBe(0x5c);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("LD A,(n)", ({ state }) => {
@@ -154,6 +167,7 @@ describe("8-bit load instructions", () => {
     loadAccumulatorFromDirectByte.call(state);
 
     expect(state.readRegister(Register.A)).toBe(0x5f);
+    expect(state.getElapsedCycles()).toBe(3);
   });
 
   testInstruction("LD (n),A", ({ state }) => {
@@ -163,6 +177,7 @@ describe("8-bit load instructions", () => {
     loadDirectByteFromAccumulator.call(state);
 
     expect(state.readBus(0xff34)).toBe(0x2f);
+    expect(state.getElapsedCycles()).toBe(3);
   });
 
   testInstruction("LD A,(HLD)", ({ state }) => {
@@ -173,6 +188,7 @@ describe("8-bit load instructions", () => {
 
     expect(state.readRegister(Register.A)).toBe(0x3c);
     expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x8a5b);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("LD A,(HLI)", ({ state }) => {
@@ -183,6 +199,7 @@ describe("8-bit load instructions", () => {
 
     expect(state.readRegister(Register.A)).toBe(0x56);
     expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x200);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("LD (HLD),A", ({ state }) => {
@@ -193,6 +210,7 @@ describe("8-bit load instructions", () => {
 
     expect(state.readBus(0x4000)).toBe(0x5);
     expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x3fff);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("LD (HLI),A", ({ state }) => {
@@ -203,5 +221,6 @@ describe("8-bit load instructions", () => {
 
     expect(state.readBus(0xffff)).toBe(0x56);
     expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x0000);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 });

@@ -21,6 +21,7 @@ describe("16-bit load instructions", () => {
 
     expect(state.readRegister(Register.H)).toBe(0x3a);
     expect(state.readRegister(Register.L)).toBe(0x5b);
+    expect(state.getElapsedCycles()).toBe(3);
   });
 
   testInstruction("LD (nn),SP", ({ state }) => {
@@ -32,6 +33,7 @@ describe("16-bit load instructions", () => {
 
     expect(state.readBus(0xc100)).toBe(0xf8);
     expect(state.readBus(0xc101)).toBe(0xff);
+    expect(state.getElapsedCycles()).toBe(5);
   });
 
   testInstruction("LD SP,HL", ({ state }) => {
@@ -40,6 +42,7 @@ describe("16-bit load instructions", () => {
     loadStackPointerFromHL.call(state);
 
     expect(state.readRegisterPair(RegisterPair.SP)).toBe(0x3a5b);
+    expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("PUSH qq", ({ state }) => {
@@ -51,6 +54,7 @@ describe("16-bit load instructions", () => {
     expect(state.readBus(0xfffd)).toBe(0x8a);
     expect(state.readBus(0xfffc)).toBe(0xc5);
     expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
+    expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("POP qq", ({ state }) => {
@@ -62,6 +66,7 @@ describe("16-bit load instructions", () => {
 
     expect(state.readRegisterPair(RegisterPair.BC)).toBe(0x3c5f);
     expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
+    expect(state.getElapsedCycles()).toBe(3);
   });
 
   testInstruction("LDHL SP,e", ({ state }) => {
@@ -75,5 +80,6 @@ describe("16-bit load instructions", () => {
     expect(state.isFlagSet(Flag.H)).toBe(false);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getElapsedCycles()).toBe(3);
   });
 });

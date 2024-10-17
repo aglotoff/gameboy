@@ -24,8 +24,17 @@ export class CpuState {
   private ime = false;
   private halted = false;
   private stopped = false;
+  private elapsedCycles = 0;
 
   public constructor(protected memory: IBus) {}
+
+  public cycle() {
+    this.elapsedCycles += 1;
+  }
+
+  public getElapsedCycles() {
+    return this.elapsedCycles;
+  }
 
   public readRegister(register: Register) {
     return this.regs.read(register);

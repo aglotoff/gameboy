@@ -1,6 +1,12 @@
 import { describe, expect } from "vitest";
 
-import { disableInterrupts, enableInterrupts, halt, stop } from "./misc";
+import {
+  disableInterrupts,
+  enableInterrupts,
+  halt,
+  noOperation,
+  stop,
+} from "./misc";
 import { testInstruction } from "./test-lib";
 
 describe("Miscellaneous instructions", () => {
@@ -22,11 +28,19 @@ describe("Miscellaneous instructions", () => {
     disableInterrupts.call(state);
 
     expect(state.getIME()).toBe(false);
+    expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("EI", ({ state }) => {
     enableInterrupts.call(state);
 
     expect(state.getIME()).toBe(true);
+    expect(state.getElapsedCycles()).toBe(1);
+  });
+
+  testInstruction("NOP", ({ state }) => {
+    noOperation.call(state);
+
+    expect(state.getElapsedCycles()).toBe(1);
   });
 });
