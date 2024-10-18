@@ -9,12 +9,14 @@ import {
 
 export const incrementRegisterPair = instruction(function (pair: RegisterPair) {
   this.writeRegisterPair(pair, wrapIncrementWord(this.readRegisterPair(pair)));
-  return 4;
+  this.cycle();
+  return 0;
 });
 
 export const decrementRegisterPair = instruction(function (pair: RegisterPair) {
   this.writeRegisterPair(pair, this.readRegisterPair(pair) - 1);
-  return 4;
+  this.cycle();
+  return 0;
 });
 
 export const addRegisterPair = instruction(function (pair: RegisterPair) {
@@ -24,11 +26,13 @@ export const addRegisterPair = instruction(function (pair: RegisterPair) {
   );
 
   this.writeRegisterPair(RegisterPair.HL, result);
+  // TODO: L on the first cycle, H on the second
+  this.cycle();
+
   this.setFlag(Flag.N, false);
   this.setFlag(Flag.H, carryFrom11);
   this.setFlag(Flag.CY, carryFrom15);
-
-  return 4;
+  return 0;
 });
 
 export const addToStackPointer = instructionWithImmediateByte(function (e) {
@@ -37,11 +41,15 @@ export const addToStackPointer = instructionWithImmediateByte(function (e) {
     e
   );
 
+  // TODO: addition split in two steps
+  this.cycle();
+  this.cycle();
+
   this.writeRegisterPair(RegisterPair.SP, result);
   this.setFlag(Flag.Z, false);
   this.setFlag(Flag.N, false);
   this.setFlag(Flag.H, carryFrom3);
   this.setFlag(Flag.CY, carryFrom7);
 
-  return 8;
+  return 0;
 });

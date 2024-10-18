@@ -10,7 +10,8 @@ import {
 
 export const jump = instructionWithImmediateWord(function (address) {
   this.writeRegisterPair(RegisterPair.PC, address);
-  return 4;
+  this.cycle();
+  return 0;
 });
 
 export const jumpToHL = instruction(function () {
@@ -30,8 +31,9 @@ export const jumpConditional = instructionWithImmediateWord(function (
   }
 
   this.writeRegisterPair(RegisterPair.PC, address);
+  this.cycle();
 
-  return 4;
+  return 0;
 });
 
 export const relativeJump = instructionWithImmediateByte(function (offset) {
@@ -41,8 +43,9 @@ export const relativeJump = instructionWithImmediateByte(function (offset) {
   );
 
   this.writeRegisterPair(RegisterPair.PC, result);
+  this.cycle();
 
-  return 4;
+  return 0;
 });
 
 export const relativeJumpConditional = instructionWithImmediateByte(function (
@@ -59,14 +62,15 @@ export const relativeJumpConditional = instructionWithImmediateByte(function (
   );
 
   this.writeRegisterPair(RegisterPair.PC, result);
+  this.cycle();
 
-  return 4;
+  return 0;
 });
 
 export const callFunction = instructionWithImmediateWord(function (address) {
   pushProgramCounter.call(this);
   this.writeRegisterPair(RegisterPair.PC, address);
-  return 12;
+  return 0;
 });
 
 export const callFunctionConditional = instructionWithImmediateWord(function (
@@ -80,34 +84,36 @@ export const callFunctionConditional = instructionWithImmediateWord(function (
   pushProgramCounter.call(this);
   this.writeRegisterPair(RegisterPair.PC, address);
 
-  return 12;
+  return 0;
 });
 
 export const returnFromFunction = instruction(function () {
   popProgramCounter.call(this);
-  return 12;
+  return 0;
 });
 
 export const returnFromFunctionConditional = instruction(function (
   condition: Condition
 ) {
-  if (!this.checkCondition(condition)) {
-    return 4;
+  let result = this.checkCondition(condition);
+  this.cycle();
+
+  if (result) {
+    popProgramCounter.call(this);
   }
 
-  popProgramCounter.call(this);
-
-  return 16;
+  return 0;
 });
 
 export const returnFromInterruptHandler = instruction(function () {
   popProgramCounter.call(this);
   this.setIME(true);
-  return 12;
+  return 0;
 });
 
 function popProgramCounter(this: CpuState) {
   this.writeRegisterPair(RegisterPair.PC, this.popWord());
+  this.cycle();
 }
 
 export const restartFunction = instruction(function (address: number) {
@@ -115,7 +121,7 @@ export const restartFunction = instruction(function (address: number) {
 
   this.writeRegisterPair(RegisterPair.PC, makeWord(0x00, address));
 
-  return 12;
+  return 0;
 });
 
 function pushProgramCounter(this: CpuState) {

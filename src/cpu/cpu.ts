@@ -13,48 +13,59 @@ export class Cpu extends CpuState {
   }
 
   public step() {
-    if (this.interruptController.hasPendingInterrupt()) {
-      this.setHalted(false);
+    try {
+      let c = 0;
 
-      if (this.getIME()) {
-        this.setIME(false);
-
-        const irq = this.interruptController.getPendingInterrupt();
-        this.interruptController.acknowledgeInterrupt(irq);
-
-        const handlerAddress = 0x40 + irq * 8;
-
-        this.pushWord(this.readRegisterPair(RegisterPair.PC));
-        this.writeRegisterPair(RegisterPair.PC, handlerAddress);
-
-        for (let i = 0; i < 5; i++) {
-          this.cycle();
-        }
-
-        return 20;
+      if (this.isHalted()) {
+        this.cycle();
+        c = 4;
+      } else {
+        const instruction = this.fetchNextInstruction();
+        c = instruction[1].call(this);
       }
-    }
 
-    if (this.isHalted()) {
-      this.cycle();
-      return 4;
-    }
+      if (this.interruptController.hasPendingInterrupt()) {
+        this.setHalted(false);
 
-    const instruction = this.fetchNextInstruction();
-    return instruction[1].call(this);
+        if (this.getIME()) {
+          this.setIME(false);
+
+          const irq = this.interruptController.getPendingInterrupt();
+          this.interruptController.acknowledgeInterrupt(irq);
+
+          const handlerAddress = 0x40 + irq * 8;
+
+          this.pushWord(this.readRegisterPair(RegisterPair.PC));
+          this.writeRegisterPair(RegisterPair.PC, handlerAddress);
+
+          for (let i = 0; i < 1; i++) {
+            this.cycle();
+          }
+
+          this.fetchNextOpcode();
+
+          c += 20;
+        }
+      }
+
+      if (!this.isHalted()) {
+        this.advancePC();
+      }
+    } catch (error) {
+      this.stop();
+      throw error;
+    }
   }
 
   private fetchNextInstruction() {
-    const opcode = this.fetchImmediateByte();
-
-    if (opcode == 0xcb) {
+    if (this.opcode == 0xcb) {
       return this.fetchNextPrefixCbInstruction();
     }
 
-    const instruction = getInstruction(opcode);
+    const instruction = getInstruction(this.opcode);
 
     if (typeof instruction === "undefined") {
-      throw new Error(`Invalid opcode ${opcode.toString(16)}`);
+      throw new Error(`Invalid opcode ${this.opcode.toString(16)}`);
     }
 
     return instruction;

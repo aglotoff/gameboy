@@ -19,8 +19,10 @@ export const loadDirectFromStackPointer = instructionWithImmediateWord(
   function (address) {
     const data = this.readRegisterPair(RegisterPair.SP);
     this.writeBus(address, getLSB(data));
+    this.cycle();
     this.writeBus(address + 1, getMSB(data));
-    return 8;
+    this.cycle();
+    return 0;
   }
 );
 
@@ -29,17 +31,18 @@ export const loadStackPointerFromHL = instruction(function () {
     RegisterPair.SP,
     this.readRegisterPair(RegisterPair.HL)
   );
-  return 4;
+  this.cycle();
+  return 0;
 });
 
 export const pushToStack = instruction(function (pair: RegisterPair) {
   this.pushWord(this.readRegisterPair(pair));
-  return 12;
+  return 0;
 });
 
 export const popFromStack = instruction(function (rr: RegisterPair) {
   this.writeRegisterPair(rr, this.popWord());
-  return 8;
+  return 0;
 });
 
 export const loadHLFromAdjustedStackPointer = instructionWithImmediateByte(
@@ -50,11 +53,14 @@ export const loadHLFromAdjustedStackPointer = instructionWithImmediateByte(
     );
 
     this.writeRegisterPair(RegisterPair.HL, result);
+    // Loading L on first cycle, H on second
+    this.cycle();
+
     this.setFlag(Flag.Z, false);
     this.setFlag(Flag.N, false);
     this.setFlag(Flag.H, carryFrom3);
     this.setFlag(Flag.CY, carryFrom7);
 
-    return 4;
+    return 0;
   }
 );

@@ -25,6 +25,7 @@ export class CpuState {
   private halted = false;
   private stopped = false;
   private elapsedCycles = 0;
+  public opcode = 0;
 
   public constructor(protected memory: IBus, private onCycle: () => void) {}
 
@@ -113,8 +114,21 @@ export class CpuState {
   public fetchImmediateByte() {
     let pc = this.readRegisterPair(RegisterPair.PC);
     const data = this.readBus(pc);
+    this.cycle();
     this.writeRegisterPair(RegisterPair.PC, wrapIncrementWord(pc));
     return data;
+  }
+
+  public fetchNextOpcode() {
+    let pc = this.readRegisterPair(RegisterPair.PC);
+    this.opcode = this.readBus(pc);
+    this.cycle();
+    return;
+  }
+
+  public advancePC() {
+    let pc = this.readRegisterPair(RegisterPair.PC);
+    this.writeRegisterPair(RegisterPair.PC, wrapIncrementWord(pc));
   }
 
   public fetchImmediateWord() {
@@ -127,11 +141,15 @@ export class CpuState {
     let sp = this.readRegisterPair(RegisterPair.SP);
 
     sp = wrapDecrementWord(sp);
+    this.cycle();
+
     this.writeBus(sp, getMSB(data));
     sp = wrapDecrementWord(sp);
-    this.writeBus(sp, getLSB(data));
+    this.cycle();
 
+    this.writeBus(sp, getLSB(data));
     this.writeRegisterPair(RegisterPair.SP, sp);
+    this.cycle();
   }
 
   public popWord() {
@@ -139,10 +157,13 @@ export class CpuState {
 
     const lsb = this.readBus(sp);
     sp = wrapIncrementWord(sp);
+    this.writeRegisterPair(RegisterPair.SP, sp);
+    this.cycle();
+
     const msb = this.readBus(sp);
     sp = wrapIncrementWord(sp);
-
     this.writeRegisterPair(RegisterPair.SP, sp);
+    this.cycle();
 
     return makeWord(msb, lsb);
   }

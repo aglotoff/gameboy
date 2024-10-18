@@ -11,9 +11,7 @@ export function instruction<T extends unknown[]>(
   return function (this: CpuState, ...args: T) {
     const cycles = cb.call(this, ...args);
 
-    for (let i = 0; i < cycles / 4 + 1; i++) {
-      this.cycle();
-    }
+    this.fetchNextOpcode();
 
     return cycles + 4;
   };
@@ -25,9 +23,7 @@ export function instructionWithImmediateByte<T extends unknown[]>(
   return function (this: CpuState, ...args: T) {
     const cycles = cb.call(this, this.fetchImmediateByte(), ...args);
 
-    for (let i = 0; i < cycles / 4 + 2; i++) {
-      this.cycle();
-    }
+    this.fetchNextOpcode();
 
     return cycles + 8;
   };
@@ -39,9 +35,7 @@ export function instructionWithImmediateWord<T extends unknown[]>(
   return function (this: CpuState, ...args: T) {
     const cycles = cb.call(this, this.fetchImmediateWord(), ...args);
 
-    for (let i = 0; i < cycles / 4 + 3; i++) {
-      this.cycle();
-    }
+    this.fetchNextOpcode();
 
     return cycles + 12;
   };

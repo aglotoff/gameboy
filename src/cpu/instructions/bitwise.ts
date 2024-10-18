@@ -23,21 +23,26 @@ export const rotateLeftCircularRegister = instruction(function (reg: Register) {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 4;
+  return 0;
 });
 
 export const rotateLeftCircularIndirectHL = instruction(function () {
   const address = this.readRegisterPair(RegisterPair.HL);
 
-  const { result, carry } = rotateLeftCircular(this.readBus(address));
+  const data = this.readBus(address);
+  this.cycle();
+
+  const { result, carry } = rotateLeftCircular(data);
 
   this.writeBus(address, result);
+  this.cycle();
+
   this.setFlag(Flag.Z, result === 0);
   this.setFlag(Flag.N, false);
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 12;
+  return 0;
 });
 
 function rotateLeftCircular(value: number) {
@@ -70,21 +75,25 @@ export const rotateRightCircularRegister = instruction(function (
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 4;
+  return 0;
 });
 
 export const rotateRightCircularIndirectHL = instruction(function () {
   const address = this.readRegisterPair(RegisterPair.HL);
+  const data = this.readBus(address);
+  this.cycle();
 
-  const { result, carry } = rotateRightCircular(this.readBus(address));
+  const { result, carry } = rotateRightCircular(data);
 
   this.writeBus(address, result);
+  this.cycle();
+
   this.setFlag(Flag.Z, result === 0);
   this.setFlag(Flag.N, false);
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 12;
+  return 0;
 });
 
 function rotateRightCircular(value: number) {
@@ -121,24 +130,25 @@ export const rotateLeftRegister = instruction(function (reg: Register) {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 4;
+  return 0;
 });
 
 export const rotateLeftIndirectHL = instruction(function () {
   const address = this.readRegisterPair(RegisterPair.HL);
+  const data = this.readBus(address);
+  this.cycle();
 
-  const { result, carry } = rotateLeft(
-    this.readBus(address),
-    this.isFlagSet(Flag.CY)
-  );
+  const { result, carry } = rotateLeft(data, this.isFlagSet(Flag.CY));
 
   this.writeBus(address, result);
+  this.cycle();
+
   this.setFlag(Flag.Z, result === 0);
   this.setFlag(Flag.N, false);
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 12;
+  return 0;
 });
 
 function rotateLeft(value: number, carry: boolean) {
@@ -175,24 +185,25 @@ export const rotateRightRegister = instruction(function (reg: Register) {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 4;
+  return 0;
 });
 
 export const rotateRightIndirectHL = instruction(function () {
   const address = this.readRegisterPair(RegisterPair.HL);
+  const data = this.readBus(address);
+  this.cycle();
 
-  const { result, carry } = rotateRight(
-    this.readBus(address),
-    this.isFlagSet(Flag.CY)
-  );
+  const { result, carry } = rotateRight(data, this.isFlagSet(Flag.CY));
 
   this.writeBus(address, result);
+  this.cycle();
+
   this.setFlag(Flag.Z, result === 0);
   this.setFlag(Flag.N, false);
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 12;
+  return 0;
 });
 
 function rotateRight(value: number, carry: boolean) {
@@ -213,21 +224,25 @@ export const shiftLeftArithmeticRegister = instruction(function (
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 4;
+  return 0;
 });
 
 export const shiftLeftArithmeticIndirectHL = instruction(function () {
   const address = this.readRegisterPair(RegisterPair.HL);
+  const data = this.readBus(address);
+  this.cycle();
 
-  const { result, carry } = shiftLeftArithmetic(this.readBus(address));
+  const { result, carry } = shiftLeftArithmetic(data);
 
   this.writeBus(address, result);
+  this.cycle();
+
   this.setFlag(Flag.Z, result === 0);
   this.setFlag(Flag.N, false);
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 12;
+  return 0;
 });
 
 function shiftLeftArithmetic(value: number) {
@@ -248,21 +263,25 @@ export const shiftRightArithmeticRegister = instruction(function (
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 4;
+  return 0;
 });
 
 export const shiftRightArithmeticIndirectHL = instruction(function () {
   const address = this.readRegisterPair(RegisterPair.HL);
+  const data = this.readBus(address);
+  this.cycle();
 
-  const { result, carry } = shiftRightArithmetic(this.readBus(address));
+  const { result, carry } = shiftRightArithmetic(data);
 
   this.writeBus(address, result);
+  this.cycle();
+
   this.setFlag(Flag.Z, result === 0);
   this.setFlag(Flag.N, false);
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 12;
+  return 0;
 });
 
 function shiftRightArithmetic(value: number) {
@@ -281,21 +300,25 @@ export const shiftRightLogicalRegister = instruction(function (reg: Register) {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 4;
+  return 0;
 });
 
 export const shiftRightLogicalIndirectHL = instruction(function () {
   const address = this.readRegisterPair(RegisterPair.HL);
+  const data = this.readBus(address);
+  this.cycle();
 
-  const { result, carry } = shiftRightLogical(this.readBus(address));
+  const { result, carry } = shiftRightLogical(data);
 
   this.writeBus(address, result);
+  this.cycle();
+
   this.setFlag(Flag.Z, result === 0);
   this.setFlag(Flag.N, false);
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, carry);
 
-  return 12;
+  return 0;
 });
 
 function shiftRightLogical(value: number) {
@@ -314,21 +337,25 @@ export const swapNibblesRegister = instruction(function (reg: Register) {
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, false);
 
-  return 4;
+  return 0;
 });
 
 export const swapNibblesIndirectHL = instruction(function () {
   const address = this.readRegisterPair(RegisterPair.HL);
+  const data = this.readBus(address);
+  this.cycle();
 
-  const result = swapNibbles(this.readBus(address));
+  const result = swapNibbles(data);
 
   this.writeBus(address, result);
+  this.cycle();
+
   this.setFlag(Flag.Z, result === 0);
   this.setFlag(Flag.N, false);
   this.setFlag(Flag.H, false);
   this.setFlag(Flag.CY, false);
 
-  return 12;
+  return 0;
 });
 
 function swapNibbles(value: number) {
@@ -343,17 +370,19 @@ export const testBitRegister = instruction(function (
   this.setFlag(Flag.N, false);
   this.setFlag(Flag.H, true);
 
-  return 4;
+  return 0;
 });
 
 export const testBitIndirectHL = instruction(function (bit: number) {
   const address = this.readRegisterPair(RegisterPair.HL);
+  const data = this.readBus(address);
+  this.cycle();
 
-  this.setFlag(Flag.Z, !testBit(this.readBus(address), bit));
+  this.setFlag(Flag.Z, !testBit(data, bit));
   this.setFlag(Flag.N, false);
   this.setFlag(Flag.H, true);
 
-  return 8;
+  return 0;
 });
 
 export const resetBitRegister = instruction(function (
@@ -361,13 +390,18 @@ export const resetBitRegister = instruction(function (
   reg: Register
 ) {
   this.writeRegister(reg, resetBit(this.readRegister(reg), bit));
-  return 4;
+  return 0;
 });
 
 export const resetBitIndirectHL = instruction(function (bit: number) {
   const address = this.readRegisterPair(RegisterPair.HL);
-  this.writeBus(address, resetBit(this.readBus(address), bit));
-  return 12;
+  const data = this.readBus(address);
+  this.cycle();
+
+  this.writeBus(address, resetBit(data, bit));
+  this.cycle();
+
+  return 0;
 });
 
 export const setBitRegister = instruction(function (
@@ -375,11 +409,16 @@ export const setBitRegister = instruction(function (
   reg: Register
 ) {
   this.writeRegister(reg, setBit(this.readRegister(reg), bit));
-  return 4;
+  return 0;
 });
 
 export const setBitIndirectHL = instruction(function (bit: number) {
   const address = this.readRegisterPair(RegisterPair.HL);
-  this.writeBus(address, setBit(this.readBus(address), bit));
-  return 12;
+  const data = this.readBus(address);
+  this.cycle();
+
+  this.writeBus(address, setBit(data, bit));
+  this.cycle();
+
+  return 0;
 });
