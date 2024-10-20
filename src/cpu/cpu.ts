@@ -38,9 +38,7 @@ export class Cpu extends CpuState {
           this.pushWord(this.readRegisterPair(RegisterPair.PC));
           this.writeRegisterPair(RegisterPair.PC, handlerAddress);
 
-          for (let i = 0; i < 1; i++) {
-            this.cycle();
-          }
+          this.cycle();
 
           this.fetchNextOpcode();
 
