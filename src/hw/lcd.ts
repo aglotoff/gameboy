@@ -32,7 +32,7 @@ interface Pixel {
 }
 
 export class LCD {
-  private controlRegister = 0;
+  private controlRegister = 1 << 7;
   private lyCompareRegister = 0;
   private statusRegister = 0;
 

@@ -208,7 +208,7 @@ async function readImage(file: File) {
     lcd,
     interruptController,
     timer,
-    cartridge,
+    cartridge.getMBC(),
     oam,
     joypad
   );

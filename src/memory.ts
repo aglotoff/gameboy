@@ -3,7 +3,7 @@ import { InterruptController } from "./hw/interrupt-controller";
 import { LCD } from "./hw/lcd";
 import { IBus } from "./cpu";
 import { OAM } from "./hw/oam";
-import { Cartridge } from "./cartridge";
+import { MBC } from "./cartridge";
 import { Joypad } from "./hw/joypad";
 
 let buf = "";
@@ -60,7 +60,7 @@ export class Memory implements IBus {
     private lcd: LCD,
     private interruptController: InterruptController,
     private timer: Timer,
-    private cartridge: Cartridge,
+    private mbc: MBC,
     private oam: OAM,
     private joypad: Joypad
   ) {}
@@ -68,12 +68,12 @@ export class Memory implements IBus {
   public read(address: number): number {
     // 16 KiB ROM bank 00
     if (address <= 0x3fff) {
-      return this.cartridge.readROM(address);
+      return this.mbc.readROM(address);
     }
 
     // 16 KiB ROM Bank 01–NN
     if (address <= 0x7fff) {
-      return this.cartridge.readROM(address);
+      return this.mbc.readROM(address);
     }
 
     // 8 KiB Video RAM (VRAM)
@@ -83,7 +83,7 @@ export class Memory implements IBus {
 
     // 8 KiB External RAM
     if (address <= 0xbfff) {
-      return this.cartridge.readRAM(address - 0xa000);
+      return this.mbc.readRAM(address - 0xa000);
     }
 
     // 4 KiB Work RAM (WRAM)
@@ -163,18 +163,20 @@ export class Memory implements IBus {
   }
 
   public write(address: number, data: number) {
+    // console.log(address.toString(16), data.toString(16));
+
     if (address <= 0x3fff) {
       // 16 KiB ROM bank 00
-      this.cartridge.writeROM(address, data);
+      this.mbc.writeROM(address, data);
     } else if (address <= 0x7fff) {
       // 16 KiB ROM Bank 01–NN
-      this.cartridge.writeROM(address, data);
+      this.mbc.writeROM(address, data);
     } else if (address <= 0x9fff) {
       // 8 KiB Video RAM (VRAM)
       this.lcd.writeVRAM(address - 0x8000, data);
     } else if (address <= 0xbfff) {
       // 8 KiB External RAM
-      this.cartridge.writeRAM(address - 0xa000, data);
+      this.mbc.writeRAM(address - 0xa000, data);
     } else if (address <= 0xcfff) {
       // 4 KiB Work RAM (WRAM)
       this.wram[address] = data;
