@@ -2,7 +2,7 @@ import { makeWord } from "../utils";
 
 export type DMAReadFn = (address: number) => number;
 
-export interface DMAOptions {
+export interface OAMOptions {
   readCallback: DMAReadFn;
 }
 
@@ -12,20 +12,20 @@ export class OAM {
   private data = new Uint8Array(OAM_SIZE);
 
   private dmaInProgress = false;
-  private ticksToDMA = 0;
-  private dmaSource = 0;
+  private dmaDelay = 0;
+  private dmaTick = 0;
+  private currentDMASource = 0;
+  private currentDMAIndex = 0;
+  private nextDMASource = 0;
 
   private readCallback: DMAReadFn;
 
-  public constructor({ readCallback }: DMAOptions) {
+  public constructor({ readCallback }: OAMOptions) {
     this.readCallback = readCallback;
   }
 
   public read(offset: number) {
-    if (this.dmaInProgress) {
-      return 0xff;
-    }
-    return this.data[offset];
+    return this.dmaInProgress ? 0xff : this.data[offset];
   }
 
   public write(offset: number, data: number) {
@@ -35,30 +35,38 @@ export class OAM {
   }
 
   public startDMA(source: number) {
-    this.dmaInProgress = true;
-    this.dmaSource = source;
-    this.ticksToDMA = 160 * 4;
+    this.dmaDelay = 4;
+    this.nextDMASource = source;
   }
 
   public tick() {
-    if (!this.dmaInProgress) {
-      return;
+    if (this.dmaTick > 0) {
+      this.dmaInProgress = true;
+
+      if (this.dmaTick % 4 === 0) {
+        const address = makeWord(this.currentDMASource, this.currentDMAIndex);
+        const byte = this.readCallback(address);
+        this.data[this.currentDMAIndex] = byte;
+        this.currentDMAIndex += 1;
+      }
+
+      this.dmaTick -= 1;
+    } else {
+      this.dmaInProgress = false;
     }
 
-    if (this.ticksToDMA > 0) {
-      this.ticksToDMA -= 1;
-      return;
-    }
+    if (this.dmaDelay > 0) {
+      this.dmaDelay -= 1;
 
-    this.dmaInProgress = false;
-
-    for (let i = 0; i < 160; i++) {
-      const sourceAddress = makeWord(this.dmaSource, i);
-      this.data[i] = this.readCallback(sourceAddress);
+      if (this.dmaDelay === 0) {
+        this.currentDMASource = this.nextDMASource;
+        this.currentDMAIndex = 0;
+        this.dmaTick = 640;
+      }
     }
   }
 
   public getDMASource() {
-    return this.dmaSource;
+    return this.currentDMASource;
   }
 }

@@ -1,6 +1,6 @@
 import { Timer } from "./hw/timer";
 import { InterruptController } from "./hw/interrupt-controller";
-import { LCD } from "./hw/lcd";
+import { PPU } from "./hw/ppu";
 import { IBus } from "./cpu";
 import { OAM } from "./hw/oam";
 import { MBC } from "./cartridge";
@@ -53,11 +53,35 @@ export enum HWRegister {
   IE = 0xffff,
 }
 
+const bootROM = [
+  0x31, 0xfe, 0xff, 0xaf, 0x21, 0xff, 0x9f, 0x32, 0xcb, 0x7c, 0x20, 0xfb, 0x21,
+  0x26, 0xff, 0x0e, 0x11, 0x3e, 0x80, 0x32, 0xe2, 0x0c, 0x3e, 0xf3, 0xe2, 0x32,
+  0x3e, 0x77, 0x77, 0x3e, 0xfc, 0xe0, 0x47, 0x11, 0x04, 0x01, 0x21, 0x10, 0x80,
+  0x1a, 0xcd, 0x95, 0x00, 0xcd, 0x96, 0x00, 0x13, 0x7b, 0xfe, 0x34, 0x20, 0xf3,
+  0x11, 0xd8, 0x00, 0x06, 0x08, 0x1a, 0x13, 0x22, 0x23, 0x05, 0x20, 0xf9, 0x3e,
+  0x19, 0xea, 0x10, 0x99, 0x21, 0x2f, 0x99, 0x0e, 0x0c, 0x3d, 0x28, 0x08, 0x32,
+  0x0d, 0x20, 0xf9, 0x2e, 0x0f, 0x18, 0xf3, 0x67, 0x3e, 0x64, 0x57, 0xe0, 0x42,
+  0x3e, 0x91, 0xe0, 0x40, 0x04, 0x1e, 0x02, 0x0e, 0x0c, 0xf0, 0x44, 0xfe, 0x90,
+  0x20, 0xfa, 0x0d, 0x20, 0xf7, 0x1d, 0x20, 0xf2, 0x0e, 0x13, 0x24, 0x7c, 0x1e,
+  0x83, 0xfe, 0x62, 0x28, 0x06, 0x1e, 0xc1, 0xfe, 0x64, 0x20, 0x06, 0x7b, 0xe2,
+  0x0c, 0x3e, 0x87, 0xe2, 0xf0, 0x42, 0x90, 0xe0, 0x42, 0x15, 0x20, 0xd2, 0x05,
+  0x20, 0x4f, 0x16, 0x20, 0x18, 0xcb, 0x4f, 0x06, 0x04, 0xc5, 0xcb, 0x11, 0x17,
+  0xc1, 0xcb, 0x11, 0x17, 0x05, 0x20, 0xf5, 0x22, 0x23, 0x22, 0x23, 0xc9, 0xce,
+  0xed, 0x66, 0x66, 0xcc, 0x0d, 0x00, 0x0b, 0x03, 0x73, 0x00, 0x83, 0x00, 0x0c,
+  0x00, 0x0d, 0x00, 0x08, 0x11, 0x1f, 0x88, 0x89, 0x00, 0x0e, 0xdc, 0xcc, 0x6e,
+  0xe6, 0xdd, 0xdd, 0xd9, 0x99, 0xbb, 0xbb, 0x67, 0x63, 0x6e, 0x0e, 0xec, 0xcc,
+  0xdd, 0xdc, 0x99, 0x9f, 0xbb, 0xb9, 0x33, 0x3e, 0x3c, 0x42, 0xb9, 0xa5, 0xb9,
+  0xa5, 0x42, 0x3c, 0x21, 0x04, 0x01, 0x11, 0xa8, 0x00, 0x1a, 0x13, 0xbe, 0x20,
+  0xfe, 0x23, 0x7d, 0xfe, 0x34, 0x20, 0xf5, 0x06, 0x19, 0x78, 0x86, 0x23, 0x05,
+  0x20, 0xfb, 0x86, 0x20, 0xfe, 0x3e, 0x01, 0xe0, 0x50,
+];
+
 export class Memory implements IBus {
   private wram = new Uint8Array(0x10000);
+  private bootROMDisabled = false;
 
   public constructor(
-    private lcd: LCD,
+    private ppu: PPU,
     private interruptController: InterruptController,
     private timer: Timer,
     private mbc: MBC,
@@ -66,6 +90,10 @@ export class Memory implements IBus {
   ) {}
 
   public read(address: number): number {
+    if (address < bootROM.length && !this.bootROMDisabled) {
+      return bootROM[address];
+    }
+
     // 16 KiB ROM bank 00
     if (address <= 0x3fff) {
       return this.mbc.readROM(address);
@@ -78,7 +106,7 @@ export class Memory implements IBus {
 
     // 8 KiB Video RAM (VRAM)
     if (address <= 0x9fff) {
-      return this.lcd.readVRAM(address - 0x8000);
+      return this.ppu.readVRAM(address - 0x8000);
     }
 
     // 8 KiB External RAM
@@ -127,27 +155,27 @@ export class Memory implements IBus {
         case HWRegister.TAC:
           return this.timer.getControlRegister();
         case HWRegister.LCDC:
-          return this.lcd.getControlRegister();
+          return this.ppu.getControlRegister();
         case HWRegister.LY:
-          return this.lcd.getYCoordinateRegister();
+          return this.ppu.getYCoordinateRegister();
         case HWRegister.LYC:
-          return this.lcd.getLYCompareRegister();
+          return this.ppu.getLYCompareRegister();
         case HWRegister.STAT:
-          return this.lcd.getStatusRegister();
+          return this.ppu.getStatusRegister();
         case HWRegister.SCY:
-          return this.lcd.getViewportYPositionRegister();
+          return this.ppu.getViewportYPositionRegister();
         case HWRegister.SCX:
-          return this.lcd.getViewportXPositionRegister();
+          return this.ppu.getViewportXPositionRegister();
         case HWRegister.BGP:
-          return this.lcd.getBGPaletteDataRegister();
+          return this.ppu.getBGPaletteDataRegister();
         case HWRegister.WY:
-          return this.lcd.getWindowYPositionRegister();
+          return this.ppu.getWindowYPositionRegister();
         case HWRegister.WX:
-          return this.lcd.getWindowXPositionRegister();
+          return this.ppu.getWindowXPositionRegister();
         case HWRegister.OBP0:
-          return this.lcd.getObjPalette0DataRegister();
+          return this.ppu.getObjPalette0DataRegister();
         case HWRegister.OPB1:
-          return this.lcd.getObjPalette1DataRegister();
+          return this.ppu.getObjPalette1DataRegister();
         case HWRegister.IF:
           return this.interruptController.getFlagRegister();
         case HWRegister.IE:
@@ -163,40 +191,60 @@ export class Memory implements IBus {
   }
 
   public write(address: number, data: number) {
-    // console.log(address.toString(16), data.toString(16));
+    // if (address < bootROM.length && !this.bootROMDisabled) {
+    //   return;
+    // }
 
     if (address <= 0x3fff) {
       // 16 KiB ROM bank 00
-      this.mbc.writeROM(address, data);
-    } else if (address <= 0x7fff) {
+      return this.mbc.writeROM(address, data);
+    }
+
+    if (address <= 0x7fff) {
       // 16 KiB ROM Bank 01–NN
-      this.mbc.writeROM(address, data);
-    } else if (address <= 0x9fff) {
+      return this.mbc.writeROM(address, data);
+    }
+
+    if (address <= 0x9fff) {
       // 8 KiB Video RAM (VRAM)
-      this.lcd.writeVRAM(address - 0x8000, data);
-    } else if (address <= 0xbfff) {
+      return this.ppu.writeVRAM(address - 0x8000, data);
+    }
+
+    if (address <= 0xbfff) {
       // 8 KiB External RAM
-      this.mbc.writeRAM(address - 0xa000, data);
-    } else if (address <= 0xcfff) {
+      return this.mbc.writeRAM(address - 0xa000, data);
+    }
+
+    if (address <= 0xcfff) {
       // 4 KiB Work RAM (WRAM)
-      this.wram[address] = data;
-    } else if (address <= 0xdfff) {
+      return (this.wram[address] = data);
+    }
+
+    if (address <= 0xdfff) {
       // 4 KiB Work RAM (WRAM)
-      this.wram[address] = data;
-    } else if (address <= 0xfdff) {
+      return (this.wram[address] = data);
+    }
+
+    if (address <= 0xfdff) {
       // Echo RAM
-      this.wram[address - 0x2000] = data;
-    } else if (address <= 0xfe9f) {
+      return (this.wram[address - 0x2000] = data);
+    }
+
+    if (address <= 0xfe9f) {
       // Object attribute memory (OAM)
-      this.oam.write(address - 0xfe00, data);
-    } else if (address <= 0xfeff) {
+      return this.oam.write(address - 0xfe00, data);
+    }
+
+    if (address <= 0xfeff) {
       // Not Usable
-    } else if (address <= 0xff7f || address === 0xffff) {
+      return;
+    }
+
+    if (address <= 0xff7f || address === 0xffff) {
       // I/O Registers
       switch (address) {
         case HWRegister.JOYP:
-          this.joypad.writeRegister(data);
-          break;
+          return this.joypad.writeRegister(data);
         case HWRegister.SB:
           if (data == 10) {
             if (buf.length > 0) {
@@ -208,56 +256,39 @@ export class Memory implements IBus {
           }
           break;
         case HWRegister.DMA:
-          this.oam.startDMA(data);
-          break;
+          return this.oam.startDMA(data);
         case HWRegister.DIV:
-          this.timer.setDividerRegister(data);
-          break;
+          return this.timer.setDividerRegister(data);
         case HWRegister.TIMA:
-          this.timer.setCounterRegister(data);
-          break;
+          return this.timer.setCounterRegister(data);
         case HWRegister.TMA:
-          this.timer.setModuloRegister(data);
-          break;
+          return this.timer.setModuloRegister(data);
         case HWRegister.TAC:
-          this.timer.setControlRegister(data);
-          break;
+          return this.timer.setControlRegister(data);
         case HWRegister.LCDC:
-          this.lcd.setControlRegister(data);
-          break;
+          return this.ppu.setControlRegister(data);
         case HWRegister.LYC:
-          this.lcd.setLYCompareRegister(data);
-          break;
+          return this.ppu.setLYCompareRegister(data);
         case HWRegister.STAT:
-          this.lcd.setStatusRegister(data);
-          break;
+          return this.ppu.setStatusRegister(data);
         case HWRegister.SCY:
-          this.lcd.setViewportYPositionRegister(data);
-          break;
+          return this.ppu.setViewportYPositionRegister(data);
         case HWRegister.SCX:
-          this.lcd.setViewportXPositionRegister(data);
-          break;
+          return this.ppu.setViewportXPositionRegister(data);
         case HWRegister.BGP:
-          this.lcd.setBGPaletteDataRegister(data);
-          break;
+          return this.ppu.setBGPaletteDataRegister(data);
         case HWRegister.WY:
-          this.lcd.setWindowYPositionRegister(data);
-          break;
+          return this.ppu.setWindowYPositionRegister(data);
         case HWRegister.WX:
-          this.lcd.setWindowXPositionRegister(data);
-          break;
+          return this.ppu.setWindowXPositionRegister(data);
         case HWRegister.OBP0:
-          this.lcd.setObjPalett0DataRegister(data);
-          break;
+          return this.ppu.setObjPalett0DataRegister(data);
         case HWRegister.OPB1:
-          this.lcd.setObjPalett1DataRegister(data);
-          break;
+          return this.ppu.setObjPalett1DataRegister(data);
         case HWRegister.IF:
-          this.interruptController.setFlagRegister(data);
-          break;
+          return this.interruptController.setFlagRegister(data);
         case HWRegister.IE:
-          this.interruptController.setEnableRegister(data);
-          break;
+          return this.interruptController.setEnableRegister(data);
         case HWRegister.NR10:
         case HWRegister.NR11:
         case HWRegister.NR12:
@@ -283,13 +314,19 @@ export class Memory implements IBus {
         case 0xff1f:
           // TODO
           break;
+        case 0xff50:
+          if (data !== 0) {
+            this.bootROMDisabled = true;
+          }
+          break;
         default:
           //console.log("WRITE", address.toString(16));
           break;
       }
-    } else {
-      // High RAM
-      this.wram[address] = data;
+      return;
     }
+
+    // High RAM
+    this.wram[address] = data;
   }
 }

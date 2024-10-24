@@ -31,8 +31,15 @@ interface Pixel {
   bgPriority?: boolean;
 }
 
-export class LCD {
-  private controlRegister = 1 << 7;
+enum Mode {
+  HBlank = 0,
+  VBlank = 1,
+  OAMScan = 2,
+  Drawing = 3,
+}
+
+export class PPU {
+  private controlRegister = 0;
   private lyCompareRegister = 0;
   private statusRegister = 0;
 
@@ -40,7 +47,7 @@ export class LCD {
   private scanline = 0;
   private dot = 0;
   private imageData: ImageData;
-  private mode = 0;
+  private mode = Mode.OAMScan;
 
   private viewportX = 0;
   private viewportY = 0;
@@ -71,7 +78,7 @@ export class LCD {
   }
 
   public writeVRAM(offset: number, value: number) {
-    if (this.mode !== 3) {
+    if (this.mode !== Mode.Drawing) {
       this.vram[offset] = value;
     }
   }
@@ -107,7 +114,7 @@ export class LCD {
   }
 
   public getStatusRegister() {
-    return this.statusRegister | this.mode;
+    return this.statusRegister | (this.mode & 0x3);
   }
 
   public setStatusRegister(data: number) {
@@ -205,25 +212,9 @@ export class LCD {
     this.objPalette1 = data;
   }
 
-  // private getBGColor(id: number) {
-  //   return this.getPaletteColor(this.bgPalette, id);
-  // }
-
   private getPaletteColor(p: number, id: number) {
     return palette[(p >> (id * 2)) & 0x3];
   }
-
-  // public displayTile(tileNumber: number, x: number, y: number) {
-  //   for (let line = 0; line < 8; line++) {
-  //     for (let pixel = 0; pixel < 8; pixel++) {
-  //       const id = this.getTilePixelId(tileNumber, pixel, line, false);
-
-  //       this.debugContext.fillStyle =
-  //         "#" + ("00000000" + this.getBGColor(id).toString(16)).slice(-8);
-  //       this.debugContext.fillRect(x + pixel * 2, y + line * 2, 2, 2);
-  //     }
-  //   }
-  // }
 
   private getTilePixelId(
     tileNumber: number,
@@ -250,30 +241,65 @@ export class LCD {
     return (msb << 1) | lsb;
   }
 
+  private oamScanTick() {
+    if (this.dot % 2 === 1) {
+      this.oamScan();
+    }
+
+    if (this.dot === 79) {
+      this.mode = Mode.Drawing;
+    }
+  }
+
+  private drawingTick() {
+    if (this.dot === 251) {
+      this.mode = Mode.HBlank;
+      this.updateScanline();
+    }
+  }
+
+  private hBlankTick() {
+    if (this.dot === DOTS_PER_SCANLINE - 1) {
+      if (this.scanline === 143) {
+        this.mode = Mode.VBlank;
+        this.windowLineCounter = 0;
+        this.onVBlank();
+        this.render();
+      } else {
+        this.mode = Mode.OAMScan;
+        this.objectsPerLine = [];
+      }
+    }
+  }
+
+  private vBlankTick() {
+    if (
+      this.dot === DOTS_PER_SCANLINE - 1 &&
+      this.scanline === SCANLINES_PER_FRAME - 1
+    ) {
+      this.mode = Mode.OAMScan;
+      this.objectsPerLine = [];
+    }
+  }
+
   public tick() {
     if (!this.isEnabled()) {
       return;
     }
 
-    if (this.scanline < 144) {
-      if (this.dot === 0) {
-        this.mode = 2;
-        this.objectsPerLine = [];
-      } else if (this.dot < 80) {
-        if (this.dot % 2 === 1) {
-          this.oamScan();
-        }
-      } else if (this.dot === 80) {
-        this.mode = 3;
-      } else if (this.dot === 252) {
-        this.mode = 0;
-        this.updateScanline();
-      }
-    } else if (this.scanline === 144 && this.dot === 0) {
-      this.mode = 1;
-      this.windowLineCounter = 0;
-      this.onVBlank();
-      this.render();
+    switch (this.mode) {
+      case Mode.OAMScan:
+        this.oamScanTick();
+        break;
+      case Mode.Drawing:
+        this.drawingTick();
+        break;
+      case Mode.HBlank:
+        this.hBlankTick();
+        break;
+      case Mode.VBlank:
+        this.vBlankTick();
+        break;
     }
 
     this.dot = (this.dot + 1) % DOTS_PER_SCANLINE;
@@ -474,12 +500,6 @@ export class LCD {
   }
 
   private render() {
-    // for (let y = 0; y < 24; y++) {
-    //   for (let x = 0; x < 16; x++) {
-    //     this.displayTile(y * 16 + x, x * 16, y * 16);
-    //   }
-    // }
-
     this.context.putImageData(this.imageData, 0, 0);
   }
 }

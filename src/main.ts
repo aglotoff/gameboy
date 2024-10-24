@@ -1,6 +1,6 @@
-import { Cpu, RegisterPair } from "./cpu";
+import { Cpu, Register } from "./cpu";
 import { InterruptController } from "./hw/interrupt-controller";
-import { LCD } from "./hw/lcd";
+import { PPU } from "./hw/ppu";
 import { Memory } from "./memory";
 import { Timer } from "./hw/timer";
 import { OAM } from "./hw/oam";
@@ -15,13 +15,6 @@ canvas.height = 144 * 2;
 canvas.style.margin = "0 0 32px";
 canvas.style.border = "1px solid gray";
 const context = canvas.getContext("2d")!;
-
-const logoBytes = [
-  0xce, 0xed, 0x66, 0x66, 0xcc, 0x0d, 0x00, 0x0b, 0x03, 0x73, 0x00, 0x83, 0x00,
-  0x0c, 0x00, 0x0d, 0x00, 0x08, 0x11, 0x1f, 0x88, 0x89, 0x00, 0x0e, 0xdc, 0xcc,
-  0x6e, 0xe6, 0xdd, 0xdd, 0xd9, 0x99, 0xbb, 0xbb, 0x67, 0x63, 0x6e, 0x0e, 0xec,
-  0xcc, 0xdd, 0xdc, 0x99, 0x9f, 0xbb, 0xb9, 0x33, 0x3e,
-];
 
 const cartridgeTypes: Partial<Record<number, string>> = {
   [0x00]: "ROM ONLY",
@@ -77,7 +70,7 @@ interface Emulator {
   oam: OAM;
   timer: Timer;
   interruptController: InterruptController;
-  lcd: LCD;
+  ppu: PPU;
 }
 
 let current: Emulator | null = null;
@@ -169,7 +162,7 @@ async function run({ cpu }: Emulator) {
     }
   }, 16);
 
-  cpu.writeRegisterPair(RegisterPair.PC, 0x100);
+  //cpu.writeRegisterPair(RegisterPair.PC, 0x100);
 }
 
 async function readImage(file: File) {
@@ -188,7 +181,7 @@ async function readImage(file: File) {
     readCallback: (address): number => memory.read(address),
   });
 
-  const lcd = new LCD(
+  const ppu = new PPU(
     context,
     // context2,
     oam,
@@ -205,7 +198,7 @@ async function readImage(file: File) {
   });
 
   const memory = new Memory(
-    lcd,
+    ppu,
     interruptController,
     timer,
     cartridge.getMBC(),
@@ -217,27 +210,17 @@ async function readImage(file: File) {
     for (let i = 0; i < 4; i++) {
       oam.tick();
       timer.tick();
-      lcd.tick();
+      ppu.tick();
     }
   });
 
   current = {
     interruptController,
     oam,
-    lcd,
+    ppu,
     cpu,
     timer,
   };
-
-  const logoData = cartridge.getLogo();
-
-  displayLogo(logoData);
-
-  logoBytes.forEach((byte, i) => {
-    if (logoData[i] !== byte) {
-      throw new Error("Invalid logo");
-    }
-  });
 
   const type = cartridge.getType();
   const typeName = cartridgeTypes[type];
@@ -250,36 +233,13 @@ async function readImage(file: File) {
   console.log(`Type: ${typeName}`);
   console.log(`ROM Size: ${cartridge.getROMSize()}`);
 
+  cpu.writeRegister(Register.A, 0x01);
+  cpu.writeRegister(Register.B, 0xff);
+  cpu.writeRegister(Register.C, 0x13);
+  cpu.writeRegister(Register.D, 0x00);
+
   run(current);
 }
-
-const displayLogo = (bytes: Uint8Array) => {
-  for (let i = 0; i < 24; i++) {
-    const byte = bytes[i];
-
-    for (let j = 0; j < 8; j++) {
-      const x = 56 + Math.floor(i / 2) * 4 + (j % 4);
-      const y = 68 + (i % 2) * 2 + Math.floor(j / 4);
-
-      if (byte & (1 << (7 - j))) {
-        context.fillRect(x * 2, y * 2, 2, 2);
-      }
-    }
-  }
-
-  for (let i = 24; i < 48; i++) {
-    const byte = bytes[i];
-
-    for (let j = 0; j < 8; j++) {
-      const x = 56 + Math.floor((i - 24) / 2) * 4 + (j % 4);
-      const y = 68 + 4 + (i % 2) * 2 + Math.floor(j / 4);
-
-      if (byte & (1 << (7 - j))) {
-        context.fillRect(x * 2, y * 2, 2, 2);
-      }
-    }
-  }
-};
 
 const app = document.getElementById("app");
 if (app != null) {
