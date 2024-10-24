@@ -24,6 +24,10 @@ export class OAM {
     this.readCallback = readCallback;
   }
 
+  public isDMAInProgress() {
+    return this.dmaInProgress;
+  }
+
   public read(offset: number) {
     return this.dmaInProgress ? 0xff : this.data[offset];
   }

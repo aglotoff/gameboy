@@ -77,7 +77,8 @@ const bootROM = [
 ];
 
 export class Memory implements IBus {
-  private wram = new Uint8Array(0x10000);
+  private wram = new Uint8Array(0x2000);
+  private hram = new Uint8Array(0x80);
   private bootROMDisabled = false;
 
   public constructor(
@@ -89,7 +90,7 @@ export class Memory implements IBus {
     private joypad: Joypad
   ) {}
 
-  public read(address: number): number {
+  public readDMA(address: number) {
     if (address < bootROM.length && !this.bootROMDisabled) {
       return bootROM[address];
     }
@@ -114,19 +115,16 @@ export class Memory implements IBus {
       return this.mbc.readRAM(address - 0xa000);
     }
 
-    // 4 KiB Work RAM (WRAM)
-    if (address <= 0xcfff) {
-      return this.wram[address];
-    }
+    // WRAM
+    return this.wram[(address - 0xc000) & 0x1fff];
+  }
 
-    // 4 KiB Work RAM (WRAM)
-    if (address <= 0xdfff) {
-      return this.wram[address];
-    }
-
-    // Echo RAM
+  public read(address: number): number {
     if (address <= 0xfdff) {
-      return this.wram[address - 0x2000];
+      // if (this.oam.isDMAInProgress()) {
+      //   return 0xff;
+      // }
+      return this.readDMA(address);
     }
 
     // Object attribute memory (OAM)
@@ -187,14 +185,10 @@ export class Memory implements IBus {
     }
 
     // High RAM
-    return this.wram[address];
+    return this.hram[address - 0xff80];
   }
 
-  public write(address: number, data: number) {
-    // if (address < bootROM.length && !this.bootROMDisabled) {
-    //   return;
-    // }
-
+  public writeDMA(address: number, data: number) {
     if (address <= 0x3fff) {
       // 16 KiB ROM bank 00
       return this.mbc.writeROM(address, data);
@@ -215,19 +209,16 @@ export class Memory implements IBus {
       return this.mbc.writeRAM(address - 0xa000, data);
     }
 
-    if (address <= 0xcfff) {
-      // 4 KiB Work RAM (WRAM)
-      return (this.wram[address] = data);
-    }
+    // WRAM
+    this.wram[(address - 0xc000) & 0x1fff] = data;
+  }
 
-    if (address <= 0xdfff) {
-      // 4 KiB Work RAM (WRAM)
-      return (this.wram[address] = data);
-    }
-
+  public write(address: number, data: number) {
     if (address <= 0xfdff) {
-      // Echo RAM
-      return (this.wram[address - 0x2000] = data);
+      // if (this.oam.isDMAInProgress()) {
+      //   return;
+      // }
+      return this.writeDMA(address, data);
     }
 
     if (address <= 0xfe9f) {
@@ -327,6 +318,6 @@ export class Memory implements IBus {
     }
 
     // High RAM
-    this.wram[address] = data;
+    this.hram[address - 0xff80] = data;
   }
 }

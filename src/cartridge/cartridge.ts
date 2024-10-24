@@ -1,5 +1,6 @@
 import { MBC } from "./mbc";
 import { MBC1 } from "./mbc1";
+import { MBC5 } from "./mbc5";
 import { NoMBC } from "./no-mbc";
 
 const LOGO_BASE = 0x0104;
@@ -15,12 +16,19 @@ export function createMBC(
   ramSize: number
 ): MBC {
   switch (type) {
-    case 0:
+    case 0x0:
       return new NoMBC(rom);
-    case 1:
-    case 2:
-    case 3:
+    case 0x1:
+    case 0x2:
+    case 0x3:
       return new MBC1(rom, romSize, ramSize);
+    case 0x19:
+    case 0x1a:
+    case 0x1b:
+    case 0x1c:
+    case 0x1d:
+    case 0x1e:
+      return new MBC5(rom, romSize, ramSize);
     default:
       throw new Error("Unsupported type " + type.toString(16));
   }

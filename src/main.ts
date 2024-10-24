@@ -178,7 +178,7 @@ async function readImage(file: File) {
   const interruptController = new InterruptController();
 
   const oam = new OAM({
-    readCallback: (address): number => memory.read(address),
+    readCallback: (address): number => memory.readDMA(address),
   });
 
   const ppu = new PPU(
