@@ -6,10 +6,27 @@ export interface OAMOptions {
   readCallback: DMAReadFn;
 }
 
-const OAM_SIZE = 160;
+export const OAM_TOTAL_OBJECTS = 40;
+
+const OAM_OBJECT_SIZE = 4;
+const OAM_TOTAL_SIZE = OAM_TOTAL_OBJECTS * OAM_OBJECT_SIZE;
+
+export interface OAMEntry {
+  yPosition: number;
+  xPosition: number;
+  tileIndex: number;
+  attributes: number;
+}
+
+export enum OAMFlags {
+  PaletteNumber = 1 << 4,
+  XFlip = 1 << 5,
+  YFlip = 1 << 6,
+  BGAndWindowOverOBJ = 1 << 7,
+}
 
 export class OAM {
-  private data = new Uint8Array(OAM_SIZE);
+  private data = new Uint8Array(OAM_TOTAL_SIZE);
 
   private dmaInProgress = false;
   private dmaDelay = 0;
@@ -30,6 +47,15 @@ export class OAM {
 
   public read(offset: number) {
     return this.dmaInProgress ? 0xff : this.data[offset];
+  }
+
+  public getEntry(index: number): OAMEntry {
+    return {
+      yPosition: this.read(index * OAM_OBJECT_SIZE + 0),
+      xPosition: this.read(index * OAM_OBJECT_SIZE + 1),
+      tileIndex: this.read(index * OAM_OBJECT_SIZE + 2),
+      attributes: this.read(index * OAM_OBJECT_SIZE + 3),
+    };
   }
 
   public write(offset: number, data: number) {

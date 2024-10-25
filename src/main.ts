@@ -1,6 +1,6 @@
 import { Cpu, Register } from "./cpu";
 import { InterruptController } from "./hw/interrupt-controller";
-import { PPU } from "./hw/ppu";
+import { LCD, PPU } from "./hw/ppu";
 import { Memory } from "./memory";
 import { Timer } from "./hw/timer";
 import { OAM } from "./hw/oam";
@@ -182,7 +182,7 @@ async function readImage(file: File) {
   });
 
   const ppu = new PPU(
-    context,
+    new LCD(context),
     // context2,
     oam,
     () => {

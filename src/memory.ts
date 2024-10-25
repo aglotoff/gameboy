@@ -273,9 +273,9 @@ export class Memory implements IBus {
         case HWRegister.WX:
           return this.ppu.setWindowXPositionRegister(data);
         case HWRegister.OBP0:
-          return this.ppu.setObjPalett0DataRegister(data);
+          return this.ppu.setObjPalette0DataRegister(data);
         case HWRegister.OPB1:
-          return this.ppu.setObjPalett1DataRegister(data);
+          return this.ppu.setObjPalette1DataRegister(data);
         case HWRegister.IF:
           return this.interruptController.setFlagRegister(data);
         case HWRegister.IE:
