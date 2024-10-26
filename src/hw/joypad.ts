@@ -49,8 +49,6 @@ export class Joypad {
     if (!testBit(this.actionButtons, i)) {
       this.actionButtons = setBit(this.actionButtons, i);
 
-      console.log("pressed", ActionButton[i]);
-
       if (this.selectedButtons === SelectedButtons.Action) {
         //this.onPress();
       }
@@ -64,8 +62,6 @@ export class Joypad {
   public pressDirectionButton(i: DirectionButton) {
     if (!testBit(this.directionButtons, i)) {
       this.directionButtons = setBit(this.directionButtons, i);
-
-      console.log("pressed", DirectionButton[i]);
 
       if (this.selectedButtons === SelectedButtons.Direction) {
         //this.onPress();
