@@ -290,10 +290,92 @@ export class PPU {
   }
 
   private drawingTick() {
-    if (this.dot === MIN_DRAWING_TICKS + OAM_SCAN_TICKS - 1) {
-      this.updateScanline();
-      this.objBuffer.splice(0);
-      this.setMode(PPUMode.HBlank);
+    if (this.dot === OAM_SCAN_TICKS) {
+      this.bgQueue = [];
+      this.objQueue = [];
+      this.bgXPosition = 0;
+      this.inWindow = false;
+      this.xPosition = 0;
+      this.bgXSkip = this.viewportX % 8;
+      this.bgFetcher.step = 0;
+      this.bgFetcher.busy = false;
+      this.bgFetcher.ready = false;
+      this.objFetcher.busy = null;
+      this.objFetcher.ready = null;
+      this.objFetcher.step = 0;
+
+      this.windowTriggered = false;
+
+      if (
+        this.isWindowEnabled() &&
+        this.isBGAndWindowEnabled() &&
+        this.windowX <= 166 &&
+        this.windowY < LCD_HEIGHT &&
+        this.scanline >= this.windowY
+      ) {
+        this.windowTriggered = true;
+      }
+    } else if (this.dot >= OAM_SCAN_TICKS + 6) {
+      this.bgFetcherTick();
+      this.objFetcherTick();
+
+      if (this.objFetcher.busy) {
+        return;
+      }
+
+      if (this.isObjEnabled()) {
+        this.objFetcher.busy = this.getCurrentObject(this.xPosition);
+        if (this.objFetcher.busy != null) {
+          return;
+        }
+      }
+
+      const bgPixel = this.bgQueue.shift();
+      if (bgPixel == null) {
+        return;
+      }
+
+      if (this.bgXSkip > 0) {
+        this.bgXSkip -= 1;
+        return;
+      }
+
+      if (
+        this.windowTriggered &&
+        this.xPosition >= this.windowX - 7 &&
+        !this.inWindow
+      ) {
+        this.inWindow = true;
+        this.bgXPosition = 0;
+        this.bgQueue.splice(0);
+        this.bgFetcher.step = 0;
+        this.bgFetcher.busy = false;
+        this.bgFetcher.ready = false;
+        return;
+      }
+
+      const objPixel = this.objQueue.shift();
+
+      let mergedPixel = 0x00000000;
+
+      if (objPixel && objPixel.color != 0) {
+        if (objPixel.bgPriority && bgPixel.color !== 0) {
+          mergedPixel = this.getPaletteColor(this.bgPalette, bgPixel.color);
+        } else {
+          mergedPixel = this.getPaletteColor(objPixel.palette, objPixel.color);
+        }
+      } else {
+        mergedPixel = this.getPaletteColor(this.bgPalette, bgPixel.color);
+      }
+
+      this.lcd.setPixel(this.xPosition, this.scanline, mergedPixel);
+      this.xPosition++;
+
+      if (this.xPosition === LCD_WIDTH) {
+        this.updateScanline();
+        this.objBuffer.splice(0);
+        this.setMode(PPUMode.HBlank);
+      }
     }
   }
 
@@ -431,10 +513,6 @@ export class PPU {
           j
         );
 
-        if (this.xPosition >= this.objQueue.length) {
-          this.objQueue[this.xPosition] = null;
-        }
-
         const pixel = {
           color,
           bgPriority: testBit(this.objFetcher.ready.attributes, 7),
@@ -443,9 +521,9 @@ export class PPU {
             : this.objPalette0,
         };
 
-        const oldPixel = this.objQueue[this.xPosition + j - firstIdx];
+        const oldPixel = this.objQueue[j - firstIdx];
         if (oldPixel == null || oldPixel?.color === 0) {
-          this.objQueue[this.xPosition + j - firstIdx] = pixel;
+          this.objQueue[j - firstIdx] = pixel;
         }
       }
       this.objFetcher.ready = null;
@@ -458,87 +536,7 @@ export class PPU {
   }
 
   private updateScanline() {
-    this.windowTriggered = false;
-
-    if (
-      this.isWindowEnabled() &&
-      this.isBGAndWindowEnabled() &&
-      this.windowX <= 166 &&
-      this.windowY < LCD_HEIGHT &&
-      this.scanline >= this.windowY
-    ) {
-      this.windowTriggered = true;
-    }
-
-    this.bgQueue = [];
-    this.objQueue = [];
-    this.bgXPosition = 0;
-    this.inWindow = false;
-    this.xPosition = 0;
-    this.bgXSkip = this.viewportX % 8;
-    this.bgFetcher.step = 0;
-    this.bgFetcher.busy = false;
-    this.bgFetcher.ready = false;
-    this.objFetcher.busy = null;
-    this.objFetcher.ready = null;
-    this.objFetcher.step = 0;
-
-    while (this.xPosition < LCD_WIDTH) {
-      this.bgFetcherTick();
-      this.objFetcherTick();
-
-      if (this.objFetcher.busy) {
-        continue;
-      }
-
-      if (this.isObjEnabled()) {
-        this.objFetcher.busy = this.getCurrentObject(this.xPosition);
-        if (this.objFetcher.busy != null) {
-          continue;
-        }
-      }
-
-      const bgPixel = this.bgQueue.shift();
-      if (bgPixel == null) {
-        continue;
-      }
-
-      if (this.bgXSkip > 0) {
-        this.bgXSkip -= 1;
-        continue;
-      }
-
-      if (
-        this.windowTriggered &&
-        this.xPosition >= this.windowX - 7 &&
-        !this.inWindow
-      ) {
-        this.inWindow = true;
-        this.bgXPosition = 0;
-        this.bgQueue.splice(0);
-        this.bgFetcher.step = 0;
-        this.bgFetcher.busy = false;
-        this.bgFetcher.ready = false;
-        continue;
-      }
-
-      const objPixel = this.objQueue[this.xPosition];
-
-      let mergedPixel = 0x00000000;
-
-      if (objPixel && objPixel.color != 0) {
-        if (objPixel.bgPriority && bgPixel.color !== 0) {
-          mergedPixel = this.getPaletteColor(this.bgPalette, bgPixel.color);
-        } else {
-          mergedPixel = this.getPaletteColor(objPixel.palette, objPixel.color);
-        }
-      } else {
-        mergedPixel = this.getPaletteColor(this.bgPalette, bgPixel.color);
-      }
-
-      this.lcd.setPixel(this.xPosition, this.scanline, mergedPixel);
-      this.xPosition++;
-    }
+    while (this.xPosition < LCD_WIDTH) {}
 
     if (this.windowTriggered) {
       this.windowLineCounter++;
