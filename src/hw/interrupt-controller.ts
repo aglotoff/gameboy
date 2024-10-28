@@ -8,7 +8,7 @@ export class InterruptController {
   private flagRegister = 0;
 
   public getEnableRegister() {
-    return this.enableRegister;
+    return 0xe0 | this.enableRegister;
   }
 
   public setEnableRegister(enable: number) {
@@ -16,7 +16,7 @@ export class InterruptController {
   }
 
   public getFlagRegister() {
-    return this.flagRegister;
+    return 0xe0 | this.flagRegister;
   }
 
   public setFlagRegister(flag: number) {

@@ -1,6 +1,6 @@
 import { Cpu, Register } from "./cpu";
 import { InterruptController } from "./hw/interrupt-controller";
-import { LCD, PPU } from "./hw/ppu";
+import { PPU } from "./hw/ppu";
 import { Memory } from "./memory";
 import { Timer } from "./hw/timer";
 import { OAM } from "./hw/oam";
@@ -8,6 +8,7 @@ import { Cartridge } from "./cartridge";
 import { ActionButton, DirectionButton, Joypad } from "./hw/joypad";
 
 import "./style.css";
+import { LCD } from "./hw/lcd";
 
 const canvas = document.createElement("canvas");
 canvas.width = 160 * 2;

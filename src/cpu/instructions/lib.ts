@@ -13,6 +13,13 @@ export function instruction<T extends unknown[]>(
 
     this.fetchNextOpcode();
 
+    if (this.stepsToIME > 0) {
+      this.stepsToIME -= 1;
+      if (this.stepsToIME === 0) {
+        this.setIME(true);
+      }
+    }
+
     return cycles + 4;
   };
 }
@@ -25,6 +32,13 @@ export function instructionWithImmediateByte<T extends unknown[]>(
 
     this.fetchNextOpcode();
 
+    if (this.stepsToIME > 0) {
+      this.stepsToIME -= 1;
+      if (this.stepsToIME === 0) {
+        this.setIME(true);
+      }
+    }
+
     return cycles + 8;
   };
 }
@@ -36,6 +50,13 @@ export function instructionWithImmediateWord<T extends unknown[]>(
     const cycles = cb.call(this, this.fetchImmediateWord(), ...args);
 
     this.fetchNextOpcode();
+
+    if (this.stepsToIME > 0) {
+      this.stepsToIME -= 1;
+      if (this.stepsToIME === 0) {
+        this.setIME(true);
+      }
+    }
 
     return cycles + 12;
   };

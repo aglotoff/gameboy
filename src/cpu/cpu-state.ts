@@ -26,6 +26,7 @@ export class CpuState {
   private stopped = false;
   private elapsedCycles = 0;
   public opcode = 0;
+  public stepsToIME = 0;
 
   public constructor(protected memory: IBus, private onCycle: () => void) {}
 
@@ -44,6 +45,16 @@ export class CpuState {
 
   public readRegister(register: Register) {
     return this.regs.read(register);
+  }
+
+  public cancelIME() {
+    this.stepsToIME = 0;
+  }
+
+  public scheduleIME() {
+    if (this.stepsToIME == 0) {
+      this.stepsToIME = 2;
+    }
   }
 
   public writeRegister(register: Register, value: number) {

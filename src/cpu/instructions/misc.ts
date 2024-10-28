@@ -11,12 +11,13 @@ export const stop = instructionWithImmediateByte(function () {
 });
 
 export const disableInterrupts = instruction(function () {
+  this.cancelIME();
   this.setIME(false);
   return 0;
 });
 
 export const enableInterrupts = instruction(function () {
-  this.setIME(true);
+  this.scheduleIME();
   return 0;
 });
 

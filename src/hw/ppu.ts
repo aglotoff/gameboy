@@ -1,4 +1,5 @@
 import { resetBit, setBit, testBit } from "../utils";
+import { LCD } from "./lcd";
 import { OAM, OAM_TOTAL_OBJECTS, OAMEntry } from "./oam";
 
 const LCD_WIDTH = 160;
@@ -12,8 +13,6 @@ const VRAM_SIZE = 0x2000;
 
 const TICKS_PER_OAM_ENTRY = 2;
 const OAM_SCAN_TICKS = TICKS_PER_OAM_ENTRY * OAM_TOTAL_OBJECTS;
-
-const MIN_DRAWING_TICKS = 172;
 
 const palette = [0xe0f8d0ff, 0x88c070ff, 0x346856ff, 0x081820ff];
 
@@ -30,57 +29,89 @@ enum PPUMode {
   Drawing = 3,
 }
 
-export class LCD {
-  private imageData: ImageData;
-
-  constructor(private context: CanvasRenderingContext2D) {
-    this.imageData = context.createImageData(160 * 2, 144 * 2);
-  }
-
-  public render() {
-    this.context.putImageData(this.imageData, 0, 0);
-  }
-
-  public setPixel(x: number, y: number, color: number) {
-    this.setImagePixel(x * 2, y * 2, color);
-    this.setImagePixel(x * 2 + 1, y * 2, color);
-    this.setImagePixel(x * 2, y * 2 + 1, color);
-    this.setImagePixel(x * 2 + 1, y * 2 + 1, color);
-  }
-
-  private setImagePixel(x: number, y: number, color: number) {
-    const idx = (y * this.imageData.width + x) * 4;
-    this.imageData.data[idx] = (color >> 24) & 0xff;
-    this.imageData.data[idx + 1] = (color >> 16) & 0xff;
-    this.imageData.data[idx + 2] = (color >> 8) & 0xff;
-    this.imageData.data[idx + 3] = (color >> 0) & 0xff;
-  }
+enum StatSource {
+  Mode0 = 3,
+  Mode1 = 4,
+  Mode2 = 5,
+  LYC = 6,
 }
 
+const STAT_SOURCE_MASK = 0b1111000;
+
 const STAT_MODE_MASK = 0x3;
-const STAT_RW_MASK = 0x78;
 
 export class PPU {
   private vram = new Uint8Array(VRAM_SIZE);
 
+  // Registers
   private controlRegister = 0;
-  private lyCompareRegister = 0;
   private statusRegister = 0;
-
   private scanline = 0;
-  private dot = 0;
-
-  private viewportX = 0;
+  private lyCompareRegister = 0;
   private viewportY = 0;
-  private windowX = 0;
+  private viewportX = 0;
   private windowY = 0;
+  private windowX = 0;
   private bgPalette = 0;
   private objPalette0 = 0;
   private objPalette1 = 0;
-  private objBuffer = [] as OAMEntry[];
 
+  // Interrupts
+  private statSourceState = 0;
+  private statInterruptLine = 0;
+
+  // Per-frame state
   private windowLineCounter = 0;
   private windowTriggered = false;
+
+  // Per-scanline
+  private dot = 0;
+  private objBuffer = [] as OAMEntry[];
+  private bgQueue: Pixel[] = [];
+  private objQueue: Array<Pixel | null> = [];
+  private bgXPosition = 0;
+  private inWindow = false;
+  private xPosition = 0;
+  private bgXSkip = 0;
+
+  private bgFetcher = {
+    step: 0,
+    tileNo: 0,
+    dataLow: 0,
+    dataHigh: 0,
+    busy: false,
+    ready: false,
+  };
+
+  private objFetcher = {
+    step: 0,
+    tileNo: 0,
+    dataLow: 0,
+    dataHigh: 0,
+    busy: null as OAMEntry | null,
+    ready: null as OAMEntry | null,
+  };
+
+  private statSourceUp(source: StatSource) {
+    this.statSourceState = setBit(this.statSourceState, source);
+  }
+
+  private statSourceDown(source: StatSource) {
+    this.statSourceState = resetBit(this.statSourceState, source);
+  }
+
+  private getStatInterruptLine() {
+    return this.statSourceState & this.statusRegister & STAT_SOURCE_MASK;
+  }
+
+  private checkStatRisingEdge() {
+    const newLine = this.getStatInterruptLine();
+    const hasRisingEdge = this.statInterruptLine === 0 && newLine !== 0;
+    if (hasRisingEdge) {
+      this.onStat();
+    }
+    this.statInterruptLine = newLine;
+  }
 
   public constructor(
     private lcd: LCD,
@@ -147,10 +178,7 @@ export class PPU {
 
   // TODO: IRQs
   public setStatusRegister(data: number) {
-    if ((data & ~0b1000111) !== 0) {
-      throw new Error("Not implemented " + data.toString(2));
-    }
-    this.statusRegister = data & STAT_RW_MASK;
+    this.statusRegister = data & STAT_SOURCE_MASK;
   }
 
   private getMode() {
@@ -174,7 +202,14 @@ export class PPU {
 
   public setLYCompareRegister(data: number) {
     this.lyCompareRegister = data;
-    // TODO: trigger IRQ?
+
+    if (this.scanline === this.lyCompareRegister) {
+      this.statusRegister = setBit(this.statusRegister, 2);
+      this.statSourceUp(StatSource.LYC);
+    } else {
+      this.statusRegister = resetBit(this.statusRegister, 2);
+      this.statSourceDown(StatSource.LYC);
+    }
   }
 
   // ff42
@@ -245,6 +280,8 @@ export class PPU {
       return;
     }
 
+    this.checkStatRisingEdge();
+
     switch (this.getMode()) {
       case PPUMode.OAMScan:
         this.oamScanTick();
@@ -267,6 +304,7 @@ export class PPU {
     if (this.dot % TICKS_PER_OAM_ENTRY === 0) {
       this.checkOAMEntry(this.dot / TICKS_PER_OAM_ENTRY);
     } else if (this.dot === OAM_SCAN_TICKS - 1) {
+      this.statSourceDown(StatSource.Mode2);
       this.setMode(PPUMode.Drawing);
     }
   }
@@ -375,34 +413,10 @@ export class PPU {
         this.updateScanline();
         this.objBuffer.splice(0);
         this.setMode(PPUMode.HBlank);
+        this.statSourceUp(StatSource.Mode0);
       }
     }
   }
-
-  private bgQueue: Pixel[] = [];
-  private objQueue: Array<Pixel | null> = [];
-  private bgXPosition = 0;
-  private inWindow = false;
-  private xPosition = 0;
-  private bgXSkip = 0;
-
-  private bgFetcher = {
-    step: 0,
-    tileNo: 0,
-    dataLow: 0,
-    dataHigh: 0,
-    busy: false,
-    ready: false,
-  };
-
-  private objFetcher = {
-    step: 0,
-    tileNo: 0,
-    dataLow: 0,
-    dataHigh: 0,
-    busy: null as OAMEntry | null,
-    ready: null as OAMEntry | null,
-  };
 
   private bgFetcherTick() {
     if (this.bgFetcher.step === 0) {
@@ -638,10 +652,13 @@ export class PPU {
 
   private hBlankTick() {
     if (this.dot === DOTS_PER_SCANLINE - 1) {
+      this.statSourceDown(StatSource.Mode0);
       if (this.scanline < LCD_HEIGHT - 1) {
         this.setMode(PPUMode.OAMScan);
+        this.statSourceUp(StatSource.Mode2);
       } else {
         this.setMode(PPUMode.VBlank);
+        this.statSourceUp(StatSource.Mode1);
       }
     }
   }
@@ -654,7 +671,9 @@ export class PPU {
       this.dot === DOTS_PER_SCANLINE - 1 &&
       this.scanline === SCANLINES_PER_FRAME - 1
     ) {
+      this.statSourceDown(StatSource.Mode1);
       this.setMode(PPUMode.OAMScan);
+      this.statSourceUp(StatSource.Mode2);
       this.windowLineCounter = 0;
     }
   }
@@ -672,9 +691,10 @@ export class PPU {
 
     if (this.scanline === this.lyCompareRegister) {
       this.statusRegister = setBit(this.statusRegister, 2);
-      this.onStat();
+      this.statSourceUp(StatSource.LYC);
     } else {
       this.statusRegister = resetBit(this.statusRegister, 2);
+      this.statSourceDown(StatSource.LYC);
     }
   }
 
