@@ -15,14 +15,11 @@ export class Cpu extends CpuState {
 
   public step() {
     try {
-      let c = 0;
-
       if (this.isHalted()) {
         this.cycle();
-        c = 4;
       } else {
         const instruction = this.fetchNextInstruction();
-        c = instruction[1].call(this);
+        instruction[1].call(this);
       }
 
       if (this.interruptController.hasPendingInterrupt()) {
@@ -59,8 +56,6 @@ export class Cpu extends CpuState {
           this.cycle();
 
           this.fetchNextOpcode();
-
-          c += 20;
         }
       }
 

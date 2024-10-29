@@ -34,7 +34,7 @@ describe("Miscellaneous instructions", () => {
   testInstruction("EI", ({ state }) => {
     enableInterrupts.call(state);
 
-    expect(state.getIME()).toBe(true);
+    expect(state.stepsToIME).toBe(1);
     expect(state.getElapsedCycles()).toBe(1);
   });
 

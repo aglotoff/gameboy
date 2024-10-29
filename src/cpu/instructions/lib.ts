@@ -2,14 +2,14 @@ import { CpuState } from "../cpu-state";
 import { getLSB, getMSB, makeWord } from "../../utils";
 
 export type OpTable = Partial<
-  Record<number, [string, (this: CpuState) => number]>
+  Record<number, [string, (this: CpuState) => void]>
 >;
 
 export function instruction<T extends unknown[]>(
-  cb: (this: CpuState, ...args: T) => number
+  cb: (this: CpuState, ...args: T) => void
 ) {
   return function (this: CpuState, ...args: T) {
-    const cycles = cb.call(this, ...args);
+    cb.call(this, ...args);
 
     this.fetchNextOpcode();
 
@@ -19,16 +19,14 @@ export function instruction<T extends unknown[]>(
         this.setIME(true);
       }
     }
-
-    return cycles + 4;
   };
 }
 
 export function instructionWithImmediateByte<T extends unknown[]>(
-  cb: (this: CpuState, byte: number, ...args: T) => number
+  cb: (this: CpuState, byte: number, ...args: T) => void
 ) {
   return function (this: CpuState, ...args: T) {
-    const cycles = cb.call(this, this.fetchImmediateByte(), ...args);
+    cb.call(this, this.fetchImmediateByte(), ...args);
 
     this.fetchNextOpcode();
 
@@ -38,16 +36,14 @@ export function instructionWithImmediateByte<T extends unknown[]>(
         this.setIME(true);
       }
     }
-
-    return cycles + 8;
   };
 }
 
 export function instructionWithImmediateWord<T extends unknown[]>(
-  cb: (this: CpuState, word: number, ...args: T) => number
+  cb: (this: CpuState, word: number, ...args: T) => void
 ) {
   return function (this: CpuState, ...args: T) {
-    const cycles = cb.call(this, this.fetchImmediateWord(), ...args);
+    cb.call(this, this.fetchImmediateWord(), ...args);
 
     this.fetchNextOpcode();
 
@@ -57,17 +53,15 @@ export function instructionWithImmediateWord<T extends unknown[]>(
         this.setIME(true);
       }
     }
-
-    return cycles + 12;
   };
 }
 
 export function bindArgs<T extends unknown[]>(
-  f: (this: CpuState, ...args: T) => number,
+  f: (this: CpuState, ...args: T) => void,
   ...args: T
 ) {
   return function (this: CpuState) {
-    return f.call(this, ...args);
+    f.call(this, ...args);
   };
 }
 
