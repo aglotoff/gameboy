@@ -6,11 +6,11 @@ import { getLSB, getMSB, wrapDecrementWord } from "../utils";
 
 export class Cpu extends CpuState {
   public constructor(
-    memory: IBus,
+    bus: IBus,
     private interruptController: InterruptController,
     onCycle: () => void
   ) {
-    super(memory, onCycle);
+    super({ bus, onCycle });
   }
 
   public step() {
@@ -18,46 +18,10 @@ export class Cpu extends CpuState {
       if (this.isHalted()) {
         this.cycle();
       } else {
-        const instruction = this.fetchNextInstruction();
-        instruction[1].call(this);
+        this.executeNextInstruction();
       }
 
-      if (this.interruptController.hasPendingInterrupt()) {
-        this.setHalted(false);
-
-        if (this.getIME()) {
-          this.setIME(false);
-          this.cancelIME();
-
-          let sp = this.readRegisterPair(RegisterPair.SP);
-
-          sp = wrapDecrementWord(sp);
-          this.cycle();
-
-          this.writeBus(sp, getMSB(this.readRegisterPair(RegisterPair.PC)));
-          sp = wrapDecrementWord(sp);
-          this.cycle();
-
-          const irq = this.interruptController.getPendingInterrupt();
-
-          this.writeBus(sp, getLSB(this.readRegisterPair(RegisterPair.PC)));
-          this.writeRegisterPair(RegisterPair.SP, sp);
-          this.cycle();
-
-          if (irq < 0) {
-            this.writeRegisterPair(RegisterPair.PC, 0);
-          } else {
-            this.interruptController.acknowledgeInterrupt(irq);
-            this.writeRegisterPair(RegisterPair.PC, 0x40 + irq * 8);
-          }
-
-          //this.pushWord(this.readRegisterPair(RegisterPair.PC));
-
-          this.cycle();
-
-          this.fetchNextOpcode();
-        }
-      }
+      this.processInterruptRequests();
 
       if (!this.isHalted()) {
         this.advancePC();
@@ -68,22 +32,26 @@ export class Cpu extends CpuState {
     }
   }
 
-  private fetchNextInstruction() {
-    if (this.opcode == 0xcb) {
-      return this.fetchNextPrefixCbInstruction();
+  private executeNextInstruction() {
+    const instruction = this.decodeInstruction(this.getOpcode());
+    instruction[1].call(this);
+  }
+
+  private decodeInstruction(opcode: number) {
+    if (opcode == 0xcb) {
+      return this.decodePrefixCBInstruction(this.fetchImmediateByte());
     }
 
-    const instruction = getInstruction(this.opcode);
+    const instruction = getInstruction(opcode);
 
     if (typeof instruction === "undefined") {
-      throw new Error(`Invalid opcode ${this.opcode.toString(16)}`);
+      throw new Error(`Invalid opcode ${opcode.toString(16)}`);
     }
 
     return instruction;
   }
 
-  private fetchNextPrefixCbInstruction() {
-    const opcode = this.fetchImmediateByte();
+  private decodePrefixCBInstruction(opcode: number) {
     const instruction = getPrefixCBInstruction(opcode);
 
     if (typeof instruction === "undefined") {
@@ -92,4 +60,50 @@ export class Cpu extends CpuState {
 
     return instruction;
   }
+
+  private processInterruptRequests() {
+    if (this.interruptController.hasPendingInterrupt()) {
+      this.setHalted(false);
+
+      if (this.isInterruptMasterEnabled()) {
+        this.handleInterrupt();
+      }
+    }
+  }
+
+  private handleInterrupt() {
+    this.setInterruptMasterEnable(false);
+
+    let sp = this.readRegisterPair(RegisterPair.SP);
+    sp = wrapDecrementWord(sp);
+
+    this.cycle();
+
+    this.writeBus(sp, getMSB(this.readRegisterPair(RegisterPair.PC)));
+    sp = wrapDecrementWord(sp);
+
+    this.cycle();
+
+    const irq = this.interruptController.getPendingInterrupt();
+
+    this.writeBus(sp, getLSB(this.readRegisterPair(RegisterPair.PC)));
+    this.writeRegisterPair(RegisterPair.SP, sp);
+
+    this.cycle();
+
+    if (irq < 0) {
+      this.writeRegisterPair(RegisterPair.PC, 0);
+    } else {
+      this.interruptController.acknowledgeInterrupt(irq);
+      this.writeRegisterPair(RegisterPair.PC, getInterruptVectorAddress(irq));
+    }
+
+    this.cycle();
+
+    this.fetchNextOpcode();
+  }
+}
+
+function getInterruptVectorAddress(irq: number) {
+  return 0x40 + irq * 8;
 }

@@ -9,12 +9,11 @@ export const stop = instructionWithImmediateByte(function () {
 });
 
 export const disableInterrupts = instruction(function () {
-  this.cancelIME();
-  this.setIME(false);
+  this.setInterruptMasterEnable(false);
 });
 
 export const enableInterrupts = instruction(function () {
-  this.scheduleIME();
+  this.scheduleInterruptMasterEnable();
 });
 
 export const noOperation = instruction(() => {});

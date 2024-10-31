@@ -1,11 +1,15 @@
-import { Condition, CpuState } from "../cpu-state";
+import { CpuState } from "../cpu-state";
 import { RegisterPair } from "../register";
 import { makeWord } from "../../utils";
 import {
   addSignedByteToWord,
+  checkCondition,
+  Condition,
   instruction,
   instructionWithImmediateByte,
   instructionWithImmediateWord,
+  popWord,
+  pushWord,
 } from "./lib";
 
 export const jump = instructionWithImmediateWord(function (address) {
@@ -24,7 +28,7 @@ export const jumpConditional = instructionWithImmediateWord(function (
   address,
   condition: Condition
 ) {
-  if (!this.checkCondition(condition)) {
+  if (!checkCondition(this, condition)) {
     return;
   }
 
@@ -46,7 +50,7 @@ export const relativeJumpConditional = instructionWithImmediateByte(function (
   offset,
   condition: Condition
 ) {
-  if (!this.checkCondition(condition)) {
+  if (!checkCondition(this, condition)) {
     return;
   }
 
@@ -68,7 +72,7 @@ export const callFunctionConditional = instructionWithImmediateWord(function (
   address,
   condition: Condition
 ) {
-  if (!this.checkCondition(condition)) {
+  if (!checkCondition(this, condition)) {
     return;
   }
 
@@ -83,7 +87,7 @@ export const returnFromFunction = instruction(function () {
 export const returnFromFunctionConditional = instruction(function (
   condition: Condition
 ) {
-  let result = this.checkCondition(condition);
+  let result = checkCondition(this, condition);
   this.cycle();
 
   if (result) {
@@ -93,11 +97,11 @@ export const returnFromFunctionConditional = instruction(function (
 
 export const returnFromInterruptHandler = instruction(function () {
   popProgramCounter.call(this);
-  this.setIME(true);
+  this.setInterruptMasterEnable(true);
 });
 
 function popProgramCounter(this: CpuState) {
-  this.writeRegisterPair(RegisterPair.PC, this.popWord());
+  this.writeRegisterPair(RegisterPair.PC, popWord(this));
   this.cycle();
 }
 
@@ -108,5 +112,5 @@ export const restartFunction = instruction(function (address: number) {
 });
 
 function pushProgramCounter(this: CpuState) {
-  this.pushWord(this.readRegisterPair(RegisterPair.PC));
+  pushWord(this, this.readRegisterPair(RegisterPair.PC));
 }

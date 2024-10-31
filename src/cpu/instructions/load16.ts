@@ -5,6 +5,8 @@ import {
   instruction,
   instructionWithImmediateByte,
   instructionWithImmediateWord,
+  popWord,
+  pushWord,
 } from "./lib";
 
 export const loadRegisterPair = instructionWithImmediateWord(function (
@@ -33,11 +35,11 @@ export const loadStackPointerFromHL = instruction(function () {
 });
 
 export const pushToStack = instruction(function (pair: RegisterPair) {
-  this.pushWord(this.readRegisterPair(pair));
+  pushWord(this, this.readRegisterPair(pair));
 });
 
 export const popFromStack = instruction(function (rr: RegisterPair) {
-  this.writeRegisterPair(rr, this.popWord());
+  this.writeRegisterPair(rr, popWord(this));
 });
 
 export const loadHLFromAdjustedStackPointer = instructionWithImmediateByte(

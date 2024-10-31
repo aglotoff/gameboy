@@ -23,19 +23,25 @@ describe("Miscellaneous instructions", () => {
   });
 
   testInstruction("DI", ({ state }) => {
-    state.setIME(true);
+    state.setInterruptMasterEnable(true);
 
     disableInterrupts.call(state);
 
-    expect(state.getIME()).toBe(false);
+    expect(state.isInterruptMasterEnabled()).toBe(false);
     expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("EI", ({ state }) => {
     enableInterrupts.call(state);
 
-    expect(state.stepsToIME).toBe(1);
+    expect(state.isInterruptMasterEnableScheduled()).toBe(true);
+    expect(state.isInterruptMasterEnabled()).toBe(false);
     expect(state.getElapsedCycles()).toBe(1);
+
+    state.advancePC();
+
+    expect(state.isInterruptMasterEnableScheduled()).toBe(false);
+    expect(state.isInterruptMasterEnabled()).toBe(true);
   });
 
   testInstruction("NOP", ({ state }) => {

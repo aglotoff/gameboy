@@ -16,7 +16,7 @@ import {
 } from "./flow";
 import { getLSB, getMSB } from "../../utils";
 import { testInstruction } from "./test-lib";
-import { Condition } from "../cpu-state";
+import { Condition } from "./lib";
 
 describe("Control flow instructions", () => {
   testInstruction("JP nn", ({ state }) => {
@@ -298,7 +298,7 @@ describe("Control flow instructions", () => {
 
     expect(state.readRegisterPair(RegisterPair.PC)).toBe(0x8001);
     expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
-    expect(state.getIME()).toBe(true);
+    expect(state.isInterruptMasterEnabled()).toBe(true);
     expect(state.getElapsedCycles()).toBe(4);
   });
 

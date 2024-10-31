@@ -1,22 +1,14 @@
 import { Flag, Register, RegisterFile, RegisterPair } from "./register";
-import {
-  getLSB,
-  getMSB,
-  makeWord,
-  wrapDecrementWord,
-  wrapIncrementWord,
-} from "../utils";
-
-export enum Condition {
-  Z,
-  C,
-  NZ,
-  NC,
-}
+import { wrapIncrementWord } from "../utils";
 
 export interface IBus {
   read(address: number): number;
   write(address: number, data: number): void;
+}
+
+export interface CpuStateOptions {
+  bus: IBus;
+  onCycle: () => void;
 }
 
 export class CpuState {
@@ -25,10 +17,15 @@ export class CpuState {
   private halted = false;
   private stopped = false;
   private elapsedCycles = 0;
-  public opcode = 0;
-  public stepsToIME = 0;
+  private opcode = 0;
+  private imeNext = false;
+  private bus: IBus;
+  private onCycle: () => void;
 
-  public constructor(protected memory: IBus, private onCycle: () => void) {}
+  public constructor({ bus, onCycle }: CpuStateOptions) {
+    this.bus = bus;
+    this.onCycle = onCycle;
+  }
 
   public cycle() {
     this.elapsedCycles += 1;
@@ -45,16 +42,6 @@ export class CpuState {
 
   public readRegister(register: Register) {
     return this.regs.read(register);
-  }
-
-  public cancelIME() {
-    this.stepsToIME = 0;
-  }
-
-  public scheduleIME() {
-    if (this.stepsToIME == 0) {
-      this.stepsToIME = 2;
-    }
   }
 
   public writeRegister(register: Register, value: number) {
@@ -78,11 +65,11 @@ export class CpuState {
   }
 
   public readBus(address: number) {
-    return this.memory.read(address);
+    return this.bus.read(address);
   }
 
   public writeBus(address: number, data: number) {
-    this.memory.write(address, data);
+    this.bus.write(address, data);
   }
 
   public setHalted(halted: boolean) {
@@ -101,31 +88,32 @@ export class CpuState {
     return this.stopped;
   }
 
-  public setIME(ime: boolean) {
-    this.ime = ime;
+  public getOpcode() {
+    return this.opcode;
   }
 
-  public getIME() {
+  public setInterruptMasterEnable(ime: boolean) {
+    this.ime = ime;
+    this.imeNext = false;
+  }
+
+  public isInterruptMasterEnabled() {
     return this.ime;
   }
 
-  public checkCondition(condition: Condition) {
-    switch (condition) {
-      case Condition.Z:
-        return this.isFlagSet(Flag.Z);
-      case Condition.C:
-        return this.isFlagSet(Flag.CY);
-      case Condition.NZ:
-        return !this.isFlagSet(Flag.Z);
-      case Condition.NC:
-        return !this.isFlagSet(Flag.CY);
-    }
+  public scheduleInterruptMasterEnable() {
+    this.imeNext = true;
+  }
+
+  public isInterruptMasterEnableScheduled() {
+    return this.imeNext;
   }
 
   public fetchImmediateByte() {
     let pc = this.readRegisterPair(RegisterPair.PC);
     const data = this.readBus(pc);
     this.cycle();
+
     this.writeRegisterPair(RegisterPair.PC, wrapIncrementWord(pc));
     return data;
   }
@@ -134,48 +122,14 @@ export class CpuState {
     let pc = this.readRegisterPair(RegisterPair.PC);
     this.opcode = this.readBus(pc);
     this.cycle();
-    return;
   }
 
   public advancePC() {
     let pc = this.readRegisterPair(RegisterPair.PC);
     this.writeRegisterPair(RegisterPair.PC, wrapIncrementWord(pc));
-  }
 
-  public fetchImmediateWord() {
-    let lowByte = this.fetchImmediateByte();
-    let highByte = this.fetchImmediateByte();
-    return makeWord(highByte, lowByte);
-  }
-
-  public pushWord(data: number) {
-    let sp = this.readRegisterPair(RegisterPair.SP);
-
-    sp = wrapDecrementWord(sp);
-    this.cycle();
-
-    this.writeBus(sp, getMSB(data));
-    sp = wrapDecrementWord(sp);
-    this.cycle();
-
-    this.writeBus(sp, getLSB(data));
-    this.writeRegisterPair(RegisterPair.SP, sp);
-    this.cycle();
-  }
-
-  public popWord() {
-    let sp = this.readRegisterPair(RegisterPair.SP);
-
-    const lsb = this.readBus(sp);
-    sp = wrapIncrementWord(sp);
-    this.writeRegisterPair(RegisterPair.SP, sp);
-    this.cycle();
-
-    const msb = this.readBus(sp);
-    sp = wrapIncrementWord(sp);
-    this.writeRegisterPair(RegisterPair.SP, sp);
-    this.cycle();
-
-    return makeWord(msb, lsb);
+    if (this.imeNext) {
+      this.setInterruptMasterEnable(true);
+    }
   }
 }

@@ -1,5 +1,12 @@
 import { CpuState } from "../cpu-state";
-import { getLSB, getMSB, makeWord } from "../../utils";
+import {
+  getLSB,
+  getMSB,
+  makeWord,
+  wrapDecrementWord,
+  wrapIncrementWord,
+} from "../../utils";
+import { Flag, RegisterPair } from "../register";
 
 export type OpTable = Partial<
   Record<number, [string, (this: CpuState) => void]>
@@ -10,15 +17,7 @@ export function instruction<T extends unknown[]>(
 ) {
   return function (this: CpuState, ...args: T) {
     cb.call(this, ...args);
-
     this.fetchNextOpcode();
-
-    if (this.stepsToIME > 0) {
-      this.stepsToIME -= 1;
-      if (this.stepsToIME === 0) {
-        this.setIME(true);
-      }
-    }
   };
 }
 
@@ -27,15 +26,7 @@ export function instructionWithImmediateByte<T extends unknown[]>(
 ) {
   return function (this: CpuState, ...args: T) {
     cb.call(this, this.fetchImmediateByte(), ...args);
-
     this.fetchNextOpcode();
-
-    if (this.stepsToIME > 0) {
-      this.stepsToIME -= 1;
-      if (this.stepsToIME === 0) {
-        this.setIME(true);
-      }
-    }
   };
 }
 
@@ -43,25 +34,23 @@ export function instructionWithImmediateWord<T extends unknown[]>(
   cb: (this: CpuState, word: number, ...args: T) => void
 ) {
   return function (this: CpuState, ...args: T) {
-    cb.call(this, this.fetchImmediateWord(), ...args);
-
+    cb.call(this, fetchImmediateWord(this), ...args);
     this.fetchNextOpcode();
-
-    if (this.stepsToIME > 0) {
-      this.stepsToIME -= 1;
-      if (this.stepsToIME === 0) {
-        this.setIME(true);
-      }
-    }
   };
 }
 
-export function bindArgs<T extends unknown[]>(
-  f: (this: CpuState, ...args: T) => void,
+function fetchImmediateWord(state: CpuState) {
+  let lowByte = state.fetchImmediateByte();
+  let highByte = state.fetchImmediateByte();
+  return makeWord(highByte, lowByte);
+}
+
+export function bindInstructionArgs<T extends unknown[]>(
+  instruction: (this: CpuState, ...args: T) => void,
   ...args: T
 ) {
   return function (this: CpuState) {
-    f.call(this, ...args);
+    instruction.call(this, ...args);
   };
 }
 
@@ -117,4 +106,55 @@ export function subtractBytes(a: number, b: number, carryFlag = false) {
     borrowTo7: (a & BYTE_MASK) < (b & BYTE_MASK) + c,
     result: (a - b - c) & BYTE_MASK,
   };
+}
+
+export enum Condition {
+  Z,
+  C,
+  NZ,
+  NC,
+}
+
+export function checkCondition(state: CpuState, condition: Condition) {
+  switch (condition) {
+    case Condition.Z:
+      return state.isFlagSet(Flag.Z);
+    case Condition.C:
+      return state.isFlagSet(Flag.CY);
+    case Condition.NZ:
+      return !state.isFlagSet(Flag.Z);
+    case Condition.NC:
+      return !state.isFlagSet(Flag.CY);
+  }
+}
+
+export function pushWord(state: CpuState, data: number) {
+  let sp = state.readRegisterPair(RegisterPair.SP);
+
+  sp = wrapDecrementWord(sp);
+  state.cycle();
+
+  state.writeBus(sp, getMSB(data));
+  sp = wrapDecrementWord(sp);
+  state.cycle();
+
+  state.writeBus(sp, getLSB(data));
+  state.writeRegisterPair(RegisterPair.SP, sp);
+  state.cycle();
+}
+
+export function popWord(state: CpuState) {
+  let sp = state.readRegisterPair(RegisterPair.SP);
+
+  const lsb = state.readBus(sp);
+  sp = wrapIncrementWord(sp);
+  state.writeRegisterPair(RegisterPair.SP, sp);
+  state.cycle();
+
+  const msb = state.readBus(sp);
+  sp = wrapIncrementWord(sp);
+  state.writeRegisterPair(RegisterPair.SP, sp);
+  state.cycle();
+
+  return makeWord(msb, lsb);
 }
