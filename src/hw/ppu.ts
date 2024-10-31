@@ -147,12 +147,14 @@ export class PPU {
     private onStat: () => void
   ) {}
 
+  private vramLocked = false;
+
   public readVRAM(offset: number) {
-    return this.mode !== PPUMode.Drawing ? this.vram[offset] : 0xff;
+    return !this.vramLocked ? this.vram[offset] : 0xff;
   }
 
   public writeVRAM(offset: number, value: number) {
-    if (this.mode !== PPUMode.Drawing) {
+    if (!this.vramLocked) {
       this.vram[offset] = value;
     }
   }
@@ -172,6 +174,9 @@ export class PPU {
       this.dot = 0;
       this.mode = PPUMode.HBlank;
       this.statusRegister &= ~STAT_MODE_MASK;
+      this.objBuffer.splice(0);
+      this.oam.unlock();
+      this.vramLocked = false;
       //this.statInterruptLine = false;
       console.log("Reenabled");
       this.isOnLine = true;
@@ -212,7 +217,7 @@ export class PPU {
 
   // ff41
   public getStatusRegister() {
-    return this.statusRegister;
+    return 0x80 | this.statusRegister;
   }
 
   // TODO: IRQs
@@ -310,6 +315,10 @@ export class PPU {
 
   public tick() {
     if (!this.isEnabled()) {
+      this.statusRegister &= ~STAT_MODE_MASK;
+      this.objBuffer.splice(0);
+      this.oam.unlock();
+      this.vramLocked = false;
       return;
     }
 
@@ -317,12 +326,6 @@ export class PPU {
       this.delayMode -= 1;
 
       if (this.delayMode === 0) {
-        if (this.scanline === this.lyCompareRegister) {
-          this.statusRegister = setBit(this.statusRegister, 2);
-        } else {
-          this.statusRegister = resetBit(this.statusRegister, 2);
-        }
-
         this.statusRegister &= ~STAT_MODE_MASK;
         this.statusRegister |= this.mode;
       }
@@ -345,20 +348,21 @@ export class PPU {
 
     this.advanceDot();
 
+    if (this.dot >= 4 && this.scanline === this.lyCompareRegister) {
+      this.statusRegister = setBit(this.statusRegister, 2);
+    } else {
+      this.statusRegister = resetBit(this.statusRegister, 2);
+    }
+
     this.checkStatRisingEdge();
   }
-
-  private lastLength = -1;
 
   private oamScanTick() {
     if (this.dot % TICKS_PER_OAM_ENTRY === 0) {
       this.checkOAMEntry(this.dot / TICKS_PER_OAM_ENTRY);
-    } else if (this.dot === OAM_SCAN_TICKS - 1) {
+    } else if (this.dot === this.getOAMScanTicks() - 1) {
       this.setMode(PPUMode.Drawing);
-      if (this.objBuffer.length !== this.lastLength) {
-        console.log(this.objBuffer.length, "objects");
-        this.lastLength = this.objBuffer.length;
-      }
+      this.vramLocked = true;
     }
   }
 
@@ -383,7 +387,7 @@ export class PPU {
   private last = -4;
 
   private drawingTick() {
-    if (this.dot === OAM_SCAN_TICKS) {
+    if (this.dot === this.getOAMScanTicks()) {
       this.bgQueue = [];
       this.objQueue = [];
       this.bgXPosition = 0;
@@ -396,6 +400,8 @@ export class PPU {
       this.objFetcher.busy = null;
       this.objFetcher.ready = null;
       this.objFetcher.step = 0;
+      this.oam.lock();
+      this.vramLocked = true;
 
       this.windowTriggered = false;
 
@@ -408,7 +414,7 @@ export class PPU {
       ) {
         this.windowTriggered = true;
       }
-    } else if (this.dot >= OAM_SCAN_TICKS + 6) {
+    } else if (this.dot >= this.getOAMScanTicks() + 6) {
       this.bgFetcherTick();
       this.objFetcherTick();
 
@@ -710,7 +716,21 @@ export class PPU {
     return palette[(p >> (id * 2)) & 0x3];
   }
 
+  private getOAMScanTicks() {
+    return this.isOnLine ? OAM_SCAN_TICKS - 4 : OAM_SCAN_TICKS;
+  }
+
   private hBlankTick() {
+    if (this.dot === this.getOAMScanTicks() - 1) {
+      this.setMode(PPUMode.Drawing);
+      return;
+    }
+
+    if (this.dot < this.getOAMScanTicks() - 1) {
+      return;
+    }
+
+    this.vramLocked = false;
     this.oam.unlock();
 
     if (this.dot === this.getDotsPerScnaline() - 1) {

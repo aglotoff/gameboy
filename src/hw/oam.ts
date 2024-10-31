@@ -1,5 +1,5 @@
 import { makeWord } from "../utils";
-import { PPU } from "./ppu";
+// import { PPU } from "./ppu";
 
 export type DMAReadFn = (address: number) => number;
 

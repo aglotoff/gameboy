@@ -207,7 +207,7 @@ async function readImage(file: File) {
     joypad
   );
 
-  const cpu = new Cpu(memory, interruptController, ppu, () => {
+  const cpu = new Cpu(memory, interruptController, () => {
     for (let i = 0; i < 4; i++) {
       oam.tick();
       timer.tick();
