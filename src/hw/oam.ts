@@ -1,4 +1,5 @@
 import { makeWord } from "../utils";
+import { PPU } from "./ppu";
 
 export type DMAReadFn = (address: number) => number;
 
@@ -35,10 +36,20 @@ export class OAM {
   private currentDMAIndex = 0;
   private nextDMASource = 0;
 
+  private locked = false;
+
   private readCallback: DMAReadFn;
 
   public constructor({ readCallback }: OAMOptions) {
     this.readCallback = readCallback;
+  }
+
+  public lock() {
+    this.locked = true;
+  }
+
+  public unlock() {
+    this.locked = false;
   }
 
   public isDMAInProgress() {
@@ -46,20 +57,20 @@ export class OAM {
   }
 
   public read(offset: number) {
-    return this.dmaInProgress ? 0xff : this.data[offset];
+    return this.dmaInProgress || this.locked ? 0xff : this.data[offset];
   }
 
   public getEntry(index: number): OAMEntry {
     return {
-      yPosition: this.read(index * OAM_OBJECT_SIZE + 0),
-      xPosition: this.read(index * OAM_OBJECT_SIZE + 1),
-      tileIndex: this.read(index * OAM_OBJECT_SIZE + 2),
-      attributes: this.read(index * OAM_OBJECT_SIZE + 3),
+      yPosition: this.data[index * OAM_OBJECT_SIZE + 0],
+      xPosition: this.data[index * OAM_OBJECT_SIZE + 1],
+      tileIndex: this.data[index * OAM_OBJECT_SIZE + 2],
+      attributes: this.data[index * OAM_OBJECT_SIZE + 3],
     };
   }
 
   public write(offset: number, data: number) {
-    if (!this.dmaInProgress) {
+    if (!this.dmaInProgress && !this.locked) {
       this.data[offset] = data;
     }
   }

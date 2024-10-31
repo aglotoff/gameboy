@@ -60,6 +60,7 @@ export class PPU {
   private statInterruptLine = false;
   private mode = 0;
   private delayMode = 0;
+  private isOnLine = false;
 
   // Per-frame state
   private windowLineCounter = 0;
@@ -93,19 +94,21 @@ export class PPU {
     ready: null as OAMEntry | null,
   };
 
+  private getDotsPerScnaline() {
+    return this.isOnLine ? DOTS_PER_SCANLINE - 4 : DOTS_PER_SCANLINE;
+  }
+
   private getStatInterruptLine() {
     if (
       testBit(this.statusRegister, StatSource.LYC) &&
       testBit(this.statusRegister, 2)
-      //this.scanline === this.lyCompareRegister
     ) {
       return true;
     }
 
     if (
       testBit(this.statusRegister, StatSource.Mode0) &&
-      this.getStatusMode() === PPUMode.HBlank //&&
-      //this.dot >= 256
+      this.getStatusMode() === PPUMode.HBlank
     ) {
       return true;
     }
@@ -120,7 +123,7 @@ export class PPU {
     if (
       testBit(this.statusRegister, StatSource.Mode2) &&
       (this.getStatusMode() === PPUMode.OAMScan ||
-        (this.dot === 0 && this.scanline === LCD_HEIGHT))
+        (this.dot === 4 && this.scanline === LCD_HEIGHT))
     ) {
       return true;
     }
@@ -160,7 +163,19 @@ export class PPU {
   }
 
   public setControlRegister(value: number) {
+    const wasDisabled = !this.isEnabled();
+
     this.controlRegister = value;
+
+    if (wasDisabled && this.isEnabled()) {
+      this.scanline = 0;
+      this.dot = 0;
+      this.mode = PPUMode.HBlank;
+      this.statusRegister &= ~STAT_MODE_MASK;
+      //this.statInterruptLine = false;
+      console.log("Reenabled");
+      this.isOnLine = true;
+    }
   }
 
   private isEnabled() {
@@ -333,11 +348,17 @@ export class PPU {
     this.checkStatRisingEdge();
   }
 
+  private lastLength = -1;
+
   private oamScanTick() {
     if (this.dot % TICKS_PER_OAM_ENTRY === 0) {
       this.checkOAMEntry(this.dot / TICKS_PER_OAM_ENTRY);
     } else if (this.dot === OAM_SCAN_TICKS - 1) {
       this.setMode(PPUMode.Drawing);
+      if (this.objBuffer.length !== this.lastLength) {
+        console.log(this.objBuffer.length, "objects");
+        this.lastLength = this.objBuffer.length;
+      }
     }
   }
 
@@ -348,11 +369,11 @@ export class PPU {
 
     const entry = this.oam.getEntry(entryIndex);
 
-    const right = entry.xPosition - 1;
+    //const right = entry.xPosition - 1;
     const top = entry.yPosition - 16;
     const bottom = top + this.getObjHeight() - 1;
 
-    if (right < 0 || this.scanline < top || this.scanline > bottom) {
+    if (this.scanline < top || this.scanline > bottom) {
       return;
     }
 
@@ -606,7 +627,7 @@ export class PPU {
 
       if (
         x < objX ||
-        x >= objX + 8 ||
+        //x >= objX + 8 ||
         this.scanline < objY ||
         this.scanline >= objY + objHeight
       ) {
@@ -690,9 +711,12 @@ export class PPU {
   }
 
   private hBlankTick() {
-    if (this.dot === DOTS_PER_SCANLINE - 1) {
+    this.oam.unlock();
+
+    if (this.dot === this.getDotsPerScnaline() - 1) {
       if (this.scanline < LCD_HEIGHT - 1) {
         this.setMode(PPUMode.OAMScan);
+        this.oam.lock();
       } else {
         this.setMode(PPUMode.VBlank);
       }
@@ -708,14 +732,16 @@ export class PPU {
       this.scanline === SCANLINES_PER_FRAME - 1
     ) {
       this.setMode(PPUMode.OAMScan);
+      this.oam.lock();
       this.windowLineCounter = 0;
     }
   }
 
   private advanceDot() {
-    this.dot = (this.dot + 1) % DOTS_PER_SCANLINE;
+    this.dot = (this.dot + 1) % this.getDotsPerScnaline();
 
     if (this.dot === 0) {
+      this.isOnLine = false;
       this.advanceScanline();
     }
   }
