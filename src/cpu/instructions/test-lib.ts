@@ -16,6 +16,6 @@ class TestMemory implements IBus {
 
 export const testInstruction = test.extend({
   state: async ({}, use: (state: CpuState) => Promise<void>) => {
-    await use(new CpuState(new TestMemory(), () => {}));
+    await use(new CpuState({ bus: new TestMemory(), onCycle: () => {} }));
   },
 });

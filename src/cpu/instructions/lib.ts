@@ -16,6 +16,7 @@ export function instruction<T extends unknown[]>(
   cb: (this: CpuState, ...args: T) => void
 ) {
   return function (this: CpuState, ...args: T) {
+    this.cycle();
     cb.call(this, ...args);
     this.fetchNextOpcode();
   };
@@ -25,6 +26,7 @@ export function instructionWithImmediateByte<T extends unknown[]>(
   cb: (this: CpuState, byte: number, ...args: T) => void
 ) {
   return function (this: CpuState, ...args: T) {
+    this.cycle();
     cb.call(this, this.fetchImmediateByte(), ...args);
     this.fetchNextOpcode();
   };
@@ -34,6 +36,7 @@ export function instructionWithImmediateWord<T extends unknown[]>(
   cb: (this: CpuState, word: number, ...args: T) => void
 ) {
   return function (this: CpuState, ...args: T) {
+    this.cycle();
     cb.call(this, fetchImmediateWord(this), ...args);
     this.fetchNextOpcode();
   };

@@ -57,15 +57,16 @@ export class PPU {
   private objPalette1 = 0;
 
   // Interrupts
-  private statSourceState = 0;
-  private statInterruptLine = 0;
+  private statInterruptLine = false;
+  private mode = 0;
+  private delayMode = 0;
 
   // Per-frame state
   private windowLineCounter = 0;
   private windowTriggered = false;
 
   // Per-scanline
-  private dot = 0;
+  public dot = 0;
   private objBuffer = [] as OAMEntry[];
   private bgQueue: Pixel[] = [];
   private objQueue: Array<Pixel | null> = [];
@@ -92,22 +93,45 @@ export class PPU {
     ready: null as OAMEntry | null,
   };
 
-  private statSourceUp(source: StatSource) {
-    this.statSourceState = setBit(this.statSourceState, source);
-  }
-
-  private statSourceDown(source: StatSource) {
-    this.statSourceState = resetBit(this.statSourceState, source);
-  }
-
   private getStatInterruptLine() {
-    return this.statSourceState & this.statusRegister & STAT_SOURCE_MASK;
+    if (
+      testBit(this.statusRegister, StatSource.LYC) &&
+      testBit(this.statusRegister, 2)
+      //this.scanline === this.lyCompareRegister
+    ) {
+      return true;
+    }
+
+    if (
+      testBit(this.statusRegister, StatSource.Mode0) &&
+      this.getStatusMode() === PPUMode.HBlank //&&
+      //this.dot >= 256
+    ) {
+      return true;
+    }
+
+    if (
+      testBit(this.statusRegister, StatSource.Mode1) &&
+      this.getStatusMode() === PPUMode.VBlank
+    ) {
+      return true;
+    }
+
+    if (
+      testBit(this.statusRegister, StatSource.Mode2) &&
+      (this.getStatusMode() === PPUMode.OAMScan ||
+        (this.dot === 0 && this.scanline === LCD_HEIGHT))
+    ) {
+      return true;
+    }
+
+    return false;
   }
 
   private checkStatRisingEdge() {
     const newLine = this.getStatInterruptLine();
-    const hasRisingEdge = this.statInterruptLine === 0 && newLine !== 0;
-    if (hasRisingEdge) {
+    if (!this.statInterruptLine && newLine) {
+      // console.log("STAT", this.dot);
       this.onStat();
     }
     this.statInterruptLine = newLine;
@@ -121,11 +145,11 @@ export class PPU {
   ) {}
 
   public readVRAM(offset: number) {
-    return this.getMode() !== PPUMode.Drawing ? this.vram[offset] : 0xff;
+    return this.mode !== PPUMode.Drawing ? this.vram[offset] : 0xff;
   }
 
   public writeVRAM(offset: number, value: number) {
-    if (this.getMode() !== PPUMode.Drawing) {
+    if (this.mode !== PPUMode.Drawing) {
       this.vram[offset] = value;
     }
   }
@@ -178,20 +202,22 @@ export class PPU {
 
   // TODO: IRQs
   public setStatusRegister(data: number) {
-    this.statusRegister = data & STAT_SOURCE_MASK;
+    this.statusRegister &= ~STAT_SOURCE_MASK;
+    this.statusRegister |= data & STAT_SOURCE_MASK;
   }
 
-  private getMode() {
+  private getStatusMode() {
     return this.statusRegister & STAT_MODE_MASK;
   }
 
   private setMode(mode: PPUMode) {
-    this.statusRegister &= ~STAT_MODE_MASK;
-    this.statusRegister |= mode;
+    this.mode = mode;
+    this.delayMode = 4;
   }
 
   // ff44
   public getYCoordinateRegister() {
+    //console.log("reading LY", this.scanline.toString(16));
     return this.scanline;
   }
 
@@ -202,14 +228,6 @@ export class PPU {
 
   public setLYCompareRegister(data: number) {
     this.lyCompareRegister = data;
-
-    if (this.scanline === this.lyCompareRegister) {
-      this.statusRegister = setBit(this.statusRegister, 2);
-      this.statSourceUp(StatSource.LYC);
-    } else {
-      this.statusRegister = resetBit(this.statusRegister, 2);
-      this.statSourceDown(StatSource.LYC);
-    }
   }
 
   // ff42
@@ -280,9 +298,22 @@ export class PPU {
       return;
     }
 
-    this.checkStatRisingEdge();
+    if (this.delayMode > 0) {
+      this.delayMode -= 1;
 
-    switch (this.getMode()) {
+      if (this.delayMode === 0) {
+        if (this.scanline === this.lyCompareRegister) {
+          this.statusRegister = setBit(this.statusRegister, 2);
+        } else {
+          this.statusRegister = resetBit(this.statusRegister, 2);
+        }
+
+        this.statusRegister &= ~STAT_MODE_MASK;
+        this.statusRegister |= this.mode;
+      }
+    }
+
+    switch (this.mode) {
       case PPUMode.OAMScan:
         this.oamScanTick();
         break;
@@ -298,13 +329,14 @@ export class PPU {
     }
 
     this.advanceDot();
+
+    this.checkStatRisingEdge();
   }
 
   private oamScanTick() {
     if (this.dot % TICKS_PER_OAM_ENTRY === 0) {
       this.checkOAMEntry(this.dot / TICKS_PER_OAM_ENTRY);
     } else if (this.dot === OAM_SCAN_TICKS - 1) {
-      this.statSourceDown(StatSource.Mode2);
       this.setMode(PPUMode.Drawing);
     }
   }
@@ -326,6 +358,8 @@ export class PPU {
 
     this.objBuffer.push(entry);
   }
+
+  private last = -4;
 
   private drawingTick() {
     if (this.dot === OAM_SCAN_TICKS) {
@@ -412,8 +446,13 @@ export class PPU {
       if (this.xPosition === LCD_WIDTH) {
         this.updateScanline();
         this.objBuffer.splice(0);
+
+        if (this.last !== this.dot + 1) {
+          console.log("HBlank at ", this.dot + 1);
+          this.last = this.dot + 1;
+        }
+
         this.setMode(PPUMode.HBlank);
-        this.statSourceUp(StatSource.Mode0);
       }
     }
   }
@@ -652,13 +691,10 @@ export class PPU {
 
   private hBlankTick() {
     if (this.dot === DOTS_PER_SCANLINE - 1) {
-      this.statSourceDown(StatSource.Mode0);
       if (this.scanline < LCD_HEIGHT - 1) {
         this.setMode(PPUMode.OAMScan);
-        this.statSourceUp(StatSource.Mode2);
       } else {
         this.setMode(PPUMode.VBlank);
-        this.statSourceUp(StatSource.Mode1);
       }
     }
   }
@@ -671,9 +707,7 @@ export class PPU {
       this.dot === DOTS_PER_SCANLINE - 1 &&
       this.scanline === SCANLINES_PER_FRAME - 1
     ) {
-      this.statSourceDown(StatSource.Mode1);
       this.setMode(PPUMode.OAMScan);
-      this.statSourceUp(StatSource.Mode2);
       this.windowLineCounter = 0;
     }
   }
@@ -688,14 +722,6 @@ export class PPU {
 
   private advanceScanline() {
     this.scanline = (this.scanline + 1) % SCANLINES_PER_FRAME;
-
-    if (this.scanline === this.lyCompareRegister) {
-      this.statusRegister = setBit(this.statusRegister, 2);
-      this.statSourceUp(StatSource.LYC);
-    } else {
-      this.statusRegister = resetBit(this.statusRegister, 2);
-      this.statSourceDown(StatSource.LYC);
-    }
   }
 
   private fetchBackgroundTileNo(x: number, y: number) {

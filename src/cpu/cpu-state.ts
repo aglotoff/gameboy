@@ -121,7 +121,6 @@ export class CpuState {
   public fetchNextOpcode() {
     let pc = this.readRegisterPair(RegisterPair.PC);
     this.opcode = this.readBus(pc);
-    this.cycle();
   }
 
   public advancePC() {

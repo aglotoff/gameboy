@@ -3,11 +3,13 @@ import { getInstruction, getPrefixCBInstruction } from "./instructions";
 import { InterruptController } from "../hw/interrupt-controller";
 import { RegisterPair } from "./register";
 import { getLSB, getMSB, wrapDecrementWord } from "../utils";
+import { PPU } from "../hw/ppu";
 
 export class Cpu extends CpuState {
   public constructor(
     bus: IBus,
     private interruptController: InterruptController,
+    private ppu: PPU,
     onCycle: () => void
   ) {
     super({ bus, onCycle });
@@ -73,6 +75,15 @@ export class Cpu extends CpuState {
 
   private handleInterrupt() {
     this.setInterruptMasterEnable(false);
+
+    console.log(
+      "handle IRQ at cycle",
+      this.ppu.dot / 4,
+      "till LY++:",
+      (456 - this.ppu.dot) / 4
+    );
+
+    this.cycle();
 
     let sp = this.readRegisterPair(RegisterPair.SP);
     sp = wrapDecrementWord(sp);
