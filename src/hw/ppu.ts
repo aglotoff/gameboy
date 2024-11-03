@@ -14,6 +14,8 @@ const VRAM_SIZE = 0x2000;
 const TICKS_PER_OAM_ENTRY = 2;
 const OAM_SCAN_TICKS = TICKS_PER_OAM_ENTRY * OAM_TOTAL_OBJECTS;
 
+const BYTES_PER_TILE = 16;
+
 const palette = [0xe0f8d0ff, 0x88c070ff, 0x346856ff, 0x081820ff];
 
 interface Pixel {
@@ -59,7 +61,7 @@ export class PPU {
   // Interrupts
   private statInterruptLine = false;
   private mode = 0;
-  private delayMode = 0;
+  private ticksToStatModeUpdate = 0;
   private isOnLine = false;
 
   // Per-frame state
@@ -98,48 +100,6 @@ export class PPU {
     return this.isOnLine ? DOTS_PER_SCANLINE - 4 : DOTS_PER_SCANLINE;
   }
 
-  private getStatInterruptLine() {
-    if (
-      testBit(this.statusRegister, StatSource.LYC) &&
-      testBit(this.statusRegister, 2)
-    ) {
-      return true;
-    }
-
-    if (
-      testBit(this.statusRegister, StatSource.Mode0) &&
-      this.getStatusMode() === PPUMode.HBlank
-    ) {
-      return true;
-    }
-
-    if (
-      testBit(this.statusRegister, StatSource.Mode1) &&
-      this.getStatusMode() === PPUMode.VBlank
-    ) {
-      return true;
-    }
-
-    if (
-      testBit(this.statusRegister, StatSource.Mode2) &&
-      (this.getStatusMode() === PPUMode.OAMScan ||
-        (this.dot === 4 && this.scanline === LCD_HEIGHT))
-    ) {
-      return true;
-    }
-
-    return false;
-  }
-
-  private checkStatRisingEdge() {
-    const newLine = this.getStatInterruptLine();
-    if (!this.statInterruptLine && newLine) {
-      // console.log("STAT", this.dot);
-      this.onStat();
-    }
-    this.statInterruptLine = newLine;
-  }
-
   public constructor(
     private lcd: LCD,
     private oam: OAM,
@@ -147,14 +107,15 @@ export class PPU {
     private onStat: () => void
   ) {}
 
-  private vramLocked = false;
+  private vramReadLocked = false;
+  private vramWriteLocked = false;
 
   public readVRAM(offset: number) {
-    return !this.vramLocked ? this.vram[offset] : 0xff;
+    return !this.vramReadLocked ? this.vram[offset] : 0xff;
   }
 
   public writeVRAM(offset: number, value: number) {
-    if (!this.vramLocked) {
+    if (!this.vramWriteLocked) {
       this.vram[offset] = value;
     }
   }
@@ -165,6 +126,8 @@ export class PPU {
   }
 
   public setControlRegister(value: number) {
+    console.log("LCDC = ", value.toString(16), this.getStatInterruptLine());
+
     const wasDisabled = !this.isEnabled();
 
     this.controlRegister = value;
@@ -176,9 +139,7 @@ export class PPU {
       this.statusRegister &= ~STAT_MODE_MASK;
       this.objBuffer.splice(0);
       this.oam.unlock();
-      this.vramLocked = false;
-      //this.statInterruptLine = false;
-      console.log("Reenabled");
+      this.vramReadLocked = false;
       this.isOnLine = true;
     }
   }
@@ -193,10 +154,6 @@ export class PPU {
 
   private isWindowEnabled() {
     return testBit(this.controlRegister, 5);
-  }
-
-  private getBGAndWindowTileDataArea() {
-    return (testBit(this.controlRegister, 4) ? 0x8000 : 0x8800) - VRAM_BASE;
   }
 
   private getBGTileMapArea() {
@@ -217,6 +174,7 @@ export class PPU {
 
   // ff41
   public getStatusRegister() {
+    console.log("STAT is ", (0x80 | this.statusRegister).toString(16));
     return 0x80 | this.statusRegister;
   }
 
@@ -232,7 +190,7 @@ export class PPU {
 
   private setMode(mode: PPUMode) {
     this.mode = mode;
-    this.delayMode = 4;
+    this.ticksToStatModeUpdate = 4;
   }
 
   // ff44
@@ -247,6 +205,7 @@ export class PPU {
   }
 
   public setLYCompareRegister(data: number) {
+    console.log("LYC = ", data.toString(16), this.getStatInterruptLine());
     this.lyCompareRegister = data;
   }
 
@@ -317,19 +276,13 @@ export class PPU {
     if (!this.isEnabled()) {
       this.statusRegister &= ~STAT_MODE_MASK;
       this.objBuffer.splice(0);
+      this.ticksToStatModeUpdate = 0;
       this.oam.unlock();
-      this.vramLocked = false;
+      this.vramReadLocked = false;
       return;
     }
 
-    if (this.delayMode > 0) {
-      this.delayMode -= 1;
-
-      if (this.delayMode === 0) {
-        this.statusRegister &= ~STAT_MODE_MASK;
-        this.statusRegister |= this.mode;
-      }
-    }
+    this.updateStatMode();
 
     switch (this.mode) {
       case PPUMode.OAMScan:
@@ -348,7 +301,7 @@ export class PPU {
 
     this.advanceDot();
 
-    if (this.dot >= 4 && this.scanline === this.lyCompareRegister) {
+    if (this.scanline === this.lyCompareRegister) {
       this.statusRegister = setBit(this.statusRegister, 2);
     } else {
       this.statusRegister = resetBit(this.statusRegister, 2);
@@ -357,13 +310,28 @@ export class PPU {
     this.checkStatRisingEdge();
   }
 
+  private updateStatMode() {
+    if (this.ticksToStatModeUpdate > 0) {
+      this.ticksToStatModeUpdate -= 1;
+
+      if (this.ticksToStatModeUpdate === 0) {
+        this.statusRegister &= ~STAT_MODE_MASK;
+        this.statusRegister |= this.mode;
+      }
+    }
+  }
+
   private oamScanTick() {
     if (this.dot % TICKS_PER_OAM_ENTRY === 0) {
       this.checkOAMEntry(this.dot / TICKS_PER_OAM_ENTRY);
     } else if (this.dot === this.getOAMScanTicks() - 1) {
       this.setMode(PPUMode.Drawing);
-      this.vramLocked = true;
+      this.vramReadLocked = true;
     }
+  }
+
+  private getOAMScanTicks() {
+    return this.isOnLine ? OAM_SCAN_TICKS - 4 : OAM_SCAN_TICKS;
   }
 
   private checkOAMEntry(entryIndex: number) {
@@ -384,10 +352,11 @@ export class PPU {
     this.objBuffer.push(entry);
   }
 
-  private last = -4;
+  // private last = -4;
 
   private drawingTick() {
     if (this.dot === this.getOAMScanTicks()) {
+      this.obj = this.objBuffer.length;
       this.bgQueue = [];
       this.objQueue = [];
       this.bgXPosition = 0;
@@ -401,7 +370,7 @@ export class PPU {
       this.objFetcher.ready = null;
       this.objFetcher.step = 0;
       this.oam.lock();
-      this.vramLocked = true;
+      this.vramReadLocked = true;
 
       this.windowTriggered = false;
 
@@ -471,18 +440,24 @@ export class PPU {
       this.xPosition++;
 
       if (this.xPosition === LCD_WIDTH) {
-        this.updateScanline();
         this.objBuffer.splice(0);
 
         if (this.last !== this.dot + 1) {
-          console.log("HBlank at ", this.dot + 1);
+          console.log("HBlank at ", this.dot + 1, "objs", this.obj);
           this.last = this.dot + 1;
+        }
+
+        if (this.windowTriggered) {
+          this.windowLineCounter++;
         }
 
         this.setMode(PPUMode.HBlank);
       }
     }
   }
+
+  private last = -1;
+  private obj = 0;
 
   private bgFetcherTick() {
     if (this.bgFetcher.step === 0) {
@@ -554,6 +529,55 @@ export class PPU {
     }
   }
 
+  private fetchWindowTileNo(x: number, y: number) {
+    const tileIndex = this.getTileIndex(x, y);
+    return this.vram[this.getWindowTileMapArea() + tileIndex];
+  }
+
+  private fetchBackgroundTileNo(x: number, y: number) {
+    const tileIndex = this.getTileIndex(x + this.viewportX, y + this.viewportY);
+    return this.vram[this.getBGTileMapArea() + tileIndex];
+  }
+
+  private getTileIndex(x: number, y: number) {
+    const tileX = Math.floor((x % 256) / 8) % 32;
+    const tileY = Math.floor((y % 256) / 8);
+    return (tileY * 32 + tileX) % 1024;
+  }
+
+  private fetchWindowTileDataLow(tileNo: number, y: number) {
+    const base = this.getBgAndWindowTileBase(tileNo);
+    const lineOffset = y % 8;
+    return this.vram[base + lineOffset * 2];
+  }
+
+  private fetchBackgroundTileDataLow(tileNo: number, y: number) {
+    const base = this.getBgAndWindowTileBase(tileNo);
+    const lineOffset = (y + this.viewportY) % 8;
+    return this.vram[base + lineOffset * 2];
+  }
+
+  private fetchWindowTileDataHigh(tileNo: number, y: number) {
+    const base = this.getBgAndWindowTileBase(tileNo);
+    const lineOffset = y % 8;
+    return this.vram[base + lineOffset * 2 + 1];
+  }
+
+  private fetchBackgroundTileDataHigh(tileNo: number, y: number) {
+    const base = this.getBgAndWindowTileBase(tileNo);
+    const lineOffset = (y + this.viewportY) % 8;
+    return this.vram[base + lineOffset * 2 + 1];
+  }
+
+  private getBgAndWindowTileBase(tileNo: number) {
+    if (tileNo > 127) {
+      return 0x0800 + (tileNo % 128) * BYTES_PER_TILE;
+    }
+
+    const base = testBit(this.controlRegister, 4) ? 0x0000 : 0x1000;
+    return base + tileNo * BYTES_PER_TILE;
+  }
+
   private objFetcherTick() {
     if (this.objFetcher.step === 0) {
       if (this.objFetcher.busy == null || this.bgFetcher.busy) {
@@ -615,12 +639,63 @@ export class PPU {
     }
   }
 
-  private updateScanline() {
-    while (this.xPosition < LCD_WIDTH) {}
+  private fetchObjectTileNo(obj: OAMEntry) {
+    const size = this.getObjHeight();
 
-    if (this.windowTriggered) {
-      this.windowLineCounter++;
-    }
+    const objY = obj.yPosition - 16;
+
+    const flipY = testBit(obj.attributes, 6);
+
+    const tileY = Math.floor(this.scanline - objY);
+
+    const top = flipY ? size - 1 - tileY : tileY;
+
+    return size === 16
+      ? top >= 8
+        ? obj.tileIndex | 0x01
+        : obj.tileIndex & 0xfe
+      : obj.tileIndex;
+  }
+
+  private fetchObjectTileDataLow(obj: OAMEntry, tileNo: number) {
+    const offset = this.getObjectTileDataOffset(obj, tileNo);
+    return this.vram[offset];
+  }
+
+  private fetchObjectTileDataHigh(obj: OAMEntry, tileNo: number) {
+    const offset = this.getObjectTileDataOffset(obj, tileNo);
+    return this.vram[offset + 1];
+  }
+
+  private getObjectTileDataOffset(obj: OAMEntry, tileNo: number) {
+    const size = this.getObjHeight();
+
+    const objY = obj.yPosition - 16;
+
+    const flipY = testBit(obj.attributes, 6);
+    const tileY = Math.floor(this.scanline - objY);
+
+    const top = flipY ? size - 1 - tileY : tileY;
+
+    const off = tileNo * 16;
+
+    return off + (top % 8) * 2;
+  }
+
+  private fetchObjectColor(
+    obj: OAMEntry,
+    firstByte: number,
+    secondByte: number,
+    tileX: number
+  ) {
+    const flipX = testBit(obj.attributes, 5);
+
+    const left = flipX ? 7 - tileX : tileX;
+
+    const lsb = (firstByte >> (7 - left)) & 0x1;
+    const msb = (secondByte >> (7 - left)) & 0x1;
+
+    return (msb << 1) | lsb;
   }
 
   private getCurrentObject(x: number) {
@@ -652,72 +727,8 @@ export class PPU {
     return minObj;
   }
 
-  private fetchObjectTileNo(obj: OAMEntry) {
-    const size = this.getObjHeight();
-
-    const objY = obj.yPosition - 16;
-
-    const flipY = testBit(obj.attributes, 6);
-
-    const tileY = Math.floor(this.scanline - objY);
-
-    const top = flipY ? size - 1 - tileY : tileY;
-
-    return size === 16
-      ? top >= 8
-        ? obj.tileIndex | 0x01
-        : obj.tileIndex & 0xfe
-      : obj.tileIndex;
-  }
-
-  private fetchObjectTileDataLow(obj: OAMEntry, tileNo: number) {
-    const size = this.getObjHeight();
-    const objY = obj.yPosition - 16;
-
-    const flipY = testBit(obj.attributes, 6);
-    const tileY = Math.floor(this.scanline - objY);
-    const top = flipY ? size - 1 - tileY : tileY;
-
-    const off = tileNo * 16;
-    return this.vram[off + (top % 8) * 2];
-  }
-
-  private fetchObjectTileDataHigh(obj: OAMEntry, tileNo: number) {
-    const size = this.getObjHeight();
-
-    const objY = obj.yPosition - 16;
-
-    const flipY = testBit(obj.attributes, 6);
-    const tileY = Math.floor(this.scanline - objY);
-
-    const top = flipY ? size - 1 - tileY : tileY;
-
-    const off = tileNo * 16;
-    return this.vram[off + (top % 8) * 2 + 1];
-  }
-
-  private fetchObjectColor(
-    obj: OAMEntry,
-    firstByte: number,
-    secondByte: number,
-    tileX: number
-  ) {
-    const flipX = testBit(obj.attributes, 5);
-
-    const left = flipX ? 7 - tileX : tileX;
-
-    const lsb = (firstByte >> (7 - left)) & 0x1;
-    const msb = (secondByte >> (7 - left)) & 0x1;
-
-    return (msb << 1) | lsb;
-  }
-
   private getPaletteColor(p: number, id: number) {
     return palette[(p >> (id * 2)) & 0x3];
-  }
-
-  private getOAMScanTicks() {
-    return this.isOnLine ? OAM_SCAN_TICKS - 4 : OAM_SCAN_TICKS;
   }
 
   private hBlankTick() {
@@ -730,7 +741,7 @@ export class PPU {
       return;
     }
 
-    this.vramLocked = false;
+    this.vramReadLocked = false;
     this.oam.unlock();
 
     if (this.dot === this.getDotsPerScnaline() - 1) {
@@ -770,83 +781,47 @@ export class PPU {
     this.scanline = (this.scanline + 1) % SCANLINES_PER_FRAME;
   }
 
-  private fetchBackgroundTileNo(x: number, y: number) {
-    const top = (this.viewportY + y) % 256;
-    const left = x % 256;
+  private checkStatRisingEdge() {
+    const newLine = this.getStatInterruptLine();
 
-    const tileX = (Math.floor(left / 8) + Math.floor(this.viewportX / 8)) % 32;
-    const tileY = Math.floor(top / 8);
-
-    const pos = (tileY * 32 + tileX) % 1024;
-
-    return this.vram[this.getBGTileMapArea() + pos];
-  }
-
-  private fetchBackgroundTileDataLow(tileNo: number, y: number) {
-    const dataBase = this.getBGAndWindowTileDataArea();
-
-    let off = 0;
-
-    if (dataBase === 0) {
-      off = tileNo * 16;
-    } else {
-      off = dataBase + ((128 + tileNo) % 256) * 16;
+    if (!this.statInterruptLine && newLine) {
+      //console.log("Reuqest IRQ");
+      this.onStat();
     }
 
-    return this.vram[off + ((y + this.viewportY) % 8) * 2];
+    this.statInterruptLine = newLine;
   }
 
-  private fetchBackgroundTileDataHigh(tileNo: number, y: number) {
-    const dataBase = this.getBGAndWindowTileDataArea();
-
-    let off = 0;
-
-    if (dataBase === 0) {
-      off = tileNo * 16;
-    } else {
-      off = dataBase + ((128 + tileNo) % 256) * 16;
+  private getStatInterruptLine() {
+    if (
+      testBit(this.statusRegister, StatSource.LYC) &&
+      testBit(this.statusRegister, 2)
+    ) {
+      return true;
     }
 
-    return this.vram[off + ((y + this.viewportY) % 8) * 2 + 1];
-  }
-
-  private fetchWindowTileNo(x: number, y: number) {
-    const top = y;
-    const left = x % 256;
-
-    const tileX = Math.floor(left / 8) % 32;
-    const tileY = Math.floor(top / 8);
-
-    const pos = (tileY * 32 + tileX) % 1024;
-
-    return this.vram[this.getWindowTileMapArea() + pos];
-  }
-
-  private fetchWindowTileDataLow(tileNo: number, y: number) {
-    const dataBase = this.getBGAndWindowTileDataArea();
-
-    let off = 0;
-
-    if (dataBase === 0) {
-      off = tileNo * 16;
-    } else {
-      off = dataBase + ((128 + tileNo) % 256) * 16;
+    if (
+      testBit(this.statusRegister, StatSource.Mode0) &&
+      this.getStatusMode() === PPUMode.HBlank
+    ) {
+      return true;
     }
 
-    return this.vram[off + (y % 8) * 2];
-  }
-
-  private fetchWindowTileDataHigh(tileNo: number, y: number) {
-    const dataBase = this.getBGAndWindowTileDataArea();
-
-    let off = 0;
-
-    if (dataBase === 0) {
-      off = tileNo * 16;
-    } else {
-      off = dataBase + ((128 + tileNo) % 256) * 16;
+    if (
+      testBit(this.statusRegister, StatSource.Mode1) &&
+      this.getStatusMode() === PPUMode.VBlank
+    ) {
+      return true;
     }
 
-    return this.vram[off + (y % 8) * 2 + 1];
+    if (
+      testBit(this.statusRegister, StatSource.Mode2) &&
+      (this.getStatusMode() === PPUMode.OAMScan ||
+        (this.dot === 4 && this.scanline === LCD_HEIGHT))
+    ) {
+      return true;
+    }
+
+    return false;
   }
 }
