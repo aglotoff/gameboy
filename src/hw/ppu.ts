@@ -61,8 +61,7 @@ export class PPU {
   // Interrupts
   private statInterruptLine = false;
   private mode = 0;
-  private ticksToStatModeUpdate = 0;
-  private isOnLine = false;
+  private isFirstLineAfterEnable = false;
 
   // Per-frame state
   private windowLineCounter = 0;
@@ -84,7 +83,7 @@ export class PPU {
     dataLow: 0,
     dataHigh: 0,
     busy: false,
-    ready: false,
+    ready: [] as Pixel[],
   };
 
   private objFetcher = {
@@ -92,13 +91,10 @@ export class PPU {
     tileNo: 0,
     dataLow: 0,
     dataHigh: 0,
-    busy: null as OAMEntry | null,
-    ready: null as OAMEntry | null,
+    busy: false,
+    ready: [] as Pixel[],
+    current: null as OAMEntry | null,
   };
-
-  private getDotsPerScnaline() {
-    return this.isOnLine ? DOTS_PER_SCANLINE - 4 : DOTS_PER_SCANLINE;
-  }
 
   public constructor(
     private lcd: LCD,
@@ -126,7 +122,7 @@ export class PPU {
   }
 
   public setControlRegister(value: number) {
-    console.log("LCDC = ", value.toString(16), this.getStatInterruptLine());
+    // console.log("LCDC = ", value.toString(16), this.getStatInterruptLine());
 
     const wasDisabled = !this.isEnabled();
 
@@ -140,7 +136,7 @@ export class PPU {
       this.objBuffer.splice(0);
       this.oam.unlock();
       this.vramReadLocked = false;
-      this.isOnLine = true;
+      this.isFirstLineAfterEnable = true;
     }
   }
 
@@ -174,7 +170,6 @@ export class PPU {
 
   // ff41
   public getStatusRegister() {
-    console.log("STAT is ", (0x80 | this.statusRegister).toString(16));
     return 0x80 | this.statusRegister;
   }
 
@@ -190,12 +185,10 @@ export class PPU {
 
   private setMode(mode: PPUMode) {
     this.mode = mode;
-    this.ticksToStatModeUpdate = 4;
   }
 
   // ff44
   public getYCoordinateRegister() {
-    //console.log("reading LY", this.scanline.toString(16));
     return this.scanline;
   }
 
@@ -205,7 +198,6 @@ export class PPU {
   }
 
   public setLYCompareRegister(data: number) {
-    console.log("LYC = ", data.toString(16), this.getStatInterruptLine());
     this.lyCompareRegister = data;
   }
 
@@ -276,12 +268,12 @@ export class PPU {
     if (!this.isEnabled()) {
       this.statusRegister &= ~STAT_MODE_MASK;
       this.objBuffer.splice(0);
-      this.ticksToStatModeUpdate = 0;
       this.oam.unlock();
       this.vramReadLocked = false;
       return;
     }
 
+    this.checkStatRisingEdge();
     this.updateStatMode();
 
     switch (this.mode) {
@@ -300,26 +292,15 @@ export class PPU {
     }
 
     this.advanceDot();
-
-    if (this.scanline === this.lyCompareRegister) {
-      this.statusRegister = setBit(this.statusRegister, 2);
-    } else {
-      this.statusRegister = resetBit(this.statusRegister, 2);
-    }
-
-    this.checkStatRisingEdge();
+    this.updateStatLYC();
   }
 
   private updateStatMode() {
-    if (this.ticksToStatModeUpdate > 0) {
-      this.ticksToStatModeUpdate -= 1;
-
-      if (this.ticksToStatModeUpdate === 0) {
-        this.statusRegister &= ~STAT_MODE_MASK;
-        this.statusRegister |= this.mode;
-      }
-    }
+    this.statusRegister &= ~STAT_MODE_MASK;
+    this.statusRegister |= this.mode;
   }
+
+  private isTestLine = false;
 
   private oamScanTick() {
     if (this.dot % TICKS_PER_OAM_ENTRY === 0) {
@@ -330,9 +311,7 @@ export class PPU {
     }
   }
 
-  private getOAMScanTicks() {
-    return this.isOnLine ? OAM_SCAN_TICKS - 4 : OAM_SCAN_TICKS;
-  }
+  private objPenalty = 0;
 
   private checkOAMEntry(entryIndex: number) {
     if (this.objBuffer.length === 10) {
@@ -349,6 +328,8 @@ export class PPU {
       return;
     }
 
+    this.objPenalty = 0;
+    this.aaa = entry.xPosition;
     this.objBuffer.push(entry);
   }
 
@@ -357,17 +338,27 @@ export class PPU {
   private drawingTick() {
     if (this.dot === this.getOAMScanTicks()) {
       this.obj = this.objBuffer.length;
-      this.bgQueue = [];
+      this.bgQueue = [
+        { color: 0, palette: 0 },
+        { color: 0, palette: 0 },
+        { color: 0, palette: 0 },
+        { color: 0, palette: 0 },
+        { color: 0, palette: 0 },
+        { color: 0, palette: 0 },
+        { color: 0, palette: 0 },
+        { color: 0, palette: 0 },
+      ];
       this.objQueue = [];
       this.bgXPosition = 0;
       this.inWindow = false;
-      this.xPosition = 0;
+      this.xPosition = -8;
       this.bgXSkip = this.viewportX % 8;
       this.bgFetcher.step = 0;
       this.bgFetcher.busy = false;
-      this.bgFetcher.ready = false;
-      this.objFetcher.busy = null;
-      this.objFetcher.ready = null;
+      this.bgFetcher.ready = [];
+      this.objFetcher.busy = false;
+      this.objFetcher.current = null;
+      this.objFetcher.ready = [];
       this.objFetcher.step = 0;
       this.oam.lock();
       this.vramReadLocked = true;
@@ -383,30 +374,52 @@ export class PPU {
       ) {
         this.windowTriggered = true;
       }
-    } else if (this.dot >= this.getOAMScanTicks() + 6) {
-      this.bgFetcherTick();
-      this.objFetcherTick();
+    }
 
-      if (this.objFetcher.busy) {
-        return;
+    if (this.dot >= this.getOAMScanTicks() + 4) {
+      let success = false;
+
+      if (this.objFetcher.current == null) {
+        this.objFetcher.current = this.getCurrentObject(this.xPosition);
       }
 
-      if (this.isObjEnabled()) {
-        this.objFetcher.busy = this.getCurrentObject(this.xPosition);
-        if (this.objFetcher.busy != null) {
-          return;
+      if (!this.objFetcher.busy && !this.objFetcher.current) {
+        if (this.bgQueue.length !== 0) {
+          const bgPixel = this.bgQueue.shift()!;
+
+          if (this.bgXSkip > 0) {
+            this.bgXSkip -= 1;
+          } else {
+            const objPixel = this.objQueue.shift();
+
+            let mergedPixel = 0x00000000;
+
+            if (objPixel && objPixel.color != 0) {
+              if (objPixel.bgPriority && bgPixel.color !== 0) {
+                mergedPixel = this.getPaletteColor(
+                  this.bgPalette,
+                  bgPixel.color
+                );
+              } else {
+                mergedPixel = this.getPaletteColor(
+                  objPixel.palette,
+                  objPixel.color
+                );
+              }
+            } else {
+              mergedPixel = this.getPaletteColor(this.bgPalette, bgPixel.color);
+            }
+
+            if (this.xPosition >= 0) {
+              this.lcd.setPixel(this.xPosition, this.scanline, mergedPixel);
+            }
+            success = true;
+          }
         }
       }
 
-      const bgPixel = this.bgQueue.shift();
-      if (bgPixel == null) {
-        return;
-      }
-
-      if (this.bgXSkip > 0) {
-        this.bgXSkip -= 1;
-        return;
-      }
+      this.bgFetcherTick();
+      this.objFetcherTick();
 
       if (
         this.windowTriggered &&
@@ -418,61 +431,71 @@ export class PPU {
         this.bgQueue.splice(0);
         this.bgFetcher.step = 0;
         this.bgFetcher.busy = false;
-        this.bgFetcher.ready = false;
+        this.bgFetcher.ready = [];
         return;
       }
 
-      const objPixel = this.objQueue.shift();
+      if (success) {
+        this.xPosition++;
+        this.objFetcher.current = null;
 
-      let mergedPixel = 0x00000000;
+        if (this.xPosition === LCD_WIDTH) {
+          this.objBuffer.splice(0);
 
-      if (objPixel && objPixel.color != 0) {
-        if (objPixel.bgPriority && bgPixel.color !== 0) {
-          mergedPixel = this.getPaletteColor(this.bgPalette, bgPixel.color);
-        } else {
-          mergedPixel = this.getPaletteColor(objPixel.palette, objPixel.color);
+          // if (this.last !== this.dot + 1 || this.obj >= 10) {
+          //   if (this.obj) {
+          //     console.log(
+          //       "HBlank at ",
+          //       this.dot + 1,
+          //       "# objs = ",
+          //       this.obj,
+          //       ", x = ",
+          //       this.aaa,
+          //       ", penalty = ",
+          //       this.dot +
+          //         1 -
+          //         (this.getOAMScanTicks() + 172) -
+          //         (this.obj - 1) * 6
+          //     );
+          //   }
+          //   this.last = this.dot + 1;
+
+          //throw new Error("a");
+          // }
+
+          if (this.windowTriggered) {
+            this.windowLineCounter++;
+          }
+
+          this.setMode(PPUMode.HBlank);
         }
-      } else {
-        mergedPixel = this.getPaletteColor(this.bgPalette, bgPixel.color);
-      }
-
-      this.lcd.setPixel(this.xPosition, this.scanline, mergedPixel);
-      this.xPosition++;
-
-      if (this.xPosition === LCD_WIDTH) {
-        this.objBuffer.splice(0);
-
-        if (this.last !== this.dot + 1) {
-          console.log("HBlank at ", this.dot + 1, "objs", this.obj);
-          this.last = this.dot + 1;
-        }
-
-        if (this.windowTriggered) {
-          this.windowLineCounter++;
-        }
-
-        this.setMode(PPUMode.HBlank);
       }
     }
   }
 
   private last = -1;
+  private lastObjects = -1;
   private obj = 0;
+  private aaa = 0;
 
   private bgFetcherTick() {
     if (this.bgFetcher.step === 0) {
       if (this.objFetcher.busy) {
         return;
       }
+
       this.bgFetcher.busy = true;
     }
+
+    let pos = (256 + this.bgXPosition) % 256;
 
     switch (this.bgFetcher.step) {
       case 0:
         this.bgFetcher.tileNo = this.inWindow
-          ? this.fetchWindowTileNo(this.bgXPosition, this.windowLineCounter)
-          : this.fetchBackgroundTileNo(this.bgXPosition, this.scanline);
+          ? this.fetchWindowTileNo(pos, this.windowLineCounter)
+          : this.fetchBackgroundTileNo(pos, this.scanline);
         break;
+
       case 2:
         this.bgFetcher.dataLow = this.inWindow
           ? this.fetchWindowTileDataLow(
@@ -484,6 +507,7 @@ export class PPU {
               this.scanline
             );
         break;
+
       case 4:
         this.bgFetcher.dataHigh = this.inWindow
           ? this.fetchWindowTileDataHigh(
@@ -494,39 +518,41 @@ export class PPU {
               this.bgFetcher.tileNo,
               this.scanline
             );
-        break;
-      case 6:
-        this.bgFetcher.busy = false;
-        this.bgFetcher.ready = true;
-        break;
-    }
 
-    if (this.bgFetcher.ready) {
-      if (this.bgQueue.length === 0) {
+        this.bgFetcher.ready = [];
+
         for (let x = 0; x < 8; x++) {
+          let pos = (256 + this.bgXPosition) % 256;
+
           if (this.isBGAndWindowEnabled()) {
-            const lsb =
-              (this.bgFetcher.dataLow >> (7 - (this.bgXPosition % 8))) & 0x1;
-            const msb =
-              (this.bgFetcher.dataHigh >> (7 - (this.bgXPosition % 8))) & 0x1;
+            const lsb = (this.bgFetcher.dataLow >> (7 - (pos % 8))) & 0x1;
+            const msb = (this.bgFetcher.dataHigh >> (7 - (pos % 8))) & 0x1;
 
             const color = (msb << 1) | lsb;
 
-            this.bgQueue.push({ color, palette: this.bgPalette });
+            this.bgFetcher.ready.push({ color, palette: this.bgPalette });
           } else {
-            this.bgQueue.push({ color: 0, palette: this.bgPalette });
+            this.bgFetcher.ready.push({ color: 0, palette: this.bgPalette });
           }
 
           this.bgXPosition++;
         }
-        this.bgFetcher.ready = false;
-      }
+        break;
+
+      case 5:
+        this.bgFetcher.busy = false;
+
+        if (this.bgQueue.length === 0) {
+          for (let x = 0; x < 8; x++) {
+            this.bgQueue.push(this.bgFetcher.ready.shift()!);
+          }
+
+          this.bgFetcher.step = 0;
+        }
+        return;
     }
 
     this.bgFetcher.step += 1;
-    if (this.bgFetcher.step >= 8 && !this.bgFetcher.ready) {
-      this.bgFetcher.step = 0;
-    }
   }
 
   private fetchWindowTileNo(x: number, y: number) {
@@ -580,63 +606,77 @@ export class PPU {
 
   private objFetcherTick() {
     if (this.objFetcher.step === 0) {
-      if (this.objFetcher.busy == null || this.bgFetcher.busy) {
+      if (this.objFetcher.current == null || this.bgFetcher.busy) {
         return;
       }
+
+      this.objFetcher.busy = true;
     }
 
     switch (this.objFetcher.step) {
       case 0:
-        this.objFetcher.tileNo = this.fetchObjectTileNo(this.objFetcher.busy!);
+        this.objFetcher.tileNo = this.fetchObjectTileNo(
+          this.objFetcher.current!
+        );
         break;
       case 2:
         this.objFetcher.dataLow = this.fetchObjectTileDataLow(
-          this.objFetcher.busy!,
+          this.objFetcher.current!,
           this.objFetcher.tileNo
         );
         break;
       case 4:
         this.objFetcher.dataHigh = this.fetchObjectTileDataHigh(
-          this.objFetcher.busy!,
+          this.objFetcher.current!,
           this.objFetcher.tileNo
         );
+
         break;
-      case 6:
-        this.objFetcher.ready = this.objFetcher.busy;
-        this.objFetcher.busy = null;
-        break;
-    }
 
-    if (this.objFetcher.ready) {
-      const firstIdx = this.xPosition - (this.objFetcher.ready.xPosition - 8);
-      for (let j = firstIdx; j < 8; j++) {
-        const color = this.fetchObjectColor(
-          this.objFetcher.ready,
-          this.objFetcher.dataLow,
-          this.objFetcher.dataHigh,
-          j
-        );
+      case 5:
+        const start = this.xPosition - this.objFetcher.current!.xPosition + 8;
 
-        const pixel = {
-          color,
-          bgPriority: testBit(this.objFetcher.ready.attributes, 7),
-          palette: testBit(this.objFetcher.ready.attributes, 4)
-            ? this.objPalette1
-            : this.objPalette0,
-        };
+        for (let j = start; j < 8; j++) {
+          const color = this.fetchObjectColor(
+            this.objFetcher.current!,
+            this.objFetcher.dataLow,
+            this.objFetcher.dataHigh,
+            j
+          );
 
-        const oldPixel = this.objQueue[j - firstIdx];
-        if (oldPixel == null || oldPixel?.color === 0) {
-          this.objQueue[j - firstIdx] = pixel;
+          const pixel = {
+            color,
+            bgPriority: testBit(this.objFetcher.current!.attributes, 7),
+            palette: testBit(this.objFetcher.current!.attributes, 4)
+              ? this.objPalette1
+              : this.objPalette0,
+          };
+
+          const oldPixel = this.objFetcher.ready[j - start];
+          if (oldPixel == null || oldPixel?.color === 0) {
+            this.objFetcher.ready[j - start] = pixel;
+          }
         }
-      }
-      this.objFetcher.ready = null;
+
+        this.objFetcher.current = this.getCurrentObject(this.xPosition);
+        if (this.objFetcher.current == null) {
+          for (let j = 0; j < this.objFetcher.ready.length; j++) {
+            const pixel = this.objFetcher.ready[j];
+            const oldPixel = this.objQueue[j];
+            if (oldPixel == null || oldPixel?.color === 0) {
+              this.objQueue[j] = pixel;
+            }
+          }
+
+          this.objFetcher.ready = [];
+          this.objFetcher.busy = false;
+        }
+
+        this.objFetcher.step = 0;
+        return;
     }
 
     this.objFetcher.step += 1;
-    if (this.objFetcher.step >= 8 && !this.objFetcher.ready) {
-      this.objFetcher.step = 0;
-    }
   }
 
   private fetchObjectTileNo(obj: OAMEntry) {
@@ -699,6 +739,10 @@ export class PPU {
   }
 
   private getCurrentObject(x: number) {
+    if (!this.isObjEnabled()) {
+      return null;
+    }
+
     const objHeight = this.getObjHeight();
     let minObj: OAMEntry | null = null;
 
@@ -708,7 +752,6 @@ export class PPU {
 
       if (
         x < objX ||
-        //x >= objX + 8 ||
         this.scanline < objY ||
         this.scanline >= objY + objHeight
       ) {
@@ -732,6 +775,12 @@ export class PPU {
   }
 
   private hBlankTick() {
+    // if (this.isTestLine && this.dot < 316) {
+    //   throw new Error("Babbbaaa");
+    // }
+
+    this.isTestLine = false;
+
     if (this.dot === this.getOAMScanTicks() - 1) {
       this.setMode(PPUMode.Drawing);
       return;
@@ -747,6 +796,7 @@ export class PPU {
     if (this.dot === this.getDotsPerScnaline() - 1) {
       if (this.scanline < LCD_HEIGHT - 1) {
         this.setMode(PPUMode.OAMScan);
+        this.objPenalty = 0;
         this.oam.lock();
       } else {
         this.setMode(PPUMode.VBlank);
@@ -754,8 +804,12 @@ export class PPU {
     }
   }
 
+  private getOAMScanTicks() {
+    return this.isFirstLineAfterEnable ? OAM_SCAN_TICKS - 4 : OAM_SCAN_TICKS;
+  }
+
   private vBlankTick() {
-    if (this.dot === 0 && this.scanline === LCD_HEIGHT) {
+    if (this.dot === 4 && this.scanline === LCD_HEIGHT) {
       this.onVBlank();
       this.lcd.render();
     } else if (
@@ -764,6 +818,7 @@ export class PPU {
     ) {
       this.setMode(PPUMode.OAMScan);
       this.oam.lock();
+      this.objPenalty = 0;
       this.windowLineCounter = 0;
     }
   }
@@ -772,8 +827,22 @@ export class PPU {
     this.dot = (this.dot + 1) % this.getDotsPerScnaline();
 
     if (this.dot === 0) {
-      this.isOnLine = false;
+      this.isFirstLineAfterEnable = false;
       this.advanceScanline();
+    }
+  }
+
+  private getDotsPerScnaline() {
+    return this.isFirstLineAfterEnable
+      ? DOTS_PER_SCANLINE - 4
+      : DOTS_PER_SCANLINE;
+  }
+
+  private updateStatLYC() {
+    if (this.scanline === this.lyCompareRegister && this.dot !== 0) {
+      this.statusRegister = setBit(this.statusRegister, 2);
+    } else {
+      this.statusRegister = resetBit(this.statusRegister, 2);
     }
   }
 
@@ -785,7 +854,6 @@ export class PPU {
     const newLine = this.getStatInterruptLine();
 
     if (!this.statInterruptLine && newLine) {
-      //console.log("Reuqest IRQ");
       this.onStat();
     }
 
