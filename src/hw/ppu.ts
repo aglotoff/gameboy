@@ -43,6 +43,9 @@ const STAT_SOURCE_MASK = 0b1111000;
 const STAT_MODE_MASK = 0x3;
 
 export class PPU {
+  private ticks = 0;
+  private lastStat = 0;
+
   private vram = new Uint8Array(VRAM_SIZE);
 
   // Registers
@@ -270,6 +273,8 @@ export class PPU {
       this.objBuffer.splice(0);
       this.oam.unlock();
       this.vramReadLocked = false;
+      this.ticks = this.ticks + (1 % 1000000);
+      this.lastStat = this.ticks;
       return;
     }
 
@@ -293,6 +298,8 @@ export class PPU {
 
     this.advanceDot();
     this.updateStatLYC();
+
+    this.ticks = this.ticks + (1 % 10000000);
   }
 
   private updateStatMode() {
@@ -332,8 +339,6 @@ export class PPU {
     this.aaa = entry.xPosition;
     this.objBuffer.push(entry);
   }
-
-  // private last = -4;
 
   private drawingTick() {
     if (this.dot === this.getOAMScanTicks()) {
@@ -442,26 +447,37 @@ export class PPU {
         if (this.xPosition === LCD_WIDTH) {
           this.objBuffer.splice(0);
 
-          // if (this.last !== this.dot + 1 || this.obj >= 10) {
-          //   if (this.obj) {
-          //     console.log(
-          //       "HBlank at ",
-          //       this.dot + 1,
-          //       "# objs = ",
-          //       this.obj,
-          //       ", x = ",
-          //       this.aaa,
-          //       ", penalty = ",
-          //       this.dot +
-          //         1 -
-          //         (this.getOAMScanTicks() + 172) -
-          //         (this.obj - 1) * 6
-          //     );
-          //   }
-          //   this.last = this.dot + 1;
+          const hblank = this.dot + 1;
 
-          //throw new Error("a");
-          // }
+          if (
+            this.lastHBlank !== hblank ||
+            (this.obj > 0 && this.obj !== this.lastObj) ||
+            this.aaa !== this.lastPos
+          ) {
+            this.lastHBlank = hblank;
+            this.lastObj = this.obj;
+            this.lastPos = this.aaa;
+
+            if (this.obj && this.isObjEnabled()) {
+              const pTick = Math.floor(this.lastStat / 4) + 1;
+              const tick = Math.floor((this.ticks + 1) / 4) + 1;
+
+              console.log(
+                "HBlank at ",
+                //this.dot + 1,
+                tick - pTick - 63,
+                "# objs = ",
+                this.obj,
+                ", (",
+                this.aaa,
+                ") penalty = ",
+                this.dot +
+                  1 -
+                  (this.getOAMScanTicks() + 172) -
+                  (this.obj - 1) * 6
+              );
+            }
+          }
 
           if (this.windowTriggered) {
             this.windowLineCounter++;
@@ -473,8 +489,9 @@ export class PPU {
     }
   }
 
-  private last = -1;
-  private lastObjects = -1;
+  private lastHBlank = -1;
+  private lastObj = -1;
+  private lastPos = -1;
   private obj = 0;
   private aaa = 0;
 
@@ -854,6 +871,7 @@ export class PPU {
     const newLine = this.getStatInterruptLine();
 
     if (!this.statInterruptLine && newLine) {
+      this.lastStat = this.ticks;
       this.onStat();
     }
 

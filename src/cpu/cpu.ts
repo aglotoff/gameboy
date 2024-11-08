@@ -76,12 +76,12 @@ export class Cpu extends CpuState {
   private handleInterrupt() {
     this.setInterruptMasterEnable(false);
 
-    console.log(
-      "handle IRQ"
-      //this.ppu.dot / 4,
-      //"till LY++:",
-      //(456 - this.ppu.dot) / 4
-    );
+    // console.log(
+    //   "handle IRQ"
+    //   //this.ppu.dot / 4,
+    //   //"till LY++:",
+    //   //(456 - this.ppu.dot) / 4
+    // );
 
     this.cycle();
 
