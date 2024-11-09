@@ -43,9 +43,6 @@ const STAT_SOURCE_MASK = 0b1111000;
 const STAT_MODE_MASK = 0x3;
 
 export class PPU {
-  private ticks = 0;
-  private lastStat = 0;
-
   private vram = new Uint8Array(VRAM_SIZE);
 
   // Registers
@@ -125,8 +122,6 @@ export class PPU {
   }
 
   public setControlRegister(value: number) {
-    // console.log("LCDC = ", value.toString(16), this.getStatInterruptLine());
-
     const wasDisabled = !this.isEnabled();
 
     this.controlRegister = value;
@@ -173,34 +168,33 @@ export class PPU {
 
   // ff41
   public getStatusRegister() {
-    //console.log("STAT is", this.statusRegister.toString(16));
     return 0x80 | this.statusRegister;
   }
 
   // TODO: IRQs
   public setStatusRegister(data: number) {
-    // if (data === 0b100000) {
-    //   console.log("SET STAT");
-    // }
-
     this.statusRegister &= ~STAT_SOURCE_MASK;
     this.statusRegister |= data & STAT_SOURCE_MASK;
   }
 
-  private getStatusMode() {
-    return this.statusRegister & STAT_MODE_MASK;
-  }
-
   private statModeDelay = 0;
+  private irqModeDelay = 0;
+  private irqMode = 0;
 
-  private setMode(mode: PPUMode, delay = 4) {
+  private setMode(mode: PPUMode, statModeDelay = 4, irqModeDelay = 4) {
     this.mode = mode;
 
-    if (delay === 0) {
+    if (statModeDelay === 0) {
       this.statusRegister &= ~STAT_MODE_MASK;
       this.statusRegister |= mode;
     } else {
-      this.statModeDelay = delay;
+      this.statModeDelay = statModeDelay;
+    }
+
+    if (irqModeDelay === 0) {
+      this.irqMode = mode;
+    } else {
+      this.irqModeDelay = irqModeDelay;
     }
   }
 
@@ -287,8 +281,6 @@ export class PPU {
       this.objBuffer.splice(0);
       this.oam.unlock();
       this.vramReadLocked = false;
-      this.ticks = this.ticks + (1 % 1000000);
-      this.lastStat = this.ticks;
       return;
     }
 
@@ -312,8 +304,6 @@ export class PPU {
 
     this.advanceDot();
     this.updateStatLYC();
-
-    this.ticks = this.ticks + (1 % 10000000);
   }
 
   private updateStatMode() {
@@ -324,9 +314,14 @@ export class PPU {
         this.statusRegister |= this.mode;
       }
     }
-  }
 
-  private isTestLine = false;
+    if (this.irqModeDelay > 0) {
+      this.irqModeDelay -= 1;
+      if (this.irqModeDelay === 0) {
+        this.irqMode = this.mode;
+      }
+    }
+  }
 
   private oamScanTick() {
     if (this.dot % TICKS_PER_OAM_ENTRY === 0) {
@@ -336,8 +331,6 @@ export class PPU {
       this.vramReadLocked = true;
     }
   }
-
-  private objPenalty = 0;
 
   private checkOAMEntry(entryIndex: number) {
     if (this.objBuffer.length === 10) {
@@ -354,14 +347,11 @@ export class PPU {
       return;
     }
 
-    this.objPenalty = 0;
-    this.aaa = entry.xPosition;
     this.objBuffer.push(entry);
   }
 
   private drawingTick() {
     if (this.dot === this.getOAMScanTicks()) {
-      this.obj = this.objBuffer.length;
       this.bgQueue = [
         { color: 0, palette: 0 },
         { color: 0, palette: 0 },
@@ -466,56 +456,15 @@ export class PPU {
         if (this.xPosition === LCD_WIDTH) {
           this.objBuffer.splice(0);
 
-          const hblank = this.dot + 1;
-
-          if (
-            this.lastHBlank !== hblank ||
-            (this.obj > 0 && this.obj !== this.lastObj) ||
-            this.aaa !== this.lastPos
-          ) {
-            this.lastHBlank = hblank;
-            this.lastObj = this.obj;
-            this.lastPos = this.aaa;
-
-            if (this.obj && this.isObjEnabled()) {
-              // const pTick = Math.floor(this.lastStat / 4) + 1;
-              // const tick = Math.floor((this.ticks + 1) / 4) + 1;
-              // console.log(
-              //   "HBlank at ",
-              //   //this.dot + 1,
-              //   tick - pTick - 63,
-              //   "# objs = ",
-              //   this.obj,
-              //   ", (",
-              //   this.aaa,
-              //   ") penalty = ",
-              //   this.dot +
-              //     1 -
-              //     (this.getOAMScanTicks() + 174) -
-              //     (this.obj - 1) * 6
-              // );
-            }
-          }
-
           if (this.windowTriggered) {
             this.windowLineCounter++;
           }
 
-          if (this.isObjEnabled() && this.obj > 0) {
-            this.setMode(PPUMode.HBlank, 1);
-          } else {
-            this.setMode(PPUMode.HBlank, 4);
-          }
+          this.setMode(PPUMode.HBlank, 1);
         }
       }
     }
   }
-
-  private lastHBlank = -1;
-  private lastObj = -1;
-  private lastPos = -1;
-  private obj = 0;
-  private aaa = 0;
 
   private bgFetcherTick() {
     if (this.bgFetcher.step === 0) {
@@ -814,12 +763,6 @@ export class PPU {
   }
 
   private hBlankTick() {
-    // if (this.isTestLine && this.dot < 316) {
-    //   throw new Error("Babbbaaa");
-    // }
-
-    this.isTestLine = false;
-
     if (this.dot === this.getOAMScanTicks() - 1) {
       this.setMode(PPUMode.Drawing);
       return;
@@ -835,7 +778,6 @@ export class PPU {
     if (this.dot === this.getDotsPerScnaline() - 1) {
       if (this.scanline < LCD_HEIGHT - 1) {
         this.setMode(PPUMode.OAMScan);
-        this.objPenalty = 0;
         this.oam.lock();
       } else {
         this.setMode(PPUMode.VBlank);
@@ -857,7 +799,6 @@ export class PPU {
     ) {
       this.setMode(PPUMode.OAMScan);
       this.oam.lock();
-      this.objPenalty = 0;
       this.windowLineCounter = 0;
     }
   }
@@ -893,7 +834,6 @@ export class PPU {
     const newLine = this.getStatInterruptLine();
 
     if (!this.statInterruptLine && newLine) {
-      this.lastStat = this.ticks;
       this.onStat();
     }
 
@@ -910,21 +850,21 @@ export class PPU {
 
     if (
       testBit(this.statusRegister, StatSource.Mode0) &&
-      this.getStatusMode() === PPUMode.HBlank
+      this.irqMode === PPUMode.HBlank
     ) {
       return true;
     }
 
     if (
       testBit(this.statusRegister, StatSource.Mode1) &&
-      this.getStatusMode() === PPUMode.VBlank
+      this.irqMode === PPUMode.VBlank
     ) {
       return true;
     }
 
     if (
       testBit(this.statusRegister, StatSource.Mode2) &&
-      (this.getStatusMode() === PPUMode.OAMScan ||
+      (this.irqMode === PPUMode.OAMScan ||
         (this.dot === 4 && this.scanline === LCD_HEIGHT))
     ) {
       return true;
