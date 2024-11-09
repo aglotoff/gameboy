@@ -173,11 +173,16 @@ export class PPU {
 
   // ff41
   public getStatusRegister() {
+    //console.log("STAT is", this.statusRegister.toString(16));
     return 0x80 | this.statusRegister;
   }
 
   // TODO: IRQs
   public setStatusRegister(data: number) {
+    // if (data === 0b100000) {
+    //   console.log("SET STAT");
+    // }
+
     this.statusRegister &= ~STAT_SOURCE_MASK;
     this.statusRegister |= data & STAT_SOURCE_MASK;
   }
@@ -186,8 +191,17 @@ export class PPU {
     return this.statusRegister & STAT_MODE_MASK;
   }
 
-  private setMode(mode: PPUMode) {
+  private statModeDelay = 0;
+
+  private setMode(mode: PPUMode, delay = 4) {
     this.mode = mode;
+
+    if (delay === 0) {
+      this.statusRegister &= ~STAT_MODE_MASK;
+      this.statusRegister |= mode;
+    } else {
+      this.statModeDelay = delay;
+    }
   }
 
   // ff44
@@ -278,8 +292,8 @@ export class PPU {
       return;
     }
 
-    this.checkStatRisingEdge();
     this.updateStatMode();
+    this.checkStatRisingEdge();
 
     switch (this.mode) {
       case PPUMode.OAMScan:
@@ -303,8 +317,13 @@ export class PPU {
   }
 
   private updateStatMode() {
-    this.statusRegister &= ~STAT_MODE_MASK;
-    this.statusRegister |= this.mode;
+    if (this.statModeDelay > 0) {
+      this.statModeDelay -= 1;
+      if (this.statModeDelay === 0) {
+        this.statusRegister &= ~STAT_MODE_MASK;
+        this.statusRegister |= this.mode;
+      }
+    }
   }
 
   private isTestLine = false;
@@ -459,23 +478,22 @@ export class PPU {
             this.lastPos = this.aaa;
 
             if (this.obj && this.isObjEnabled()) {
-              const pTick = Math.floor(this.lastStat / 4) + 1;
-              const tick = Math.floor((this.ticks + 1) / 4) + 1;
-
-              console.log(
-                "HBlank at ",
-                //this.dot + 1,
-                tick - pTick - 63,
-                "# objs = ",
-                this.obj,
-                ", (",
-                this.aaa,
-                ") penalty = ",
-                this.dot +
-                  1 -
-                  (this.getOAMScanTicks() + 172) -
-                  (this.obj - 1) * 6
-              );
+              // const pTick = Math.floor(this.lastStat / 4) + 1;
+              // const tick = Math.floor((this.ticks + 1) / 4) + 1;
+              // console.log(
+              //   "HBlank at ",
+              //   //this.dot + 1,
+              //   tick - pTick - 63,
+              //   "# objs = ",
+              //   this.obj,
+              //   ", (",
+              //   this.aaa,
+              //   ") penalty = ",
+              //   this.dot +
+              //     1 -
+              //     (this.getOAMScanTicks() + 174) -
+              //     (this.obj - 1) * 6
+              // );
             }
           }
 
@@ -483,7 +501,11 @@ export class PPU {
             this.windowLineCounter++;
           }
 
-          this.setMode(PPUMode.HBlank);
+          if (this.isObjEnabled() && this.obj > 0) {
+            this.setMode(PPUMode.HBlank, 1);
+          } else {
+            this.setMode(PPUMode.HBlank, 4);
+          }
         }
       }
     }
