@@ -341,6 +341,8 @@ export class PPU {
 
       this.checkOAMEntry(entryIdx);
     } else if (this.dot === this.getOAMScanTicks() - 1) {
+      this.objBuffer.sort((o1, o2) => o1.xPosition - o2.xPosition);
+
       this.setMode(PPUMode.Drawing);
       this.vramReadLocked = true;
     }
@@ -353,7 +355,6 @@ export class PPU {
 
     const entry = this.oam.getEntry(entryIndex);
 
-    //const right = entry.xPosition - 1;
     const top = entry.yPosition - 16;
     const bottom = top + this.getObjHeight() - 1;
 
@@ -743,35 +744,15 @@ export class PPU {
   }
 
   private getCurrentObject(x: number) {
-    if (!this.isObjEnabled()) {
+    if (!this.isObjEnabled() || this.objBuffer.length === 0) {
       return null;
     }
 
-    const objHeight = this.getObjHeight();
-    let minObj: OAMEntry | null = null;
-
-    for (let obj of this.objBuffer) {
-      const objY = obj.yPosition - 16;
-      const objX = obj.xPosition - 8;
-
-      if (
-        x < objX ||
-        this.scanline < objY ||
-        this.scanline >= objY + objHeight
-      ) {
-        continue;
-      }
-
-      if (minObj === null || minObj.xPosition > obj.xPosition) {
-        minObj = obj;
-      }
+    if (this.objBuffer[0].xPosition - 8 > x) {
+      return null;
     }
 
-    if (minObj != null) {
-      this.objBuffer.splice(this.objBuffer.indexOf(minObj), 1);
-    }
-
-    return minObj;
+    return this.objBuffer.shift()!;
   }
 
   private getPaletteColor(p: number, id: number) {
@@ -794,11 +775,14 @@ export class PPU {
     this.oam.unlockWrite();
 
     if (this.dot === this.getDotsPerScnaline() - 1) {
-      if (this.scanline < LCD_HEIGHT - 1) {
+      this.isFirstLineAfterEnable = false;
+      this.advanceScanline();
+
+      if (this.scanline === LCD_HEIGHT) {
+        this.setMode(PPUMode.VBlank);
+      } else {
         this.setMode(PPUMode.OAMScan);
         this.oam.lockRead();
-      } else {
-        this.setMode(PPUMode.VBlank);
       }
     }
   }
@@ -811,23 +795,19 @@ export class PPU {
     if (this.dot === 4 && this.scanline === LCD_HEIGHT) {
       this.onVBlank();
       this.lcd.render();
-    } else if (
-      this.dot === DOTS_PER_SCANLINE - 1 &&
-      this.scanline === SCANLINES_PER_FRAME - 1
-    ) {
-      this.setMode(PPUMode.OAMScan);
-      this.oam.lockRead();
-      this.windowLineCounter = 0;
+    } else if (this.dot === this.getDotsPerScnaline() - 1) {
+      this.advanceScanline();
+
+      if (this.scanline === 0) {
+        this.setMode(PPUMode.OAMScan);
+        this.oam.lockRead();
+        this.windowLineCounter = 0;
+      }
     }
   }
 
   private advanceDot() {
     this.dot = (this.dot + 1) % this.getDotsPerScnaline();
-
-    if (this.dot === 0) {
-      this.isFirstLineAfterEnable = false;
-      this.advanceScanline();
-    }
   }
 
   private getDotsPerScnaline() {
