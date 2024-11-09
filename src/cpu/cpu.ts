@@ -3,7 +3,6 @@ import { getInstruction, getPrefixCBInstruction } from "./instructions";
 import { InterruptController } from "../hw/interrupt-controller";
 import { RegisterPair } from "./register";
 import { getLSB, getMSB, wrapDecrementWord } from "../utils";
-// import { PPU } from "../hw/ppu";
 
 export class Cpu extends CpuState {
   public constructor(

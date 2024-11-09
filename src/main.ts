@@ -146,10 +146,17 @@ window.addEventListener(
 
 let timeout = 0;
 
+let stepCount = 0;
+let minTime = Number.MAX_VALUE;
+let maxTime = Number.MIN_VALUE;
+let totalTime = 0;
+
 async function run({ cpu }: Emulator) {
   (fileSelector as HTMLInputElement).disabled = true;
 
   timeout = setInterval(() => {
+    const start = performance.now();
+
     cpu.resetCycle();
 
     while (cpu.getElapsedCycles() < 17477) {
@@ -161,9 +168,28 @@ async function run({ cpu }: Emulator) {
 
       cpu.step();
     }
+
+    const time = performance.now() - start;
+
+    minTime = Math.min(time, minTime);
+    maxTime = Math.max(time, maxTime);
+    totalTime += time;
+    stepCount += 1;
+
+    if (stepCount % 100 === 0) {
+      console.log(
+        `avg = ${format(totalTime / stepCount)}, min = ${format(
+          minTime
+        )}, max = ${format(maxTime)}`
+      );
+    }
   }, 16);
 
   //cpu.writeRegisterPair(RegisterPair.PC, 0x100);
+}
+
+function format(time: number) {
+  return time.toFixed(3);
 }
 
 async function readImage(file: File) {
