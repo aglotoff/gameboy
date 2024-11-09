@@ -36,7 +36,8 @@ export class OAM {
   private currentDMAIndex = 0;
   private nextDMASource = 0;
 
-  private locked = false;
+  private readLocked = false;
+  private writeLocked = false;
 
   private readCallback: DMAReadFn;
 
@@ -44,12 +45,20 @@ export class OAM {
     this.readCallback = readCallback;
   }
 
-  public lock() {
-    this.locked = true;
+  public lockRead() {
+    this.readLocked = true;
   }
 
-  public unlock() {
-    this.locked = false;
+  public unlockRead() {
+    this.readLocked = false;
+  }
+
+  public lockWrite() {
+    this.writeLocked = true;
+  }
+
+  public unlockWrite() {
+    this.writeLocked = false;
   }
 
   public isDMAInProgress() {
@@ -57,7 +66,7 @@ export class OAM {
   }
 
   public read(offset: number) {
-    return this.dmaInProgress || this.locked ? 0xff : this.data[offset];
+    return this.dmaInProgress || this.readLocked ? 0xff : this.data[offset];
   }
 
   public getEntry(index: number): OAMEntry {
@@ -70,7 +79,7 @@ export class OAM {
   }
 
   public write(offset: number, data: number) {
-    if (!this.dmaInProgress && !this.locked) {
+    if (!this.dmaInProgress && !this.writeLocked) {
       this.data[offset] = data;
     }
   }

@@ -132,8 +132,10 @@ export class PPU {
       this.mode = PPUMode.HBlank;
       this.statusRegister &= ~STAT_MODE_MASK;
       this.objBuffer.splice(0);
-      this.oam.unlock();
+      this.oam.unlockRead();
+      this.oam.unlockWrite();
       this.vramReadLocked = false;
+      this.vramWriteLocked = false;
       this.isFirstLineAfterEnable = true;
     }
   }
@@ -279,8 +281,10 @@ export class PPU {
     if (!this.isEnabled()) {
       this.statusRegister &= ~STAT_MODE_MASK;
       this.objBuffer.splice(0);
-      this.oam.unlock();
+      this.oam.unlockRead();
+      this.oam.unlockWrite();
       this.vramReadLocked = false;
+      this.vramWriteLocked = false;
       return;
     }
 
@@ -324,8 +328,18 @@ export class PPU {
   }
 
   private oamScanTick() {
+    if (this.dot === 0) {
+      this.oam.lockWrite();
+    }
+
     if (this.dot % TICKS_PER_OAM_ENTRY === 0) {
-      this.checkOAMEntry(this.dot / TICKS_PER_OAM_ENTRY);
+      const entryIdx = this.dot / TICKS_PER_OAM_ENTRY;
+
+      if (entryIdx === 38) {
+        this.oam.unlockWrite();
+      }
+
+      this.checkOAMEntry(entryIdx);
     } else if (this.dot === this.getOAMScanTicks() - 1) {
       this.setMode(PPUMode.Drawing);
       this.vramReadLocked = true;
@@ -374,8 +388,10 @@ export class PPU {
       this.objFetcher.current = null;
       this.objFetcher.ready = [];
       this.objFetcher.step = 0;
-      this.oam.lock();
+      this.oam.lockRead();
+      this.oam.lockWrite();
       this.vramReadLocked = true;
+      this.vramWriteLocked = true;
 
       this.windowTriggered = false;
 
@@ -773,12 +789,14 @@ export class PPU {
     }
 
     this.vramReadLocked = false;
-    this.oam.unlock();
+    this.vramWriteLocked = false;
+    this.oam.unlockRead();
+    this.oam.unlockWrite();
 
     if (this.dot === this.getDotsPerScnaline() - 1) {
       if (this.scanline < LCD_HEIGHT - 1) {
         this.setMode(PPUMode.OAMScan);
-        this.oam.lock();
+        this.oam.lockRead();
       } else {
         this.setMode(PPUMode.VBlank);
       }
@@ -798,7 +816,7 @@ export class PPU {
       this.scanline === SCANLINES_PER_FRAME - 1
     ) {
       this.setMode(PPUMode.OAMScan);
-      this.oam.lock();
+      this.oam.lockRead();
       this.windowLineCounter = 0;
     }
   }
