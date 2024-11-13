@@ -5,6 +5,7 @@ import { IBus } from "./cpu";
 import { OAM } from "./hw/oam";
 import { MBC } from "./cartridge";
 import { Joypad } from "./hw/joypad";
+import { APU, APURegister } from "./hw/apu";
 
 let buf = "";
 
@@ -87,7 +88,8 @@ export class Memory implements IBus {
     private timer: Timer,
     private mbc: MBC,
     private oam: OAM,
-    private joypad: Joypad
+    private joypad: Joypad,
+    private apu?: APU
   ) {}
 
   public readDMA(address: number) {
@@ -178,6 +180,28 @@ export class Memory implements IBus {
           return this.interruptController.getFlagRegister();
         case HWRegister.IE:
           return this.interruptController.getEnableRegister();
+
+        case HWRegister.NR11:
+          return this.apu?.readRegister(APURegister.NR11) ?? 0xff;
+        case HWRegister.NR12:
+          return this.apu?.readRegister(APURegister.NR12) ?? 0xff;
+        case HWRegister.NR13:
+          return this.apu?.readRegister(APURegister.NR13) ?? 0xff;
+        case HWRegister.NR14:
+          return this.apu?.readRegister(APURegister.NR14) ?? 0xff;
+        case HWRegister.NR21:
+          return this.apu?.readRegister(APURegister.NR21) ?? 0xff;
+        case HWRegister.NR22:
+          return this.apu?.readRegister(APURegister.NR22) ?? 0xff;
+        case HWRegister.NR23:
+          return this.apu?.readRegister(APURegister.NR23) ?? 0xff;
+        case HWRegister.NR24:
+          return this.apu?.readRegister(APURegister.NR24) ?? 0xff;
+        case HWRegister.NR51:
+          return this.apu?.getSoundPanning() ?? 0xff;
+        case HWRegister.NR52:
+          return this.apu?.getAudioMasterControl() ?? 0xff;
+
         default:
           //console.log("READ", address.toString(16));
           return 0xff;
@@ -280,15 +304,45 @@ export class Memory implements IBus {
           return this.interruptController.setFlagRegister(data);
         case HWRegister.IE:
           return this.interruptController.setEnableRegister(data);
-        case HWRegister.NR10:
+
         case HWRegister.NR11:
+          this.apu?.writeRegister(APURegister.NR11, data);
+          break;
         case HWRegister.NR12:
+          this.apu?.writeRegister(APURegister.NR12, data);
+          break;
         case HWRegister.NR13:
+          this.apu?.writeRegister(APURegister.NR13, data);
+          break;
         case HWRegister.NR14:
+          this.apu?.writeRegister(APURegister.NR14, data);
+          break;
         case HWRegister.NR21:
+          this.apu?.writeRegister(APURegister.NR21, data);
+          break;
         case HWRegister.NR22:
+          this.apu?.writeRegister(APURegister.NR22, data);
+          break;
         case HWRegister.NR23:
+          this.apu?.writeRegister(APURegister.NR23, data);
+          break;
         case HWRegister.NR24:
+          this.apu?.writeRegister(APURegister.NR24, data);
+          break;
+        case HWRegister.NR51:
+          this.apu?.setSoundPanning(data);
+          break;
+        case HWRegister.NR52:
+          this.apu?.setAudioMasterControl(data);
+          break;
+
+        case HWRegister.NR10:
+          console.log("Sweeep = ", data.toString(16));
+          break;
+        case HWRegister.NR50:
+          console.log("NR50 = ", data.toString(16));
+          break;
+
         case HWRegister.NR30:
         case HWRegister.NR31:
         case HWRegister.NR32:
@@ -298,9 +352,7 @@ export class Memory implements IBus {
         case HWRegister.NR42:
         case HWRegister.NR43:
         case HWRegister.NR44:
-        case HWRegister.NR50:
-        case HWRegister.NR51:
-        case HWRegister.NR52:
+
         case 0xff15:
         case 0xff1f:
           // TODO
@@ -310,6 +362,7 @@ export class Memory implements IBus {
             this.bootROMDisabled = true;
           }
           break;
+
         default:
           //console.log("WRITE", address.toString(16));
           break;

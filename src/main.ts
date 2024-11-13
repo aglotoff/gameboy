@@ -9,6 +9,7 @@ import { ActionButton, DirectionButton, Joypad } from "./hw/joypad";
 
 import "./style.css";
 import { LCD } from "./hw/lcd";
+import { APU } from "./hw/apu";
 
 const canvas = document.createElement("canvas");
 canvas.width = 160 * 2;
@@ -159,7 +160,7 @@ async function run({ cpu }: Emulator) {
 
     cpu.resetCycle();
 
-    while (cpu.getElapsedCycles() < 17477) {
+    while (cpu.getElapsedCycles() <= 17477) {
       if (cpu.isStopped()) {
         clearInterval(timeout);
         console.log("STOPPED");
@@ -184,8 +185,6 @@ async function run({ cpu }: Emulator) {
       );
     }
   }, 16);
-
-  //cpu.writeRegisterPair(RegisterPair.PC, 0x100);
 }
 
 function format(time: number) {
@@ -224,13 +223,16 @@ async function readImage(file: File) {
     interruptController.requestInterrupt(InterruptSource.Timer);
   });
 
+  const apu = new APU(timer);
+
   const memory = new Memory(
     ppu,
     interruptController,
     timer,
     cartridge.getMBC(),
     oam,
-    joypad
+    joypad,
+    apu
   );
 
   const cpu = new Cpu(memory, interruptController, () => {
@@ -238,6 +240,7 @@ async function readImage(file: File) {
       oam.tick();
       timer.tick();
       ppu.tick();
+      apu.tick();
     }
   });
 

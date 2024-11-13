@@ -5,7 +5,11 @@ import {
   wrapIncrementWord,
 } from "../utils";
 
-export class Timer {
+export interface IDivider {
+  getDividerRegister(): number;
+}
+
+export class Timer implements IDivider {
   private divider = 0;
   private ticksToReload = 0;
   private counterRegister = 0;
