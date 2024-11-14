@@ -9,8 +9,18 @@
   <body>
     <div id="app">
 
-      <input type="file" id="file-selector" multiple>
+      <input type="file" id="file-selector" style="display: none" required>
+      <button id="file-btn" onclick="document.getElementById('file-selector').click()">Upload a ROM file</button>
+
+      <div class="help">
+        <p><b>Enter</b> - Start</p>
+        <p><b>Space</b> - Select</p>
+        <p><b>Z, X</b> - Actions</p>
+        <p><b>Arrows</b> - Movement</p>
+      </div>
     </div>
+
+    
     
     <script type="module" src="/src/main.ts"></script>
   </body>

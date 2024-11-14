@@ -24,8 +24,6 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
 }
@@ -43,7 +41,6 @@ h1 {
   flex-direction: column;
   align-items: center;
   padding: 4rem;
-  height: 100vh;
 }
 
 .logo {
@@ -97,4 +94,17 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+.help {
+  margin-top: 2rem;
+  width: 320px;
+}
+
+.help p {
+  margin: 0.25rem 0;
+}
+
+#file-selector:disabled ~ button {
+  display: none;
 }
