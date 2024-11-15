@@ -61,6 +61,7 @@ export class Timer implements IDivider {
 
   public setControlRegister(data: number) {
     this.controlRegister = data & 0x7;
+    this.checkFallingEdge();
   }
 
   public tick() {
@@ -78,6 +79,10 @@ export class Timer implements IDivider {
       }
     }
 
+    this.checkFallingEdge();
+  }
+
+  private checkFallingEdge() {
     const isFallingEdge = this.tickBitHigh && !this.testTickBit();
 
     if (isFallingEdge) {
