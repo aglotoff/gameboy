@@ -2,7 +2,7 @@ import { CpuState, IBus } from "./cpu-state";
 import { getInstruction, getPrefixCBInstruction } from "./instructions";
 import { InterruptController } from "../hw/interrupt-controller";
 import { RegisterPair } from "./register";
-import { getLSB, getMSB, wrapDecrementWord } from "../utils";
+import { getLSB, getMSB, wrappingDecrementWord } from "../utils";
 
 export class Cpu extends CpuState {
   public constructor(
@@ -78,12 +78,12 @@ export class Cpu extends CpuState {
     this.cycle();
 
     let sp = this.readRegisterPair(RegisterPair.SP);
-    sp = wrapDecrementWord(sp);
+    sp = wrappingDecrementWord(sp);
 
     this.cycle();
 
     this.writeBus(sp, getMSB(this.readRegisterPair(RegisterPair.PC)));
-    sp = wrapDecrementWord(sp);
+    sp = wrappingDecrementWord(sp);
 
     this.cycle();
 

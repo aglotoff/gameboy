@@ -3,8 +3,8 @@ import {
   getLSB,
   getMSB,
   makeWord,
-  wrapDecrementWord,
-  wrapIncrementWord,
+  wrappingDecrementWord,
+  wrappingIncrementWord,
 } from "../../utils";
 import { Flag, RegisterPair } from "../register";
 
@@ -134,11 +134,11 @@ export function checkCondition(state: CpuState, condition: Condition) {
 export function pushWord(state: CpuState, data: number) {
   let sp = state.readRegisterPair(RegisterPair.SP);
 
-  sp = wrapDecrementWord(sp);
+  sp = wrappingDecrementWord(sp);
   state.cycle();
 
   state.writeBus(sp, getMSB(data));
-  sp = wrapDecrementWord(sp);
+  sp = wrappingDecrementWord(sp);
   state.cycle();
 
   state.writeBus(sp, getLSB(data));
@@ -150,12 +150,12 @@ export function popWord(state: CpuState) {
   let sp = state.readRegisterPair(RegisterPair.SP);
 
   const lsb = state.readBus(sp);
-  sp = wrapIncrementWord(sp);
+  sp = wrappingIncrementWord(sp);
   state.writeRegisterPair(RegisterPair.SP, sp);
   state.cycle();
 
   const msb = state.readBus(sp);
-  sp = wrapIncrementWord(sp);
+  sp = wrappingIncrementWord(sp);
   state.writeRegisterPair(RegisterPair.SP, sp);
   state.cycle();
 

@@ -1,5 +1,5 @@
 import { Flag, Register, RegisterFile, RegisterPair } from "./register";
-import { wrapIncrementWord } from "../utils";
+import { wrappingIncrementWord } from "../utils";
 
 export interface IBus {
   read(address: number): number;
@@ -114,7 +114,7 @@ export class CpuState {
     const data = this.readBus(pc);
     this.cycle();
 
-    this.writeRegisterPair(RegisterPair.PC, wrapIncrementWord(pc));
+    this.writeRegisterPair(RegisterPair.PC, wrappingIncrementWord(pc));
     return data;
   }
 
@@ -125,7 +125,7 @@ export class CpuState {
 
   public advancePC() {
     let pc = this.readRegisterPair(RegisterPair.PC);
-    this.writeRegisterPair(RegisterPair.PC, wrapIncrementWord(pc));
+    this.writeRegisterPair(RegisterPair.PC, wrappingIncrementWord(pc));
 
     if (this.imeNext) {
       this.setInterruptMasterEnable(true);

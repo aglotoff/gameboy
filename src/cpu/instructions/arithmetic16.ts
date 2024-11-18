@@ -1,5 +1,5 @@
 import { RegisterPair, Flag } from "../register";
-import { wrapIncrementWord } from "../../utils";
+import { wrappingIncrementWord } from "../../utils";
 import {
   addSignedByteToWord,
   addWords,
@@ -8,7 +8,10 @@ import {
 } from "./lib";
 
 export const incrementRegisterPair = instruction(function (pair: RegisterPair) {
-  this.writeRegisterPair(pair, wrapIncrementWord(this.readRegisterPair(pair)));
+  this.writeRegisterPair(
+    pair,
+    wrappingIncrementWord(this.readRegisterPair(pair))
+  );
   this.cycle();
 });
 

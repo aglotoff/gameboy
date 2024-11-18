@@ -7,9 +7,9 @@ import {
   resetBit,
   setBit,
   testBit,
-  wrapDecrementWord,
-  wrapIncrementByte,
-  wrapIncrementWord,
+  wrappingDecrementWord,
+  wrappingIncrementByte,
+  wrappingIncrementWord,
 } from "./utils";
 
 describe("utils", () => {
@@ -40,42 +40,42 @@ describe("utils", () => {
     expect(newWord).toBe(originalWord);
   });
 
-  test("wrapIncrementByte", () => {
+  test("wrappingIncrementByte", () => {
     let value = 0xfe;
 
-    value = wrapIncrementByte(value);
+    value = wrappingIncrementByte(value);
     expect(value).toBe(0xff);
 
-    value = wrapIncrementByte(value);
+    value = wrappingIncrementByte(value);
     expect(value).toBe(0x00);
 
-    value = wrapIncrementByte(value);
+    value = wrappingIncrementByte(value);
     expect(value).toBe(0x01);
   });
 
-  test("wrapIncrementWord", () => {
+  test("wrappingIncrementWord", () => {
     let value = 0xfffe;
 
-    value = wrapIncrementWord(value);
+    value = wrappingIncrementWord(value);
     expect(value).toBe(0xffff);
 
-    value = wrapIncrementWord(value);
+    value = wrappingIncrementWord(value);
     expect(value).toBe(0x0000);
 
-    value = wrapIncrementWord(value);
+    value = wrappingIncrementWord(value);
     expect(value).toBe(0x0001);
   });
 
-  test("wrapDecrementWord", () => {
+  test("wrappingDecrementWord", () => {
     let value = 0x0001;
 
-    value = wrapDecrementWord(value);
+    value = wrappingDecrementWord(value);
     expect(value).toBe(0x0000);
 
-    value = wrapDecrementWord(value);
+    value = wrappingDecrementWord(value);
     expect(value).toBe(0xffff);
 
-    value = wrapDecrementWord(value);
+    value = wrappingDecrementWord(value);
     expect(value).toBe(0xfffe);
   });
 

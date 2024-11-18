@@ -2,7 +2,7 @@ import { Cpu, Register } from "./cpu";
 import { InterruptController } from "./hw/interrupt-controller";
 import { PPU } from "./hw/ppu";
 import { Memory } from "./memory";
-import { Timer } from "./hw/timer";
+import { Timer, TimerRegisters } from "./hw/timer";
 import { OAM } from "./hw/oam";
 import { Cartridge } from "./cartridge";
 import { ActionButton, DirectionButton, Joypad } from "./hw/joypad";
@@ -228,7 +228,7 @@ async function readImage(file: File) {
   const memory = new Memory(
     ppu,
     interruptController,
-    timer,
+    new TimerRegisters(timer),
     cartridge.getMBC(),
     oam,
     joypad,

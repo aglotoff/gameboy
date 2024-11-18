@@ -1,6 +1,12 @@
-import { getLSB, getMSB, makeWord, testBit, wrapIncrementByte } from "../utils";
+import {
+  getLSB,
+  getMSB,
+  makeWord,
+  testBit,
+  wrappingIncrementByte,
+} from "../utils";
 import { PulseChannel } from "./pulse-channel";
-import { IDivider } from "./timer";
+import type { IDivider } from "./timer";
 
 export enum APURegister {
   NR11,
@@ -166,7 +172,7 @@ export class APU {
 
     const isFallingEdge = this.lastDividerBit && !dividerBit;
     if (isFallingEdge) {
-      this.divApu = wrapIncrementByte(this.divApu);
+      this.divApu = wrappingIncrementByte(this.divApu);
 
       if (this.divApu % 2 === 0) {
         this.channel1.lengthIncrementTick();
@@ -187,6 +193,6 @@ export class APU {
   }
 
   private getDividerBit() {
-    return testBit(this.divider.getDividerRegister(), 4);
+    return testBit(getMSB(this.divider.getSystemCounter()), 4);
   }
 }

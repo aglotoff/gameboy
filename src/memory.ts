@@ -1,4 +1,4 @@
-import { Timer } from "./hw/timer";
+import { TimerRegisters } from "./hw/timer";
 import { InterruptController } from "./hw/interrupt-controller";
 import { PPU } from "./hw/ppu";
 import { IBus } from "./cpu";
@@ -85,7 +85,7 @@ export class Memory implements IBus {
   public constructor(
     private ppu: PPU,
     private interruptController: InterruptController,
-    private timer: Timer,
+    private timer: TimerRegisters,
     private mbc: MBC,
     private oam: OAM,
     private joypad: Joypad,
@@ -147,13 +147,13 @@ export class Memory implements IBus {
         case HWRegister.DMA:
           return this.oam.getDMASource();
         case HWRegister.DIV:
-          return this.timer.getDividerRegister();
+          return this.timer.divider;
         case HWRegister.TIMA:
-          return this.timer.getCounterRegister();
+          return this.timer.counter;
         case HWRegister.TMA:
-          return this.timer.getModuloRegister();
+          return this.timer.modulo;
         case HWRegister.TAC:
-          return this.timer.getControlRegister();
+          return this.timer.control;
         case HWRegister.LCDC:
           return this.ppu.getControlRegister();
         case HWRegister.LY:
@@ -273,13 +273,17 @@ export class Memory implements IBus {
         case HWRegister.DMA:
           return this.oam.startDMA(data);
         case HWRegister.DIV:
-          return this.timer.setDividerRegister(data);
+          this.timer.divider = data;
+          break;
         case HWRegister.TIMA:
-          return this.timer.setCounterRegister(data);
+          this.timer.counter = data;
+          break;
         case HWRegister.TMA:
-          return this.timer.setModuloRegister(data);
+          this.timer.modulo = data;
+          break;
         case HWRegister.TAC:
-          return this.timer.setControlRegister(data);
+          this.timer.control = data;
+          break;
         case HWRegister.LCDC:
           return this.ppu.setControlRegister(data);
         case HWRegister.LYC:
@@ -337,10 +341,10 @@ export class Memory implements IBus {
           break;
 
         case HWRegister.NR10:
-          console.log("Sweeep = ", data.toString(16));
+          //console.log("Sweeep = ", data.toString(16));
           break;
         case HWRegister.NR50:
-          console.log("NR50 = ", data.toString(16));
+          //console.log("NR50 = ", data.toString(16));
           break;
 
         case HWRegister.NR30:

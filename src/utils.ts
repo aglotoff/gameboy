@@ -17,15 +17,15 @@ export function makeWord(highByte: number, lowByte: number) {
   return (highByte << BYTE_SHIFT) | lowByte;
 }
 
-export function wrapIncrementByte(value: number) {
+export function wrappingIncrementByte(value: number) {
   return value == BYTE_MAX ? BYTE_MIN : value + 1;
 }
 
-export function wrapIncrementWord(value: number) {
+export function wrappingIncrementWord(value: number) {
   return value == WORD_MAX ? WORD_MIN : value + 1;
 }
 
-export function wrapDecrementWord(value: number) {
+export function wrappingDecrementWord(value: number) {
   return value == WORD_MIN ? WORD_MAX : value - 1;
 }
 

@@ -1,5 +1,5 @@
 import { Register, RegisterPair } from "../register";
-import { wrapDecrementWord, wrapIncrementWord } from "../../utils";
+import { wrappingDecrementWord, wrappingIncrementWord } from "../../utils";
 import {
   instruction,
   instructionWithImmediateByte,
@@ -115,7 +115,7 @@ export const loadAccumulatorFromIndirectHLDecrement = instruction(function () {
   const address = this.readRegisterPair(RegisterPair.HL);
   const data = this.readBus(address);
 
-  this.writeRegisterPair(RegisterPair.HL, wrapDecrementWord(address));
+  this.writeRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
   this.cycle();
 
   this.writeRegister(Register.A, data);
@@ -124,7 +124,7 @@ export const loadAccumulatorFromIndirectHLDecrement = instruction(function () {
 export const loadAccumulatorFromIndirectHLIncrement = instruction(function () {
   const address = this.readRegisterPair(RegisterPair.HL);
   const data = this.readBus(address);
-  this.writeRegisterPair(RegisterPair.HL, wrapIncrementWord(address));
+  this.writeRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
   this.cycle();
 
   this.writeRegister(Register.A, data);
@@ -133,13 +133,13 @@ export const loadAccumulatorFromIndirectHLIncrement = instruction(function () {
 export const loadIndirectHLDecrementFromAccumulator = instruction(function () {
   const address = this.readRegisterPair(RegisterPair.HL);
   this.writeBus(address, this.readRegister(Register.A));
-  this.writeRegisterPair(RegisterPair.HL, wrapDecrementWord(address));
+  this.writeRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
   this.cycle();
 });
 
 export const loadIndirectHLIncrementFromAccumulator = instruction(function () {
   const address = this.readRegisterPair(RegisterPair.HL);
   this.writeBus(address, this.readRegister(Register.A));
-  this.writeRegisterPair(RegisterPair.HL, wrapIncrementWord(address));
+  this.writeRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
   this.cycle();
 });
