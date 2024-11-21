@@ -44,6 +44,15 @@ export class APU {
 
   public constructor(private divider: IDivider) {}
 
+  public reset() {
+    this.channel1.reset();
+    this.channel2.reset();
+    this.divApu = 0;
+    this.lastDividerBit = false;
+    this.nr51 = 0;
+    this.nr52 = 0;
+  }
+
   public readRegister(register: APURegister) {
     let data = 0;
 

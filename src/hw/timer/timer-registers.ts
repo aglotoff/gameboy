@@ -1,8 +1,12 @@
 import { getMSB, testBit } from "../../utils";
 import { Timer } from "./timer";
 
+const TAC_UNUSED_MASK = 0b11111000;
+const TAC_CLOCK_SELECT_MASK = 0b11;
+const TAC_ENABLE_BIT = 2;
+
 export class TimerRegisters {
-  private controlRegister = 0;
+  private controlRegister = TAC_UNUSED_MASK;
 
   public constructor(private timer: Timer) {}
 
@@ -37,11 +41,13 @@ export class TimerRegisters {
   }
 
   public set control(value: number) {
-    this.controlRegister = value & 0x7;
+    this.controlRegister = TAC_UNUSED_MASK | value;
 
     this.timer.setParams({
-      counterEnabled: testBit(value, 2),
-      inputClockBit: TimerRegisters.getInputClockBit(value & 0x3),
+      counterEnabled: testBit(value, TAC_ENABLE_BIT),
+      inputClockBit: TimerRegisters.getInputClockBit(
+        value & TAC_CLOCK_SELECT_MASK
+      ),
     });
   }
 

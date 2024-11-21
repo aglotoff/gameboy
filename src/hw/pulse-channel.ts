@@ -17,6 +17,20 @@ export class PulseChannel {
   private ticksToEnvelopeSweep = 0;
   private envelopeSweepPace = 0;
 
+  public reset() {
+    this.on = false;
+    this.initialVolume = 0;
+    this.volume = 0;
+    this.gainNode.gain.value = 0;
+    this.frequency = 0;
+    this.initialLengthTimer = 0;
+    this.lengthTimer = 0;
+    this.lengthEnable = false;
+    this.envelopeDirection = 0;
+    this.ticksToEnvelopeSweep = 0;
+    this.envelopeSweepPace = 0;
+  }
+
   public getEnvelopeDirection() {
     return this.envelopeDirection;
   }

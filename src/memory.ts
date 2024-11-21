@@ -81,16 +81,28 @@ export class Memory implements IBus {
   private wram = new Uint8Array(0x2000);
   private hram = new Uint8Array(0x80);
   private bootROMDisabled = false;
+  private mbc: MBC | null = null;
 
   public constructor(
     private ppu: PPU,
     private interruptController: InterruptController,
     private timer: TimerRegisters,
-    private mbc: MBC,
     private oam: OAM,
     private joypad: Joypad,
     private apu?: APU
   ) {}
+
+  public reset() {
+    this.wram = new Uint8Array(0x2000);
+    this.hram = new Uint8Array(0x80);
+    this.bootROMDisabled = false;
+    this.mbc = null;
+    this.timer.control = 0;
+  }
+
+  public setMBC(mbc: MBC) {
+    this.mbc = mbc;
+  }
 
   public readDMA(address: number) {
     if (address < bootROM.length && !this.bootROMDisabled) {
@@ -99,12 +111,12 @@ export class Memory implements IBus {
 
     // 16 KiB ROM bank 00
     if (address <= 0x3fff) {
-      return this.mbc.readROM(address);
+      return this.mbc?.readROM(address) ?? 0xff;
     }
 
     // 16 KiB ROM Bank 01–NN
     if (address <= 0x7fff) {
-      return this.mbc.readROM(address);
+      return this.mbc?.readROM(address) ?? 0xff;
     }
 
     // 8 KiB Video RAM (VRAM)
@@ -114,7 +126,7 @@ export class Memory implements IBus {
 
     // 8 KiB External RAM
     if (address <= 0xbfff) {
-      return this.mbc.readRAM(address - 0xa000);
+      return this.mbc?.readRAM(address - 0xa000) ?? 0xff;
     }
 
     // WRAM
@@ -215,12 +227,12 @@ export class Memory implements IBus {
   public writeDMA(address: number, data: number) {
     if (address <= 0x3fff) {
       // 16 KiB ROM bank 00
-      return this.mbc.writeROM(address, data);
+      return this.mbc?.writeROM(address, data);
     }
 
     if (address <= 0x7fff) {
       // 16 KiB ROM Bank 01–NN
-      return this.mbc.writeROM(address, data);
+      return this.mbc?.writeROM(address, data);
     }
 
     if (address <= 0x9fff) {
@@ -230,7 +242,7 @@ export class Memory implements IBus {
 
     if (address <= 0xbfff) {
       // 8 KiB External RAM
-      return this.mbc.writeRAM(address - 0xa000, data);
+      return this.mbc?.writeRAM(address - 0xa000, data);
     }
 
     // WRAM

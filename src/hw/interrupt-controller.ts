@@ -7,6 +7,11 @@ export class InterruptController {
   private enableRegister = 0;
   private flagRegister = 0;
 
+  public reset() {
+    this.enableRegister = 0;
+    this.flagRegister = 0;
+  }
+
   public getEnableRegister() {
     return 0xe0 | this.enableRegister;
   }

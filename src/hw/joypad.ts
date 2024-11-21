@@ -27,6 +27,12 @@ export class Joypad {
 
   public constructor() {}
 
+  public reset() {
+    this.actionButtons = 0;
+    this.directionButtons = 0;
+    this.selectedButtons = 0;
+  }
+
   writeRegister(data: number) {
     this.selectedButtons = data & 0x30;
   }

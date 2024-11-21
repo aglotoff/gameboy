@@ -1,4 +1,6 @@
-export class LCD {
+import { ILCD } from "./hw/ppu";
+
+export class LCD implements ILCD {
   private imageData: ImageData;
 
   constructor(private context: CanvasRenderingContext2D) {

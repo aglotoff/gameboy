@@ -1,5 +1,4 @@
 import { resetBit, setBit, testBit } from "../utils";
-import { LCD } from "./lcd";
 import { OAM, OAM_TOTAL_OBJECTS, OAMEntry } from "./oam";
 
 const LCD_WIDTH = 160;
@@ -41,6 +40,11 @@ enum StatSource {
 const STAT_SOURCE_MASK = 0b1111000;
 
 const STAT_MODE_MASK = 0x3;
+
+export interface ILCD {
+  setPixel(x: number, y: number, pixel: number): void;
+  render(): void;
+}
 
 export class PPU {
   private vram = new Uint8Array(VRAM_SIZE);
@@ -97,11 +101,68 @@ export class PPU {
   };
 
   public constructor(
-    private lcd: LCD,
+    private lcd: ILCD,
     private oam: OAM,
     private onVBlank: () => void,
     private onStat: () => void
   ) {}
+
+  public reset() {
+    this.controlRegister = 0;
+    this.statusRegister = 0;
+    this.scanline = 0;
+    this.lyCompareRegister = 0;
+    this.viewportY = 0;
+    this.viewportX = 0;
+    this.windowY = 0;
+    this.windowX = 0;
+    this.bgPalette = 0;
+    this.objPalette0 = 0;
+    this.objPalette1 = 0;
+    this.statInterruptLine = false;
+    this.mode = 0;
+    this.isFirstLineAfterEnable = false;
+    this.windowLineCounter = 0;
+    this.windowTriggered = false;
+    this.dot = 0;
+    this.vram = new Uint8Array(VRAM_SIZE);
+    this.statusRegister = 0;
+    this.objBuffer.splice(0);
+    this.oam.unlockRead();
+    this.oam.unlockWrite();
+    this.vramReadLocked = false;
+    this.vramWriteLocked = false;
+    this.objBuffer = [];
+    this.bgQueue = [];
+    this.objQueue = [];
+    this.bgXPosition = 0;
+    this.inWindow = false;
+    this.xPosition = 0;
+    this.bgXSkip = 0;
+
+    this.statModeDelay = 0;
+    this.irqModeDelay = 0;
+    this.irqMode = 0;
+
+    this.bgFetcher = {
+      step: 0,
+      tileNo: 0,
+      dataLow: 0,
+      dataHigh: 0,
+      busy: false,
+      ready: [] as Pixel[],
+    };
+
+    this.objFetcher = {
+      step: 0,
+      tileNo: 0,
+      dataLow: 0,
+      dataHigh: 0,
+      busy: false,
+      ready: [] as Pixel[],
+      current: null as OAMEntry | null,
+    };
+  }
 
   private vramReadLocked = false;
   private vramWriteLocked = false;

@@ -45,6 +45,18 @@ export class OAM {
     this.readCallback = readCallback;
   }
 
+  public reset() {
+    this.data = new Uint8Array(OAM_TOTAL_SIZE);
+    this.dmaInProgress = false;
+    this.dmaDelay = 0;
+    this.dmaTick = 0;
+    this.currentDMASource = 0;
+    this.currentDMAIndex = 0;
+    this.nextDMASource = 0;
+    this.readLocked = false;
+    this.writeLocked = false;
+  }
+
   public lockRead() {
     this.readLocked = true;
   }

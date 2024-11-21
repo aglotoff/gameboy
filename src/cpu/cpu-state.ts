@@ -22,6 +22,16 @@ export class CpuState {
   private bus: IBus;
   private onCycle: () => void;
 
+  public reset() {
+    this.regs = new RegisterFile();
+    this.ime = false;
+    this.halted = false;
+    this.stopped = false;
+    this.elapsedCycles = 0;
+    this.opcode = 0;
+    this.imeNext = false;
+  }
+
   public constructor({ bus, onCycle }: CpuStateOptions) {
     this.bus = bus;
     this.onCycle = onCycle;

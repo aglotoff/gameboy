@@ -28,6 +28,17 @@ export class Timer implements IDivider {
 
   public constructor(private onInterruptRequest: () => void) {}
 
+  public reset() {
+    this.systemCounter = 0xdc87;
+    this.counterEnabled = false;
+    this.counter = 0;
+    this.modulo = 0;
+    this.inputClockBit = 0;
+    this.oldInputClockSignal = false;
+    this.reloadDelay = 0;
+    this.isReloading = false;
+  }
+
   public getSystemCounter() {
     return this.systemCounter;
   }
@@ -105,7 +116,7 @@ export class Timer implements IDivider {
     }
   }
 
-  public checkClock() {
+  private checkClock() {
     const newInputClockSignal =
       testBit(this.systemCounter, this.inputClockBit) && this.counterEnabled;
 
