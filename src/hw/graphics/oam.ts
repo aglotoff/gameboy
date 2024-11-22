@@ -1,4 +1,4 @@
-import { makeWord } from "../../utils";
+import { makeWord, testBit } from "../../utils";
 
 export type DMAReadFn = (address: number) => number;
 
@@ -15,7 +15,10 @@ export interface OAMEntry {
   yPosition: number;
   xPosition: number;
   tileIndex: number;
-  attributes: number;
+  flipX: boolean;
+  flipY: boolean;
+  bgPriority: boolean;
+  palette: boolean;
 }
 
 export enum OAMFlags {
@@ -81,11 +84,19 @@ export class OAM {
   }
 
   public getEntry(index: number): OAMEntry {
+    const yPosition = this.data[index * OAM_OBJECT_SIZE + 0];
+    const xPosition = this.data[index * OAM_OBJECT_SIZE + 1];
+    const tileIndex = this.data[index * OAM_OBJECT_SIZE + 2];
+    const attributes = this.data[index * OAM_OBJECT_SIZE + 3];
+
     return {
-      yPosition: this.data[index * OAM_OBJECT_SIZE + 0],
-      xPosition: this.data[index * OAM_OBJECT_SIZE + 1],
-      tileIndex: this.data[index * OAM_OBJECT_SIZE + 2],
-      attributes: this.data[index * OAM_OBJECT_SIZE + 3],
+      yPosition: yPosition - 16,
+      xPosition: xPosition - 8,
+      tileIndex,
+      palette: testBit(attributes, 4),
+      flipX: testBit(attributes, 5),
+      flipY: testBit(attributes, 6),
+      bgPriority: testBit(attributes, 7),
     };
   }
 

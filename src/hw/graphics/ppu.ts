@@ -47,11 +47,13 @@ export interface ILCD {
 }
 
 export class PPU {
+  // VRAM
   private vram = new Uint8Array(VRAM_SIZE);
+  private vramReadLocked = false;
+  private vramWriteLocked = false;
 
   // Registers
   private statusRegister = 0;
-  private scanline = 0;
   private scanlineToCompare = 0;
   private viewportY = 0;
   private viewportX = 0;
@@ -60,12 +62,14 @@ export class PPU {
   private bgPalette = 0;
   private objPalette0 = 0;
   private objPalette1 = 0;
+  private isEnabled = false;
 
   // Interrupts
   private statInterruptLine = false;
-  private mode = 0;
 
   // Per-frame state
+  private scanline = 0;
+  private mode = 0;
   private windowLineCounter = 0;
   private windowTriggered = false;
 
@@ -168,9 +172,6 @@ export class PPU {
     };
   }
 
-  private vramReadLocked = false;
-  private vramWriteLocked = false;
-
   public readVRAM(offset: number) {
     return !this.vramReadLocked ? this.vram[offset] : 0xff;
   }
@@ -180,8 +181,6 @@ export class PPU {
       this.vram[offset] = value;
     }
   }
-
-  private isEnabled = false;
 
   public setIsEnabled(enabled: boolean) {
     const wasEnabled = this.isEnabled;
@@ -414,7 +413,7 @@ export class PPU {
 
     const entry = this.oam.getEntry(entryIndex);
 
-    const top = entry.yPosition - 16;
+    const top = entry.yPosition;
     const bottom = top + this.objHeight - 1;
 
     if (this.scanline < top || this.scanline > bottom) {
@@ -706,7 +705,7 @@ export class PPU {
         break;
 
       case 5:
-        const start = this.xPosition - this.objFetcher.current!.xPosition + 8;
+        const start = this.xPosition - this.objFetcher.current!.xPosition;
 
         for (let j = start; j < 8; j++) {
           const color = this.fetchObjectColor(
@@ -718,8 +717,8 @@ export class PPU {
 
           const pixel = {
             color,
-            bgPriority: testBit(this.objFetcher.current!.attributes, 7),
-            palette: testBit(this.objFetcher.current!.attributes, 4)
+            bgPriority: this.objFetcher.current!.bgPriority,
+            palette: this.objFetcher.current!.palette
               ? this.objPalette1
               : this.objPalette0,
           };
@@ -754,13 +753,11 @@ export class PPU {
   private fetchObjectTileNo(obj: OAMEntry) {
     const size = this.objHeight;
 
-    const objY = obj.yPosition - 16;
-
-    const flipY = testBit(obj.attributes, 6);
+    const objY = obj.yPosition;
 
     const tileY = Math.floor(this.scanline - objY);
 
-    const top = flipY ? size - 1 - tileY : tileY;
+    const top = obj.flipY ? size - 1 - tileY : tileY;
 
     return size === 16
       ? top >= 8
@@ -782,9 +779,9 @@ export class PPU {
   private getObjectTileDataOffset(obj: OAMEntry, tileNo: number) {
     const size = this.objHeight;
 
-    const objY = obj.yPosition - 16;
+    const objY = obj.yPosition;
 
-    const flipY = testBit(obj.attributes, 6);
+    const flipY = obj.flipY;
     const tileY = Math.floor(this.scanline - objY);
 
     const top = flipY ? size - 1 - tileY : tileY;
@@ -800,9 +797,7 @@ export class PPU {
     secondByte: number,
     tileX: number
   ) {
-    const flipX = testBit(obj.attributes, 5);
-
-    const left = flipX ? 7 - tileX : tileX;
+    const left = obj.flipX ? 7 - tileX : tileX;
 
     const lsb = (firstByte >> (7 - left)) & 0x1;
     const msb = (secondByte >> (7 - left)) & 0x1;
@@ -815,7 +810,7 @@ export class PPU {
       return null;
     }
 
-    if (this.objBuffer[0].xPosition - 8 > x) {
+    if (this.objBuffer[0].xPosition > x) {
       return null;
     }
 
