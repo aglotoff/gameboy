@@ -1,9 +1,8 @@
 import { Cpu, Register } from "./cpu";
 import { InterruptController } from "./hw/interrupt-controller";
-import { ILCD, PPU } from "./hw/ppu";
+import { ILCD, PPU, OAM } from "./hw/graphics";
 import { Memory } from "./memory";
 import { Timer, TimerRegisters } from "./hw/timer";
-import { OAM } from "./hw/oam";
 import { Cartridge } from "./cartridge";
 import { ActionButton, DirectionButton, Joypad } from "./hw/joypad";
 import { APU } from "./hw/apu";

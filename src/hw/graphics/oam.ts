@@ -1,5 +1,4 @@
-import { makeWord } from "../utils";
-// import { PPU } from "./ppu";
+import { makeWord } from "../../utils";
 
 export type DMAReadFn = (address: number) => number;
 

@@ -1,8 +1,7 @@
 import { TimerRegisters } from "./hw/timer";
 import { InterruptController } from "./hw/interrupt-controller";
-import { PPU } from "./hw/ppu";
+import { PPU, OAM, PPURegisters } from "./hw/graphics";
 import { IBus } from "./cpu";
-import { OAM } from "./hw/oam";
 import { MBC } from "./cartridge";
 import { Joypad } from "./hw/joypad";
 import { APU, APURegister } from "./hw/apu";
@@ -82,6 +81,7 @@ export class Memory implements IBus {
   private hram = new Uint8Array(0x80);
   private bootROMDisabled = false;
   private mbc: MBC | null = null;
+  private ppuRegs: PPURegisters;
 
   public constructor(
     private ppu: PPU,
@@ -90,14 +90,18 @@ export class Memory implements IBus {
     private oam: OAM,
     private joypad: Joypad,
     private apu?: APU
-  ) {}
+  ) {
+    this.ppuRegs = new PPURegisters(ppu);
+  }
 
   public reset() {
     this.wram = new Uint8Array(0x2000);
     this.hram = new Uint8Array(0x80);
     this.bootROMDisabled = false;
     this.mbc = null;
-    this.timer.control = 0;
+
+    this.ppuRegs.lcdc = 0;
+    this.timer.tac = 0;
   }
 
   public setMBC(mbc: MBC) {
@@ -156,38 +160,42 @@ export class Memory implements IBus {
       switch (address) {
         case HWRegister.JOYP:
           return this.joypad.readRegister();
+
         case HWRegister.DMA:
           return this.oam.getDMASource();
+
         case HWRegister.DIV:
-          return this.timer.divider;
+          return this.timer.div;
         case HWRegister.TIMA:
-          return this.timer.counter;
+          return this.timer.tima;
         case HWRegister.TMA:
-          return this.timer.modulo;
+          return this.timer.tma;
         case HWRegister.TAC:
-          return this.timer.control;
+          return this.timer.tac;
+
         case HWRegister.LCDC:
-          return this.ppu.getControlRegister();
+          return this.ppuRegs.lcdc;
         case HWRegister.LY:
-          return this.ppu.getYCoordinateRegister();
+          return this.ppuRegs.ly;
         case HWRegister.LYC:
-          return this.ppu.getLYCompareRegister();
+          return this.ppuRegs.lyc;
         case HWRegister.STAT:
-          return this.ppu.getStatusRegister();
+          return this.ppuRegs.stat;
         case HWRegister.SCY:
-          return this.ppu.getViewportYPositionRegister();
+          return this.ppuRegs.scy;
         case HWRegister.SCX:
-          return this.ppu.getViewportXPositionRegister();
+          return this.ppuRegs.scx;
         case HWRegister.BGP:
-          return this.ppu.getBGPaletteDataRegister();
+          return this.ppuRegs.bgp;
         case HWRegister.WY:
-          return this.ppu.getWindowYPositionRegister();
+          return this.ppuRegs.wy;
         case HWRegister.WX:
-          return this.ppu.getWindowXPositionRegister();
+          return this.ppuRegs.wx;
         case HWRegister.OBP0:
-          return this.ppu.getObjPalette0DataRegister();
+          return this.ppuRegs.obp0;
         case HWRegister.OPB1:
-          return this.ppu.getObjPalette1DataRegister();
+          return this.ppuRegs.obp1;
+
         case HWRegister.IF:
           return this.interruptController.getFlagRegister();
         case HWRegister.IE:
@@ -284,38 +292,51 @@ export class Memory implements IBus {
           break;
         case HWRegister.DMA:
           return this.oam.startDMA(data);
+
         case HWRegister.DIV:
-          this.timer.divider = data;
+          this.timer.div = data;
           break;
         case HWRegister.TIMA:
-          this.timer.counter = data;
+          this.timer.tima = data;
           break;
         case HWRegister.TMA:
-          this.timer.modulo = data;
+          this.timer.tma = data;
           break;
         case HWRegister.TAC:
-          this.timer.control = data;
+          this.timer.tac = data;
           break;
+
         case HWRegister.LCDC:
-          return this.ppu.setControlRegister(data);
+          this.ppuRegs.lcdc = data;
+          break;
         case HWRegister.LYC:
-          return this.ppu.setLYCompareRegister(data);
+          this.ppuRegs.lyc = data;
+          break;
         case HWRegister.STAT:
-          return this.ppu.setStatusRegister(data);
+          this.ppuRegs.stat = data;
+          break;
         case HWRegister.SCY:
-          return this.ppu.setViewportYPositionRegister(data);
+          this.ppuRegs.scy = data;
+          break;
         case HWRegister.SCX:
-          return this.ppu.setViewportXPositionRegister(data);
+          this.ppuRegs.scx = data;
+          break;
         case HWRegister.BGP:
-          return this.ppu.setBGPaletteDataRegister(data);
+          this.ppuRegs.bgp = data;
+          break;
         case HWRegister.WY:
-          return this.ppu.setWindowYPositionRegister(data);
+          this.ppuRegs.wy = data;
+          break;
         case HWRegister.WX:
-          return this.ppu.setWindowXPositionRegister(data);
+          this.ppuRegs.wx = data;
+          break;
         case HWRegister.OBP0:
-          return this.ppu.setObjPalette0DataRegister(data);
+          this.ppuRegs.obp0 = data;
+          break;
         case HWRegister.OPB1:
-          return this.ppu.setObjPalette1DataRegister(data);
+          this.ppuRegs.obp1 = data;
+          break;
+
         case HWRegister.IF:
           return this.interruptController.setFlagRegister(data);
         case HWRegister.IE:

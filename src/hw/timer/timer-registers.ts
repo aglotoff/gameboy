@@ -10,37 +10,37 @@ export class TimerRegisters {
 
   public constructor(private timer: Timer) {}
 
-  public get divider() {
+  public get div() {
     // DIV is the 8 upper bits of the system counter
     return getMSB(this.timer.getSystemCounter());
   }
 
-  public set divider(_value: number) {
+  public set div(_value: number) {
     // Writing any value resets the divider
     this.timer.resetSystemCounter();
   }
 
-  public get counter() {
+  public get tima() {
     return this.timer.getCounter();
   }
 
-  public set counter(value: number) {
+  public set tima(value: number) {
     this.timer.setCounter(value);
   }
 
-  public get modulo() {
+  public get tma() {
     return this.timer.getModulo();
   }
 
-  public set modulo(value: number) {
+  public set tma(value: number) {
     this.timer.setModulo(value);
   }
 
-  public get control() {
+  public get tac() {
     return this.controlRegister;
   }
 
-  public set control(value: number) {
+  public set tac(value: number) {
     this.controlRegister = TAC_UNUSED_MASK | value;
 
     this.timer.setParams({

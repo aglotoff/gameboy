@@ -1,4 +1,4 @@
-import { resetBit, setBit, testBit } from "../utils";
+import { resetBit, setBit, testBit } from "../../utils";
 import { OAM, OAM_TOTAL_OBJECTS, OAMEntry } from "./oam";
 
 const LCD_WIDTH = 160;
@@ -50,10 +50,9 @@ export class PPU {
   private vram = new Uint8Array(VRAM_SIZE);
 
   // Registers
-  private controlRegister = 0;
   private statusRegister = 0;
   private scanline = 0;
-  private lyCompareRegister = 0;
+  private scanlineToCompare = 0;
   private viewportY = 0;
   private viewportX = 0;
   private windowY = 0;
@@ -108,10 +107,14 @@ export class PPU {
   ) {}
 
   public reset() {
-    this.controlRegister = 0;
+    this.bgTileMapArea = 0x9800 - VRAM_BASE;
+    this.objHeight = 8;
+    this.isObjEnabled = false;
+    this.isBGAndWindowEnabled = false;
+    this.isEnabled = false;
     this.statusRegister = 0;
     this.scanline = 0;
-    this.lyCompareRegister = 0;
+    this.scanlineToCompare = 0;
     this.viewportY = 0;
     this.viewportX = 0;
     this.windowY = 0;
@@ -139,6 +142,9 @@ export class PPU {
     this.inWindow = false;
     this.xPosition = 0;
     this.bgXSkip = 0;
+    this.windowTileMapArea = 0x9800 - VRAM_BASE;
+    this.bgAndWindowTileBase = 0x1000;
+    this.isWindowEnabled = false;
 
     this.statModeDelay = 0;
     this.irqModeDelay = 0;
@@ -177,17 +183,13 @@ export class PPU {
     }
   }
 
-  // ff40
-  public getControlRegister() {
-    return this.controlRegister;
-  }
+  private isEnabled = false;
 
-  public setControlRegister(value: number) {
-    const wasDisabled = !this.isEnabled();
+  public setIsEnabled(enabled: boolean) {
+    const wasEnabled = this.isEnabled;
+    this.isEnabled = enabled;
 
-    this.controlRegister = value;
-
-    if (wasDisabled && this.isEnabled()) {
+    if (!wasEnabled && enabled) {
       this.scanline = 0;
       this.dot = 0;
       this.mode = PPUMode.HBlank;
@@ -201,32 +203,40 @@ export class PPU {
     }
   }
 
-  private isEnabled() {
-    return testBit(this.controlRegister, 7);
+  private windowTileMapArea = 0x9800 - VRAM_BASE;
+
+  public setWindowTileMapArea(base: number) {
+    this.windowTileMapArea = base;
   }
 
-  private getWindowTileMapArea() {
-    return (testBit(this.controlRegister, 6) ? 0x9c00 : 0x9800) - VRAM_BASE;
+  private isWindowEnabled = false;
+
+  public setWindowEnabled(enabled: boolean) {
+    this.isWindowEnabled = enabled;
   }
 
-  private isWindowEnabled() {
-    return testBit(this.controlRegister, 5);
+  private bgTileMapArea = 0x9800 - VRAM_BASE;
+
+  public setBGTileMapArea(area: number) {
+    this.bgTileMapArea = area;
   }
 
-  private getBGTileMapArea() {
-    return (testBit(this.controlRegister, 3) ? 0x9c00 : 0x9800) - VRAM_BASE;
+  private objHeight = 8;
+
+  public setObjHeight(objHeight: number) {
+    this.objHeight = objHeight;
   }
 
-  private getObjHeight() {
-    return testBit(this.controlRegister, 2) ? 16 : 8;
+  private isObjEnabled = false;
+
+  public setObjEnabled(enabled: boolean) {
+    this.isObjEnabled = enabled;
   }
 
-  private isObjEnabled() {
-    return testBit(this.controlRegister, 1);
-  }
+  private isBGAndWindowEnabled = false;
 
-  private isBGAndWindowEnabled() {
-    return testBit(this.controlRegister, 0);
+  public setBGAndWindowEnabled(enabled: boolean) {
+    this.isBGAndWindowEnabled = enabled;
   }
 
   // ff41
@@ -261,85 +271,76 @@ export class PPU {
     }
   }
 
-  // ff44
-  public getYCoordinateRegister() {
+  public getScanline() {
     return this.scanline;
   }
 
-  // ff45
-  public getLYCompareRegister() {
-    return this.lyCompareRegister;
+  public getScanlineToCompare() {
+    return this.scanlineToCompare;
   }
 
-  public setLYCompareRegister(data: number) {
-    this.lyCompareRegister = data;
+  public setScanlineToCompare(data: number) {
+    this.scanlineToCompare = data;
   }
 
-  // ff42
-  public getViewportYPositionRegister() {
+  public getViewportYPosition() {
     return this.viewportY;
   }
 
-  public setViewportYPositionRegister(data: number) {
+  public setViewportYPosition(data: number) {
     this.viewportY = data;
   }
 
-  // ff43
-  public getViewportXPositionRegister() {
+  public getViewportXPosition() {
     return this.viewportX;
   }
 
-  public setViewportXPositionRegister(data: number) {
+  public setViewportXPosition(data: number) {
     this.viewportX = data;
   }
 
-  // ff4a
-  public getWindowYPositionRegister() {
+  public getWindowYPosition() {
     return this.windowY;
   }
 
-  public setWindowYPositionRegister(data: number) {
+  public setWindowYPosition(data: number) {
     this.windowY = data;
   }
 
-  // ff4b
-  public getWindowXPositionRegister() {
+  public getWindowXPosition() {
     return this.windowX;
   }
 
-  public setWindowXPositionRegister(data: number) {
+  public setWindowXPosition(data: number) {
     this.windowX = data;
   }
 
-  // ff47
-  public getBGPaletteDataRegister() {
+  public getBGPaletteData() {
     return this.bgPalette;
   }
 
-  public setBGPaletteDataRegister(data: number) {
+  public setBGPaletteData(data: number) {
     this.bgPalette = data;
   }
 
-  // ff48
-  public getObjPalette0DataRegister() {
+  public getObjPalette0Data() {
     return this.objPalette0;
   }
 
-  public setObjPalette0DataRegister(data: number) {
+  public setObjPalette0Data(data: number) {
     this.objPalette0 = data;
   }
 
-  // ff49
-  public getObjPalette1DataRegister() {
+  public getObjPalette1Data() {
     return this.objPalette1;
   }
 
-  public setObjPalette1DataRegister(data: number) {
+  public setObjPalette1Data(data: number) {
     this.objPalette1 = data;
   }
 
   public tick() {
-    if (!this.isEnabled()) {
+    if (!this.isEnabled) {
       this.statusRegister &= ~STAT_MODE_MASK;
       this.objBuffer.splice(0);
       this.oam.unlockRead();
@@ -417,7 +418,7 @@ export class PPU {
     const entry = this.oam.getEntry(entryIndex);
 
     const top = entry.yPosition - 16;
-    const bottom = top + this.getObjHeight() - 1;
+    const bottom = top + this.objHeight - 1;
 
     if (this.scanline < top || this.scanline > bottom) {
       return;
@@ -458,8 +459,8 @@ export class PPU {
       this.windowTriggered = false;
 
       if (
-        this.isWindowEnabled() &&
-        this.isBGAndWindowEnabled() &&
+        this.isWindowEnabled &&
+        this.isBGAndWindowEnabled &&
         this.windowX <= 166 &&
         this.windowY < LCD_HEIGHT &&
         this.scanline >= this.windowY
@@ -559,7 +560,10 @@ export class PPU {
       case 0:
         this.bgFetcher.tileNo = this.inWindow
           ? this.fetchWindowTileNo(pos, this.windowLineCounter)
-          : this.fetchBackgroundTileNo(pos, this.scanline);
+          : this.fetchBackgroundTileNo(
+              pos + this.viewportX,
+              this.scanline + this.viewportY
+            );
         break;
 
       case 2:
@@ -570,7 +574,7 @@ export class PPU {
             )
           : this.fetchBackgroundTileDataLow(
               this.bgFetcher.tileNo,
-              this.scanline
+              this.scanline + this.viewportY
             );
         break;
 
@@ -582,7 +586,7 @@ export class PPU {
             )
           : this.fetchBackgroundTileDataHigh(
               this.bgFetcher.tileNo,
-              this.scanline
+              this.scanline + this.viewportY
             );
 
         this.bgFetcher.ready = [];
@@ -590,7 +594,7 @@ export class PPU {
         for (let x = 0; x < 8; x++) {
           let pos = (256 + this.bgXPosition) % 256;
 
-          if (this.isBGAndWindowEnabled()) {
+          if (this.isBGAndWindowEnabled) {
             const lsb = (this.bgFetcher.dataLow >> (7 - (pos % 8))) & 0x1;
             const msb = (this.bgFetcher.dataHigh >> (7 - (pos % 8))) & 0x1;
 
@@ -623,12 +627,12 @@ export class PPU {
 
   private fetchWindowTileNo(x: number, y: number) {
     const tileIndex = this.getTileIndex(x, y);
-    return this.vram[this.getWindowTileMapArea() + tileIndex];
+    return this.vram[this.windowTileMapArea + tileIndex];
   }
 
   private fetchBackgroundTileNo(x: number, y: number) {
-    const tileIndex = this.getTileIndex(x + this.viewportX, y + this.viewportY);
-    return this.vram[this.getBGTileMapArea() + tileIndex];
+    const tileIndex = this.getTileIndex(x, y);
+    return this.vram[this.bgTileMapArea + tileIndex];
   }
 
   private getTileIndex(x: number, y: number) {
@@ -645,7 +649,7 @@ export class PPU {
 
   private fetchBackgroundTileDataLow(tileNo: number, y: number) {
     const base = this.getBgAndWindowTileBase(tileNo);
-    const lineOffset = (y + this.viewportY) % 8;
+    const lineOffset = y % 8;
     return this.vram[base + lineOffset * 2];
   }
 
@@ -657,8 +661,14 @@ export class PPU {
 
   private fetchBackgroundTileDataHigh(tileNo: number, y: number) {
     const base = this.getBgAndWindowTileBase(tileNo);
-    const lineOffset = (y + this.viewportY) % 8;
+    const lineOffset = y % 8;
     return this.vram[base + lineOffset * 2 + 1];
+  }
+
+  private bgAndWindowTileBase = 0x1000;
+
+  public setBgAndWindowTileBase(base: number) {
+    this.bgAndWindowTileBase = base;
   }
 
   private getBgAndWindowTileBase(tileNo: number) {
@@ -666,8 +676,7 @@ export class PPU {
       return 0x0800 + (tileNo % 128) * BYTES_PER_TILE;
     }
 
-    const base = testBit(this.controlRegister, 4) ? 0x0000 : 0x1000;
-    return base + tileNo * BYTES_PER_TILE;
+    return this.bgAndWindowTileBase + tileNo * BYTES_PER_TILE;
   }
 
   private objFetcherTick() {
@@ -746,7 +755,7 @@ export class PPU {
   }
 
   private fetchObjectTileNo(obj: OAMEntry) {
-    const size = this.getObjHeight();
+    const size = this.objHeight;
 
     const objY = obj.yPosition - 16;
 
@@ -774,7 +783,7 @@ export class PPU {
   }
 
   private getObjectTileDataOffset(obj: OAMEntry, tileNo: number) {
-    const size = this.getObjHeight();
+    const size = this.objHeight;
 
     const objY = obj.yPosition - 16;
 
@@ -805,7 +814,7 @@ export class PPU {
   }
 
   private getCurrentObject(x: number) {
-    if (!this.isObjEnabled() || this.objBuffer.length === 0) {
+    if (!this.isObjEnabled || this.objBuffer.length === 0) {
       return null;
     }
 
@@ -878,7 +887,7 @@ export class PPU {
   }
 
   private updateStatLYC() {
-    if (this.scanline === this.lyCompareRegister && this.dot !== 0) {
+    if (this.scanline === this.scanlineToCompare && this.dot !== 0) {
       this.statusRegister = setBit(this.statusRegister, 2);
     } else {
       this.statusRegister = resetBit(this.statusRegister, 2);

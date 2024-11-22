@@ -1,4 +1,4 @@
-import { ILCD } from "./hw/ppu";
+import { ILCD } from "./hw/graphics";
 
 export class LCD implements ILCD {
   private imageData: ImageData;
