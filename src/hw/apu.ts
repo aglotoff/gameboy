@@ -9,6 +9,7 @@ import { PulseChannel } from "./pulse-channel";
 import type { IDivider } from "./timer";
 
 export enum APURegister {
+  NR10,
   NR11,
   NR12,
   NR13,
@@ -20,11 +21,12 @@ export enum APURegister {
 }
 
 const writeOnlyBitMasks: Record<APURegister, number> = {
-  [APURegister.NR11]: 0x1f,
+  [APURegister.NR10]: 0x80,
+  [APURegister.NR11]: 0x3f,
   [APURegister.NR12]: 0x00,
-  [APURegister.NR13]: 0x1f,
-  [APURegister.NR14]: 0xff,
-  [APURegister.NR21]: 0xbf,
+  [APURegister.NR13]: 0xff,
+  [APURegister.NR14]: 0xbf,
+  [APURegister.NR21]: 0x3f,
   [APURegister.NR22]: 0x00,
   [APURegister.NR23]: 0xff,
   [APURegister.NR24]: 0xbf,
@@ -82,7 +84,13 @@ export class APU {
 
   public writeRegister(register: APURegister, data: number) {
     switch (register) {
+      case APURegister.NR10:
+        this.channel1.setPeriodSweepPace((data >> 4) & 0x3);
+        this.channel1.setPeriodSweepDirection(data & 0x8 ? -1 : 1);
+        this.channel1.setPeriodSweepStep(data & 0x7);
+        break;
       case APURegister.NR11:
+        this.channel1.setWaveDuty((data >> 6) & 0x3);
         this.channel1.setInitialLengthTimer(data & 0x1f);
         break;
       case APURegister.NR12:
@@ -91,13 +99,13 @@ export class APU {
         this.channel1.setEnvelopeSweepPace(data & 0x7);
         break;
       case APURegister.NR13:
-        this.channel1.setFrequency(
-          makeWord(getMSB(this.channel1.getFrequency()), data)
+        this.channel1.setPeriod(
+          makeWord(getMSB(this.channel1.getPeriod()), data)
         );
         break;
       case APURegister.NR14:
-        this.channel1.setFrequency(
-          makeWord(data & 0x7, getLSB(this.channel1.getFrequency()))
+        this.channel1.setPeriod(
+          makeWord(data & 0x7, getLSB(this.channel1.getPeriod()))
         );
         this.channel1.setLengthEnable((data & 0x40) !== 0);
         if (data & 0x80) {
@@ -105,6 +113,7 @@ export class APU {
         }
         break;
       case APURegister.NR21:
+        this.channel2.setWaveDuty((data >> 6) & 0x3);
         this.channel2.setInitialLengthTimer(data & 0x1f);
         break;
       case APURegister.NR22:
@@ -113,13 +122,13 @@ export class APU {
         this.channel2.setEnvelopeSweepPace(data & 0x7);
         break;
       case APURegister.NR23:
-        this.channel2.setFrequency(
-          makeWord(getMSB(this.channel2.getFrequency()), data)
+        this.channel2.setPeriod(
+          makeWord(getMSB(this.channel2.getPeriod()), data)
         );
         break;
       case APURegister.NR24:
-        this.channel2.setFrequency(
-          makeWord(data & 0x7, getLSB(this.channel2.getFrequency()))
+        this.channel2.setPeriod(
+          makeWord(data & 0x7, getLSB(this.channel2.getPeriod()))
         );
         this.channel2.setLengthEnable((data & 0x40) !== 0);
         if (data & 0x80) {
@@ -188,7 +197,7 @@ export class APU {
         this.channel2.lengthIncrementTick();
 
         if (this.divApu % 4 === 0) {
-          // CH1 freq sweep
+          this.channel1.periodSweepTick();
 
           if (this.divApu % 8 === 0) {
             this.channel1.envelopeSweepTick();

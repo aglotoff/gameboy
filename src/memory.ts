@@ -259,9 +259,6 @@ export class Memory implements IBus {
 
   public write(address: number, data: number) {
     if (address <= 0xfdff) {
-      // if (this.oam.isDMAInProgress()) {
-      //   return;
-      // }
       return this.writeDMA(address, data);
     }
 
@@ -342,6 +339,9 @@ export class Memory implements IBus {
         case HWRegister.IE:
           return this.interruptController.setEnableRegister(data);
 
+        case HWRegister.NR10:
+          this.apu?.writeRegister(APURegister.NR10, data);
+          break;
         case HWRegister.NR11:
           this.apu?.writeRegister(APURegister.NR11, data);
           break;
@@ -373,9 +373,6 @@ export class Memory implements IBus {
           this.apu?.setAudioMasterControl(data);
           break;
 
-        case HWRegister.NR10:
-          //console.log("Sweeep = ", data.toString(16));
-          break;
         case HWRegister.NR50:
           //console.log("NR50 = ", data.toString(16));
           break;
