@@ -64,7 +64,6 @@ export class PPU {
   // Interrupts
   private statInterruptLine = false;
   private mode = 0;
-  private isFirstLineAfterEnable = false;
 
   // Per-frame state
   private windowLineCounter = 0;
@@ -124,7 +123,6 @@ export class PPU {
     this.objPalette1 = 0;
     this.statInterruptLine = false;
     this.mode = 0;
-    this.isFirstLineAfterEnable = false;
     this.windowLineCounter = 0;
     this.windowTriggered = false;
     this.dot = 0;
@@ -191,7 +189,7 @@ export class PPU {
 
     if (!wasEnabled && enabled) {
       this.scanline = 0;
-      this.dot = 0;
+      this.dot = 4;
       this.mode = PPUMode.HBlank;
       this.statusRegister &= ~STAT_MODE_MASK;
       this.objBuffer.splice(0);
@@ -199,7 +197,6 @@ export class PPU {
       this.oam.unlockWrite();
       this.vramReadLocked = false;
       this.vramWriteLocked = false;
-      this.isFirstLineAfterEnable = true;
     }
   }
 
@@ -402,7 +399,7 @@ export class PPU {
       }
 
       this.checkOAMEntry(entryIdx);
-    } else if (this.dot === this.getOAMScanTicks() - 1) {
+    } else if (this.dot === OAM_SCAN_TICKS - 1) {
       this.objBuffer.sort((o1, o2) => o1.xPosition - o2.xPosition);
 
       this.setMode(PPUMode.Drawing);
@@ -428,7 +425,7 @@ export class PPU {
   }
 
   private drawingTick() {
-    if (this.dot === this.getOAMScanTicks()) {
+    if (this.dot === OAM_SCAN_TICKS) {
       this.bgQueue = [
         { color: 0, palette: 0 },
         { color: 0, palette: 0 },
@@ -469,7 +466,7 @@ export class PPU {
       }
     }
 
-    if (this.dot >= this.getOAMScanTicks() + 4) {
+    if (this.dot >= OAM_SCAN_TICKS + 4) {
       let success = false;
 
       if (this.objFetcher.current == null) {
@@ -830,12 +827,12 @@ export class PPU {
   }
 
   private hBlankTick() {
-    if (this.dot === this.getOAMScanTicks() - 1) {
+    if (this.dot === OAM_SCAN_TICKS - 1) {
       this.setMode(PPUMode.Drawing);
       return;
     }
 
-    if (this.dot < this.getOAMScanTicks() - 1) {
+    if (this.dot < OAM_SCAN_TICKS - 1) {
       return;
     }
 
@@ -844,8 +841,7 @@ export class PPU {
     this.oam.unlockRead();
     this.oam.unlockWrite();
 
-    if (this.dot === this.getDotsPerScnaline() - 1) {
-      this.isFirstLineAfterEnable = false;
+    if (this.dot === DOTS_PER_SCANLINE - 1) {
       this.advanceScanline();
 
       if (this.scanline === LCD_HEIGHT) {
@@ -857,15 +853,11 @@ export class PPU {
     }
   }
 
-  private getOAMScanTicks() {
-    return this.isFirstLineAfterEnable ? OAM_SCAN_TICKS - 4 : OAM_SCAN_TICKS;
-  }
-
   private vBlankTick() {
     if (this.dot === 4 && this.scanline === LCD_HEIGHT) {
       this.onVBlank();
       this.lcd.render();
-    } else if (this.dot === this.getDotsPerScnaline() - 1) {
+    } else if (this.dot === DOTS_PER_SCANLINE - 1) {
       this.advanceScanline();
 
       if (this.scanline === 0) {
@@ -877,13 +869,7 @@ export class PPU {
   }
 
   private advanceDot() {
-    this.dot = (this.dot + 1) % this.getDotsPerScnaline();
-  }
-
-  private getDotsPerScnaline() {
-    return this.isFirstLineAfterEnable
-      ? DOTS_PER_SCANLINE - 4
-      : DOTS_PER_SCANLINE;
+    this.dot = (this.dot + 1) % DOTS_PER_SCANLINE;
   }
 
   private updateStatLYC() {
