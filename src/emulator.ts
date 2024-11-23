@@ -5,7 +5,9 @@ import { Memory } from "./memory";
 import { Timer, TimerRegisters } from "./hw/timer";
 import { Cartridge } from "./cartridge";
 import { ActionButton, DirectionButton, Joypad } from "./hw/joypad";
-import { APU } from "./hw/apu";
+import { APU } from "./hw/audio";
+import { SystemCounter } from "./hw/system-counter";
+import { WebAudio } from "./audio";
 
 export enum InterruptSource {
   VBlank = 0,
@@ -55,6 +57,7 @@ export class Emulator {
   private apu: APU;
   private memory: Memory;
   private joypad: Joypad;
+  private systemCounter: SystemCounter;
 
   public constructor(lcd: ILCD) {
     this.interruptController = new InterruptController();
@@ -74,11 +77,14 @@ export class Emulator {
       }
     );
 
-    this.timer = new Timer(() => {
+    this.systemCounter = new SystemCounter();
+
+    this.timer = new Timer(this.systemCounter, () => {
       this.interruptController.requestInterrupt(InterruptSource.Timer);
     });
 
-    this.apu = new APU(this.timer);
+    this.apu = new APU(this.systemCounter, new WebAudio());
+
     this.joypad = new Joypad();
 
     this.memory = new Memory(
@@ -87,7 +93,8 @@ export class Emulator {
       new TimerRegisters(this.timer),
       this.oam,
       this.joypad,
-      this.apu
+      this.apu,
+      this.systemCounter
     );
 
     this.cpu = new Cpu(this.memory, this.interruptController, () =>
@@ -97,8 +104,9 @@ export class Emulator {
 
   private mCycle() {
     for (let i = 0; i < 4; i++) {
-      this.oam.tick();
+      this.systemCounter.tick();
       this.timer.tick();
+      this.oam.tick();
       this.ppu.tick();
       this.apu.tick();
     }
@@ -162,6 +170,7 @@ export class Emulator {
   }
 
   public reset() {
+    this.systemCounter.reset();
     this.cpu.reset();
     this.apu.reset();
     this.interruptController.reset();

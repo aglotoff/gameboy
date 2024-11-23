@@ -1,9 +1,6 @@
+import { AudioChannel } from "../../audio";
+
 export class PulseChannel {
-  private static waves: Partial<Record<number, PeriodicWave>> = {};
-
-  private oscillator: OscillatorNode;
-  private gainNode: GainNode;
-
   private on = false;
 
   private initialVolume = 0;
@@ -40,8 +37,8 @@ export class PulseChannel {
     this.on = false;
     this.initialVolume = 0;
     this.volume = 0;
-    this.gainNode.gain.value = 0;
-    this.period = 0;
+    this.chan.setVolume(0);
+    this.setPeriod(0);
     this.initialLengthTimer = 0;
     this.lengthTimer = 0;
     this.lengthEnable = false;
@@ -81,7 +78,7 @@ export class PulseChannel {
 
   public setPeriod(period: number) {
     this.period = period;
-    this.oscillator.frequency.value = 131072 / (2048 - period);
+    this.chan.setPeriod(this.period);
   }
 
   public getInitialVolume() {
@@ -101,9 +98,7 @@ export class PulseChannel {
   public setWaveDuty(waveDuty: number) {
     if (this.waveDuty !== waveDuty) {
       this.waveDuty = waveDuty;
-      this.oscillator.setPeriodicWave(
-        this.getPeriodicWave([0.125, 0.25, 0.5, 0.75][this.waveDuty])
-      );
+      this.chan.setWaveDuty(waveDuty);
     }
   }
 
@@ -115,39 +110,7 @@ export class PulseChannel {
     this.lengthEnable = lengthEnable;
   }
 
-  public constructor(private audioContext: AudioContext) {
-    this.oscillator = audioContext.createOscillator();
-
-    this.oscillator.setPeriodicWave(this.getPeriodicWave(0.125));
-
-    this.oscillator.frequency.value = 0;
-
-    this.gainNode = audioContext.createGain();
-    this.gainNode.gain.value = 0;
-
-    this.oscillator.connect(this.gainNode);
-
-    this.gainNode.connect(audioContext.destination);
-    this.oscillator.start();
-  }
-
-  private getPeriodicWave(duty: number) {
-    const existingWave = PulseChannel.waves[duty];
-    if (existingWave != null) {
-      return existingWave;
-    }
-
-    const real = new Float32Array(128);
-    const imag = new Float32Array(128); // defaults to zeros
-
-    for (let n = 1; n < 128; n++) {
-      real[n] = (2 * Math.sin(Math.PI * n * duty)) / (Math.PI * n);
-    }
-
-    const wave = this.audioContext.createPeriodicWave(real, imag);
-    PulseChannel.waves[duty] = wave;
-    return wave;
-  }
+  public constructor(private chan: AudioChannel) {}
 
   public isOn() {
     return this.on;
@@ -168,7 +131,7 @@ export class PulseChannel {
     this.volume += this.envelopeDirection;
 
     if (!this.muted && this.on) {
-      this.gainNode.gain.value = this.volume / 100;
+      this.chan.setVolume(this.volume);
     }
 
     if (this.volume <= 0) {
@@ -184,7 +147,7 @@ export class PulseChannel {
         this.lengthTimer = 0;
         this.on = false;
         this.volume = 0;
-        this.gainNode.gain.value = 0;
+        this.chan.setVolume(0);
       }
     }
   }
@@ -208,13 +171,13 @@ export class PulseChannel {
       this.on = false;
     }
 
-    this.oscillator.frequency.value = 131072 / (2048 - this.period);
+    this.chan.setPeriod(this.period);
   }
 
   public trigger() {
     this.volume = this.initialVolume;
     if (!this.muted) {
-      this.gainNode.gain.value = this.volume / 100;
+      this.chan.setVolume(this.volume);
     }
     this.lengthTimer = this.initialLengthTimer;
     this.ticksToEnvelopeSweep = this.envelopeSweepPace;
@@ -226,11 +189,11 @@ export class PulseChannel {
 
   public mute() {
     this.muted = true;
-    this.gainNode.gain.value = 0;
+    this.chan.setVolume(0);
   }
 
   public unmute() {
     this.muted = false;
-    this.gainNode.gain.value = this.volume / 100;
+    this.chan.setVolume(this.volume);
   }
 }

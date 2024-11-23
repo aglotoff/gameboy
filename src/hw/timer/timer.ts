@@ -1,22 +1,11 @@
-import {
-  testBit,
-  wrappingIncrementByte,
-  wrappingIncrementWord,
-} from "../../utils";
-
-export interface IDivider {
-  getSystemCounter(): number;
-}
+import { testBit, wrappingIncrementByte } from "../../utils";
+import { SystemCounter } from "../system-counter";
 
 // References:
 // https://github.com/Hacktix/GBEDG/blob/master/timers/index.md
 // https://gbdev.io/pandocs/Timer_Obscure_Behaviour.html
 
-export class Timer implements IDivider {
-  // This magic value is used to pass the acceptance/boot_div-dmgABCmgb test
-  // TODO: something seems to be absolutely wrong...
-  private systemCounter = 0xdc87;
-
+export class Timer {
   private counterEnabled = false;
   private counter = 0;
   private modulo = 0;
@@ -26,10 +15,12 @@ export class Timer implements IDivider {
   private reloadDelay = 0;
   private isReloading = false;
 
-  public constructor(private onInterruptRequest: () => void) {}
+  public constructor(
+    private systemCounter: SystemCounter,
+    private onInterruptRequest: () => void
+  ) {}
 
   public reset() {
-    this.systemCounter = 0xdc87;
     this.counterEnabled = false;
     this.counter = 0;
     this.modulo = 0;
@@ -37,14 +28,6 @@ export class Timer implements IDivider {
     this.oldInputClockSignal = false;
     this.reloadDelay = 0;
     this.isReloading = false;
-  }
-
-  public getSystemCounter() {
-    return this.systemCounter;
-  }
-
-  public resetSystemCounter() {
-    this.systemCounter = 0;
   }
 
   public getCounter() {
@@ -96,7 +79,6 @@ export class Timer implements IDivider {
   }
 
   public tick() {
-    this.systemCounter = wrappingIncrementWord(this.systemCounter);
     this.processReloading();
     this.checkClock();
   }
@@ -118,7 +100,8 @@ export class Timer implements IDivider {
 
   private checkClock() {
     const newInputClockSignal =
-      testBit(this.systemCounter, this.inputClockBit) && this.counterEnabled;
+      testBit(this.systemCounter.getValue(), this.inputClockBit) &&
+      this.counterEnabled;
 
     const isFallingEdge = this.oldInputClockSignal && !newInputClockSignal;
     if (isFallingEdge) {

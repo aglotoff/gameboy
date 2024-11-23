@@ -1,4 +1,4 @@
-import { getMSB, testBit } from "../../utils";
+import { testBit } from "../../utils";
 import { Timer } from "./timer";
 
 const TAC_UNUSED_MASK = 0b11111000;
@@ -9,16 +9,6 @@ export class TimerRegisters {
   private controlRegister = TAC_UNUSED_MASK;
 
   public constructor(private timer: Timer) {}
-
-  public get div() {
-    // DIV is the 8 upper bits of the system counter
-    return getMSB(this.timer.getSystemCounter());
-  }
-
-  public set div(_value: number) {
-    // Writing any value resets the divider
-    this.timer.resetSystemCounter();
-  }
 
   public get tima() {
     return this.timer.getCounter();

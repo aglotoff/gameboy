@@ -4,7 +4,9 @@ import { PPU, OAM, PPURegisters } from "./hw/graphics";
 import { IBus } from "./cpu";
 import { MBC } from "./cartridge";
 import { Joypad } from "./hw/joypad";
-import { APU, APURegister } from "./hw/apu";
+import { APU, APURegister } from "./hw/audio";
+import { SystemCounter } from "./hw/system-counter";
+import { getMSB } from "./utils";
 
 let buf = "";
 
@@ -89,7 +91,8 @@ export class Memory implements IBus {
     private timer: TimerRegisters,
     private oam: OAM,
     private joypad: Joypad,
-    private apu?: APU
+    private apu: APU,
+    private systemCounter: SystemCounter
   ) {
     this.ppuRegs = new PPURegisters(ppu);
   }
@@ -165,7 +168,9 @@ export class Memory implements IBus {
           return this.oam.getDMASource();
 
         case HWRegister.DIV:
-          return this.timer.div;
+          // DIV is the 8 upper bits of the system counter
+          return getMSB(this.systemCounter.getValue());
+
         case HWRegister.TIMA:
           return this.timer.tima;
         case HWRegister.TMA:
@@ -291,8 +296,10 @@ export class Memory implements IBus {
           return this.oam.startDMA(data);
 
         case HWRegister.DIV:
-          this.timer.div = data;
+          // Writing any value resets the divider
+          this.systemCounter.resetValue();
           break;
+
         case HWRegister.TIMA:
           this.timer.tima = data;
           break;

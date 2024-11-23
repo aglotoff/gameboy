@@ -1,12 +1,13 @@
+import { WebAudio } from "../../audio";
 import {
   getLSB,
   getMSB,
   makeWord,
   testBit,
   wrappingIncrementByte,
-} from "../utils";
+} from "../../utils";
+import { SystemCounter } from "../system-counter";
 import { PulseChannel } from "./pulse-channel";
-import type { IDivider } from "./timer";
 
 export enum APURegister {
   NR10,
@@ -33,18 +34,19 @@ const writeOnlyBitMasks: Record<APURegister, number> = {
 };
 
 export class APU {
-  private audioContext = new AudioContext();
-
   private divApu = 0;
   private lastDividerBit = false;
 
   private nr51 = 0;
   private nr52 = 0;
 
-  private channel1 = new PulseChannel(this.audioContext);
-  private channel2 = new PulseChannel(this.audioContext);
+  private channel1 = new PulseChannel(this.audio.channel1);
+  private channel2 = new PulseChannel(this.audio.channel2);
 
-  public constructor(private divider: IDivider) {}
+  public constructor(
+    private systemCounter: SystemCounter,
+    private audio: WebAudio
+  ) {}
 
   public reset() {
     this.channel1.reset();
@@ -211,6 +213,6 @@ export class APU {
   }
 
   private getDividerBit() {
-    return testBit(getMSB(this.divider.getSystemCounter()), 4);
+    return testBit(this.systemCounter.getValue(), 12);
   }
 }
