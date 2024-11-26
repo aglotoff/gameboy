@@ -7,6 +7,7 @@ import { Joypad } from "./hw/joypad";
 import { APU, APURegister } from "./hw/audio";
 import { SystemCounter } from "./hw/system-counter";
 import { getMSB } from "./utils";
+import { APURegisters } from "./hw/audio/apu-registers";
 
 let buf = "";
 
@@ -84,6 +85,7 @@ export class Memory implements IBus {
   private bootROMDisabled = false;
   private mbc: MBC | null = null;
   private ppuRegs: PPURegisters;
+  private apuRegs: APURegisters;
 
   public constructor(
     private ppu: PPU,
@@ -95,6 +97,7 @@ export class Memory implements IBus {
     private systemCounter: SystemCounter
   ) {
     this.ppuRegs = new PPURegisters(ppu);
+    this.apuRegs = new APURegisters(apu);
   }
 
   public reset() {
@@ -206,26 +209,28 @@ export class Memory implements IBus {
         case HWRegister.IE:
           return this.interruptController.getEnableRegister();
 
+        case HWRegister.NR10:
+          return this.apuRegs.nr10;
         case HWRegister.NR11:
-          return this.apu?.readRegister(APURegister.NR11) ?? 0xff;
+          return this.apuRegs.nr11;
         case HWRegister.NR12:
-          return this.apu?.readRegister(APURegister.NR12) ?? 0xff;
+          return this.apuRegs.nr12;
         case HWRegister.NR13:
-          return this.apu?.readRegister(APURegister.NR13) ?? 0xff;
+          return this.apuRegs.nr13;
         case HWRegister.NR14:
-          return this.apu?.readRegister(APURegister.NR14) ?? 0xff;
+          return this.apuRegs.nr14;
         case HWRegister.NR21:
-          return this.apu?.readRegister(APURegister.NR21) ?? 0xff;
+          return this.apuRegs.nr21;
         case HWRegister.NR22:
-          return this.apu?.readRegister(APURegister.NR22) ?? 0xff;
+          return this.apuRegs.nr22;
         case HWRegister.NR23:
-          return this.apu?.readRegister(APURegister.NR23) ?? 0xff;
+          return this.apuRegs.nr23;
         case HWRegister.NR24:
-          return this.apu?.readRegister(APURegister.NR24) ?? 0xff;
+          return this.apuRegs.nr24;
         case HWRegister.NR51:
-          return this.apu?.getSoundPanning() ?? 0xff;
+          return this.apuRegs.nr51;
         case HWRegister.NR52:
-          return this.apu?.getAudioMasterControl() ?? 0xff;
+          return this.apuRegs.nr52;
 
         default:
           //console.log("READ", address.toString(16));
@@ -347,37 +352,37 @@ export class Memory implements IBus {
           return this.interruptController.setEnableRegister(data);
 
         case HWRegister.NR10:
-          this.apu?.writeRegister(APURegister.NR10, data);
+          this.apuRegs.nr10 = data;
           break;
         case HWRegister.NR11:
-          this.apu?.writeRegister(APURegister.NR11, data);
+          this.apuRegs.nr11 = data;
           break;
         case HWRegister.NR12:
-          this.apu?.writeRegister(APURegister.NR12, data);
+          this.apuRegs.nr12 = data;
           break;
         case HWRegister.NR13:
-          this.apu?.writeRegister(APURegister.NR13, data);
+          this.apuRegs.nr13 = data;
           break;
         case HWRegister.NR14:
-          this.apu?.writeRegister(APURegister.NR14, data);
+          this.apuRegs.nr14 = data;
           break;
         case HWRegister.NR21:
-          this.apu?.writeRegister(APURegister.NR21, data);
+          this.apuRegs.nr21 = data;
           break;
         case HWRegister.NR22:
-          this.apu?.writeRegister(APURegister.NR22, data);
+          this.apuRegs.nr22 = data;
           break;
         case HWRegister.NR23:
-          this.apu?.writeRegister(APURegister.NR23, data);
+          this.apuRegs.nr23 = data;
           break;
         case HWRegister.NR24:
-          this.apu?.writeRegister(APURegister.NR24, data);
+          this.apuRegs.nr24 = data;
           break;
         case HWRegister.NR51:
-          this.apu?.setSoundPanning(data);
+          this.apuRegs.nr51 = data;
           break;
         case HWRegister.NR52:
-          this.apu?.setAudioMasterControl(data);
+          this.apuRegs.nr52 = data;
           break;
 
         case HWRegister.NR50:

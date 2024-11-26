@@ -8,7 +8,6 @@ export class Cpu extends CpuState {
   public constructor(
     bus: IBus,
     private interruptController: InterruptController,
-    //private ppu: PPU,
     onCycle: () => void
   ) {
     super({ bus, onCycle });

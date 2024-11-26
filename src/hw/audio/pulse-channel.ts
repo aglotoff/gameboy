@@ -135,7 +135,7 @@ export class PulseChannel {
     }
 
     if (this.volume <= 0) {
-      this.on = false;
+      this.volume = 0;
     }
   }
 
@@ -145,16 +145,21 @@ export class PulseChannel {
 
       if (this.lengthTimer === 64) {
         this.lengthTimer = 0;
-        this.on = false;
-        this.volume = 0;
-        this.chan.setVolume(0);
+        this.off();
       }
     }
+  }
+
+  private off() {
+    this.on = false;
+    this.volume = 0;
+    this.chan.setVolume(0);
   }
 
   public periodSweepTick() {
     if (this.ticksToPeriodSweep > 0 && this.on && this.periodSweepPace) {
       this.ticksToPeriodSweep -= 1;
+
       if (this.ticksToPeriodSweep === 0) {
         this.ticksToPeriodSweep = this.periodSweepPace;
         this.periodSweep();
@@ -168,7 +173,7 @@ export class PulseChannel {
 
     if (this.period > 0x7ff || this.period < 0) {
       this.period = 0;
-      this.on = false;
+      this.off();
     }
 
     this.chan.setPeriod(this.period);
