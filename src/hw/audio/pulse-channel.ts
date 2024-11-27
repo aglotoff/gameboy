@@ -1,5 +1,17 @@
 import { AudioChannel } from "../../audio";
 
+export interface EnvelopeOptions {
+  direction: number;
+  sweepPace: number;
+  initialVolume: number;
+}
+
+export interface PeriodSweepOptions {
+  pace: number;
+  direction: number;
+  step: number;
+}
+
 export class PulseChannel {
   private on = false;
 
@@ -21,16 +33,32 @@ export class PulseChannel {
   private periodSweepDirection = 0;
   private periodSweepStep = 0;
 
-  public setPeriodSweepPace(sweepPace: number) {
-    this.periodSweepPace = sweepPace;
+  public getPeriodSweepOptions(): PeriodSweepOptions {
+    return {
+      pace: this.periodSweepPace,
+      direction: this.periodSweepDirection,
+      step: this.periodSweepStep,
+    };
   }
 
-  public setPeriodSweepDirection(sweepDirection: number) {
-    this.periodSweepDirection = sweepDirection;
+  public setPeriodSweepOptions(options: PeriodSweepOptions) {
+    this.periodSweepPace = options.pace;
+    this.periodSweepDirection = options.direction;
+    this.periodSweepStep = options.step;
   }
 
-  public setPeriodSweepStep(sweepStep: number) {
-    this.periodSweepStep = sweepStep;
+  public getEnvelopeOptions(): EnvelopeOptions {
+    return {
+      sweepPace: this.envelopeSweepPace,
+      direction: this.envelopeDirection,
+      initialVolume: this.initialVolume,
+    };
+  }
+
+  public setEnvelopeOptions(options: EnvelopeOptions) {
+    this.envelopeSweepPace = options.sweepPace;
+    this.envelopeDirection = options.direction;
+    this.initialVolume = options.initialVolume;
   }
 
   public reset() {
@@ -52,18 +80,6 @@ export class PulseChannel {
     this.setWaveDuty(0);
   }
 
-  public getEnvelopeDirection() {
-    return this.envelopeDirection;
-  }
-
-  public setEnvelopeDirection(direction: number) {
-    this.envelopeDirection = direction;
-  }
-
-  public setEnvelopeSweepPace(sweepPace: number) {
-    this.envelopeSweepPace = sweepPace;
-  }
-
   public getInitialLengthTimer() {
     return this.lengthTimer;
   }
@@ -79,14 +95,6 @@ export class PulseChannel {
   public setPeriod(period: number) {
     this.period = period;
     this.chan.setPeriod(this.period);
-  }
-
-  public getInitialVolume() {
-    return this.initialVolume;
-  }
-
-  public setInitialVolume(initialVolume: number) {
-    this.initialVolume = initialVolume;
   }
 
   public getLengthEnable() {
@@ -130,12 +138,12 @@ export class PulseChannel {
   private envelopeSweep() {
     this.volume += this.envelopeDirection;
 
-    if (!this.muted && this.on) {
-      this.chan.setVolume(this.volume);
-    }
-
     if (this.volume <= 0) {
       this.volume = 0;
+    }
+
+    if (!this.muted && this.on) {
+      this.chan.setVolume(this.volume);
     }
   }
 

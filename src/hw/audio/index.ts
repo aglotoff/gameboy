@@ -1,1 +1,1 @@
-export { APU, APURegister } from "./apu";
+export { APU } from "./apu";

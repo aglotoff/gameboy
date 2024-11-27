@@ -1,37 +1,11 @@
 import { WebAudio } from "../../audio";
-import {
-  getLSB,
-  getMSB,
-  makeWord,
-  testBit,
-  wrappingIncrementByte,
-} from "../../utils";
+import { testBit, wrappingIncrementByte } from "../../utils";
 import { SystemCounter } from "../system-counter";
-import { PulseChannel } from "./pulse-channel";
-
-export enum APURegister {
-  NR10,
-  NR11,
-  NR12,
-  NR13,
-  NR14,
-  NR21,
-  NR22,
-  NR23,
-  NR24,
-}
-
-const writeOnlyBitMasks: Record<APURegister, number> = {
-  [APURegister.NR10]: 0x80,
-  [APURegister.NR11]: 0x3f,
-  [APURegister.NR12]: 0x00,
-  [APURegister.NR13]: 0xff,
-  [APURegister.NR14]: 0xbf,
-  [APURegister.NR21]: 0x3f,
-  [APURegister.NR22]: 0x00,
-  [APURegister.NR23]: 0xff,
-  [APURegister.NR24]: 0xbf,
-};
+import {
+  EnvelopeOptions,
+  PeriodSweepOptions,
+  PulseChannel,
+} from "./pulse-channel";
 
 export class APU {
   private divApu = 0;
@@ -57,87 +31,92 @@ export class APU {
     this.nr52 = 0;
   }
 
-  public readRegister(register: APURegister) {
-    let data = 0;
-
-    switch (register) {
-      case APURegister.NR12:
-        data = this.channel1.getEnvelopeDirection() === 1 ? 0x08 : 0x00;
-        data |= this.channel1.getInitialVolume() << 4;
-        break;
-      case APURegister.NR14:
-        if (this.channel1.getLengthEnable()) {
-          data |= 0x40;
-        }
-        break;
-      case APURegister.NR22:
-        data = this.channel2.getEnvelopeDirection() === 1 ? 0x08 : 0x00;
-        data |= this.channel2.getInitialVolume() << 4;
-        break;
-      case APURegister.NR24:
-        if (this.channel2.getLengthEnable()) {
-          data |= 0x40;
-        }
-        break;
-    }
-
-    return data | writeOnlyBitMasks[register];
+  public getCH1Period() {
+    return this.channel1.getPeriod();
   }
 
-  public writeRegister(register: APURegister, data: number) {
-    switch (register) {
-      case APURegister.NR10:
-        this.channel1.setPeriodSweepPace((data >> 4) & 0x3);
-        this.channel1.setPeriodSweepDirection(data & 0x8 ? -1 : 1);
-        this.channel1.setPeriodSweepStep(data & 0x7);
-        break;
-      case APURegister.NR11:
-        this.channel1.setWaveDuty((data >> 6) & 0x3);
-        this.channel1.setInitialLengthTimer(data & 0x1f);
-        break;
-      case APURegister.NR12:
-        this.channel1.setEnvelopeDirection(data & 0x8 ? 1 : -1);
-        this.channel1.setInitialVolume(data >> 4);
-        this.channel1.setEnvelopeSweepPace(data & 0x7);
-        break;
-      case APURegister.NR13:
-        this.channel1.setPeriod(
-          makeWord(getMSB(this.channel1.getPeriod()), data)
-        );
-        break;
-      case APURegister.NR14:
-        this.channel1.setPeriod(
-          makeWord(data & 0x7, getLSB(this.channel1.getPeriod()))
-        );
-        this.channel1.setLengthEnable((data & 0x40) !== 0);
-        if (data & 0x80) {
-          this.channel1.trigger();
-        }
-        break;
-      case APURegister.NR21:
-        this.channel2.setWaveDuty((data >> 6) & 0x3);
-        this.channel2.setInitialLengthTimer(data & 0x1f);
-        break;
-      case APURegister.NR22:
-        this.channel2.setEnvelopeDirection(data & 0x8 ? 1 : -1);
-        this.channel2.setInitialVolume(data >> 4);
-        this.channel2.setEnvelopeSweepPace(data & 0x7);
-        break;
-      case APURegister.NR23:
-        this.channel2.setPeriod(
-          makeWord(getMSB(this.channel2.getPeriod()), data)
-        );
-        break;
-      case APURegister.NR24:
-        this.channel2.setPeriod(
-          makeWord(data & 0x7, getLSB(this.channel2.getPeriod()))
-        );
-        this.channel2.setLengthEnable((data & 0x40) !== 0);
-        if (data & 0x80) {
-          this.channel2.trigger();
-        }
-        break;
-    }
+  public setCH1Period(period: number) {
+    this.channel1.setPeriod(period);
+  }
+
+  public getCH1LengthEnable() {
+    return this.channel1.getLengthEnable();
+  }
+
+  public setCH1LengthEnable(enable: boolean) {
+    this.channel1.setLengthEnable(enable);
+  }
+
+  public getCH1PeriodSweepOptions() {
+    return this.channel1.getPeriodSweepOptions();
+  }
+
+  public setCH1PeriodSweepOptions(options: PeriodSweepOptions) {
+    this.channel1.setPeriodSweepOptions(options);
+  }
+
+  public getCH1EnvelopeOptions() {
+    return this.channel1.getEnvelopeOptions();
+  }
+
+  public setCH1EnvelopeOptions(options: EnvelopeOptions) {
+    this.channel1.setEnvelopeOptions(options);
+  }
+
+  public getCH1WaveDuty() {
+    return this.channel1.getWaveDuty();
+  }
+
+  public setCH1WaveDuty(waveDuty: number) {
+    this.channel1.setWaveDuty(waveDuty);
+  }
+
+  public setCH1LengthTimer(lengthTimer: number) {
+    this.channel1.setInitialLengthTimer(lengthTimer);
+  }
+
+  public getCH2Period() {
+    return this.channel2.getPeriod();
+  }
+
+  public setCH2Period(period: number) {
+    this.channel2.setPeriod(period);
+  }
+
+  public getCH2LengthEnable() {
+    return this.channel2.getLengthEnable();
+  }
+
+  public setCH2LengthEnable(enable: boolean) {
+    this.channel2.setLengthEnable(enable);
+  }
+
+  public getCH2EnvelopeOptions() {
+    return this.channel2.getEnvelopeOptions();
+  }
+
+  public setCH2EnvelopeOptions(options: EnvelopeOptions) {
+    this.channel2.setEnvelopeOptions(options);
+  }
+
+  public getCH2WaveDuty() {
+    return this.channel2.getWaveDuty();
+  }
+
+  public setCH2WaveDuty(waveDuty: number) {
+    this.channel2.setWaveDuty(waveDuty);
+  }
+
+  public setCH2LengthTimer(lengthTimer: number) {
+    this.channel2.setInitialLengthTimer(lengthTimer);
+  }
+
+  public triggerCH1() {
+    this.channel1.trigger();
+  }
+
+  public triggerCH2() {
+    this.channel2.trigger();
   }
 
   public getSoundPanning() {
