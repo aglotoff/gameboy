@@ -16,7 +16,7 @@ export class PulseChannel {
   private on = false;
 
   private initialVolume = 0;
-  private volume = 0;
+  private currentVolume = 0;
 
   private period = 0;
 
@@ -59,12 +59,23 @@ export class PulseChannel {
     this.envelopeSweepPace = options.sweepPace;
     this.envelopeDirection = options.direction;
     this.initialVolume = options.initialVolume;
+
+    if (this.on && !this.isDACEnabled()) {
+      this.turnOff();
+    }
+  }
+
+  private setVolume(volume: number) {
+    this.currentVolume = volume;
+    if (!this.muted) {
+      this.chan.setVolume(volume / 15);
+    }
   }
 
   public reset() {
     this.on = false;
     this.initialVolume = 0;
-    this.volume = 0;
+    this.currentVolume = 0;
     this.chan.setVolume(0);
     this.setPeriod(0);
     this.initialLengthTimer = 0;
@@ -125,6 +136,8 @@ export class PulseChannel {
   }
 
   public envelopeSweepTick() {
+    if (!this.on) return;
+
     if (this.ticksToEnvelopeSweep > 0 && this.on && this.envelopeSweepPace) {
       this.ticksToEnvelopeSweep -= 1;
 
@@ -136,35 +149,30 @@ export class PulseChannel {
   }
 
   private envelopeSweep() {
-    this.volume += this.envelopeDirection;
-
-    if (this.volume <= 0) {
-      this.volume = 0;
-    }
-
-    if (!this.muted && this.on) {
-      this.chan.setVolume(this.volume);
-    }
+    this.setVolume(
+      Math.min(Math.max(this.currentVolume + this.envelopeDirection, 0), 15)
+    );
   }
 
   public lengthIncrementTick() {
-    if (this.lengthEnable) {
+    if (this.on && this.lengthEnable) {
       this.lengthTimer += 1;
 
       if (this.lengthTimer === 64) {
         this.lengthTimer = 0;
-        this.off();
+        this.turnOff();
       }
     }
   }
 
-  private off() {
+  private turnOff() {
     this.on = false;
-    this.volume = 0;
-    this.chan.setVolume(0);
+    this.setVolume(0);
   }
 
   public periodSweepTick() {
+    if (!this.on) return;
+
     if (this.ticksToPeriodSweep > 0 && this.on && this.periodSweepPace) {
       this.ticksToPeriodSweep -= 1;
 
@@ -181,20 +189,20 @@ export class PulseChannel {
 
     if (this.period > 0x7ff || this.period < 0) {
       this.period = 0;
-      this.off();
+      this.turnOff();
     }
 
     this.chan.setPeriod(this.period);
   }
 
   public trigger() {
-    this.volume = this.initialVolume;
-    if (!this.muted) {
-      this.chan.setVolume(this.volume);
-    }
+    if (!this.isDACEnabled()) return;
+
+    this.setVolume(this.initialVolume);
     this.lengthTimer = this.initialLengthTimer;
     this.ticksToEnvelopeSweep = this.envelopeSweepPace;
     this.ticksToPeriodSweep = this.periodSweepPace;
+
     this.on = true;
   }
 
@@ -207,6 +215,14 @@ export class PulseChannel {
 
   public unmute() {
     this.muted = false;
-    this.chan.setVolume(this.volume);
+    this.chan.setVolume(this.currentVolume / 15);
+  }
+
+  public isMuted() {
+    return this.muted;
+  }
+
+  private isDACEnabled() {
+    return this.initialVolume > 0 || this.envelopeDirection > 0;
   }
 }

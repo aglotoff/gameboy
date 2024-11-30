@@ -4,7 +4,7 @@ import { PPU, OAM, PPURegisters } from "./hw/graphics";
 import { IBus } from "./cpu";
 import { MBC } from "./cartridge";
 import { Joypad } from "./hw/joypad";
-import { APU, APURegister } from "./hw/audio";
+import { APU } from "./hw/audio";
 import { SystemCounter } from "./hw/system-counter";
 import { getMSB } from "./utils";
 import { APURegisters } from "./hw/audio/apu-registers";
@@ -227,10 +227,38 @@ export class Memory implements IBus {
           return this.apuRegs.nr23;
         case HWRegister.NR24:
           return this.apuRegs.nr24;
+        case HWRegister.NR30:
+          return this.apuRegs.nr30;
+        case HWRegister.NR31:
+          return this.apuRegs.nr31;
+        case HWRegister.NR32:
+          return this.apuRegs.nr32;
+        case HWRegister.NR33:
+          return this.apuRegs.nr33;
+        case HWRegister.NR34:
+          return this.apuRegs.nr34;
         case HWRegister.NR51:
           return this.apuRegs.nr51;
         case HWRegister.NR52:
           return this.apuRegs.nr52;
+
+        case 0xff30:
+        case 0xff31:
+        case 0xff32:
+        case 0xff33:
+        case 0xff34:
+        case 0xff35:
+        case 0xff36:
+        case 0xff37:
+        case 0xff38:
+        case 0xff39:
+        case 0xff3a:
+        case 0xff3b:
+        case 0xff3c:
+        case 0xff3d:
+        case 0xff3e:
+        case 0xff3f:
+          return this.apu.readWaveRAM(address - 0xff30);
 
         default:
           //console.log("READ", address.toString(16));
@@ -385,19 +413,49 @@ export class Memory implements IBus {
           this.apuRegs.nr52 = data;
           break;
 
+        case HWRegister.NR30:
+          this.apuRegs.nr30 = data;
+          break;
+        case HWRegister.NR31:
+          this.apuRegs.nr31 = data;
+          break;
+        case HWRegister.NR32:
+          this.apuRegs.nr32 = data;
+          break;
+        case HWRegister.NR33:
+          this.apuRegs.nr33 = data;
+          break;
+        case HWRegister.NR34:
+          this.apuRegs.nr34 = data;
+          break;
+
         case HWRegister.NR50:
           //console.log("NR50 = ", data.toString(16));
           break;
 
-        case HWRegister.NR30:
-        case HWRegister.NR31:
-        case HWRegister.NR32:
-        case HWRegister.NR33:
-        case HWRegister.NR34:
         case HWRegister.NR41:
         case HWRegister.NR42:
         case HWRegister.NR43:
         case HWRegister.NR44:
+
+        case 0xff30:
+        case 0xff31:
+        case 0xff32:
+        case 0xff33:
+        case 0xff34:
+        case 0xff35:
+        case 0xff36:
+        case 0xff37:
+        case 0xff38:
+        case 0xff39:
+        case 0xff3a:
+        case 0xff3b:
+        case 0xff3c:
+        case 0xff3d:
+        case 0xff3e:
+        case 0xff3f:
+          this.apu.writeWaveRAM(address - 0xff30, data);
+          break;
 
         case 0xff15:
         case 0xff1f:

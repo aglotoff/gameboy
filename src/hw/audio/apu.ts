@@ -6,16 +6,24 @@ import {
   PeriodSweepOptions,
   PulseChannel,
 } from "./pulse-channel";
+import { WaveChannel } from "./wave-channel";
+
+// TODO: 13 in double-speed mode
+const APU_DIV_TRIGGER_BIT = 12;
+
+const SOUND_LENGTH_RATE = 2;
+const PERIOD_SWEEP_RATE = 4;
+const ENVELOPE_SWEEP_RATE = 8;
 
 export class APU {
   private divApu = 0;
   private lastDividerBit = false;
 
   private nr51 = 0;
-  private nr52 = 0;
 
-  private channel1 = new PulseChannel(this.audio.channel1);
-  private channel2 = new PulseChannel(this.audio.channel2);
+  public channel1 = new PulseChannel(this.audio.channel1);
+  public channel2 = new PulseChannel(this.audio.channel2);
+  public channel3 = new WaveChannel(this.audio.channel3);
 
   public constructor(
     private systemCounter: SystemCounter,
@@ -28,7 +36,6 @@ export class APU {
     this.divApu = 0;
     this.lastDividerBit = false;
     this.nr51 = 0;
-    this.nr52 = 0;
   }
 
   public getCH1Period() {
@@ -111,12 +118,52 @@ export class APU {
     this.channel2.setInitialLengthTimer(lengthTimer);
   }
 
+  public getCH3Period() {
+    return this.channel3.getPeriod();
+  }
+
+  public setCH3Period(period: number) {
+    this.channel3.setPeriod(period);
+  }
+
+  public getCH3LengthEnable() {
+    return this.channel3.getLengthEnable();
+  }
+
+  public setCH3LengthEnable(enable: boolean) {
+    this.channel3.setLengthEnable(enable);
+  }
+
   public triggerCH1() {
     this.channel1.trigger();
   }
 
   public triggerCH2() {
     this.channel2.trigger();
+  }
+
+  public triggerCH3() {
+    this.channel3.trigger();
+  }
+
+  public isCH3DACEnabled() {
+    return this.channel3.isDACEnabled();
+  }
+
+  public setCH3DACEnabled(enabled: boolean) {
+    this.channel3.setDACEnabled(enabled);
+  }
+
+  public setCH3LengthTimer(timer: number) {
+    this.channel3.setInitialLengthTimer(timer);
+  }
+
+  public getCH3Volume() {
+    return this.channel3.getVolume();
+  }
+
+  public setCH3Volume(volume: number) {
+    this.channel3.setVolume(volume);
   }
 
   public getSoundPanning() {
@@ -137,33 +184,40 @@ export class APU {
     } else {
       this.channel2.mute();
     }
-  }
 
-  public getAudioMasterControl() {
-    return (
-      this.nr52 |
-      (this.channel2.isOn() ? 0x2 : 0) |
-      (this.channel1.isOn() ? 1 : 0)
-    );
-  }
-
-  public setAudioMasterControl(data: number) {
-    const wasOn = (this.nr52 & 0x80) !== 0;
-    const isOn = (data & 0x80) !== 0;
-
-    this.nr52 = data & 0x80;
-
-    if (!wasOn && isOn) {
-      if (data & 0x11) {
-        this.channel1.unmute();
-      }
-      if (data & 0x22) {
-        this.channel2.unmute();
-      }
-    } else if (wasOn && !isOn) {
-      this.channel1.mute();
-      this.channel2.mute();
+    if (data & 0x44) {
+      this.channel3.unmute();
+    } else {
+      this.channel3.mute();
     }
+  }
+
+  public isCH1On() {
+    return this.channel1.isOn();
+  }
+
+  public isCH2On() {
+    return this.channel2.isOn();
+  }
+
+  public isCH3On() {
+    return this.channel3.isOn();
+  }
+
+  private on = false;
+
+  public turnOn() {
+    this.on = true;
+    this.audio.turnOn();
+  }
+
+  public turnOff() {
+    this.on = false;
+    this.audio.turnOff();
+  }
+
+  public isOn() {
+    return this.on;
   }
 
   public tick() {
@@ -173,14 +227,15 @@ export class APU {
     if (isFallingEdge) {
       this.divApu = wrappingIncrementByte(this.divApu);
 
-      if (this.divApu % 2 === 0) {
+      if (this.divApu % SOUND_LENGTH_RATE === 0) {
         this.channel1.lengthIncrementTick();
         this.channel2.lengthIncrementTick();
+        this.channel3.lengthIncrementTick();
 
-        if (this.divApu % 4 === 0) {
+        if (this.divApu % PERIOD_SWEEP_RATE === 0) {
           this.channel1.periodSweepTick();
 
-          if (this.divApu % 8 === 0) {
+          if (this.divApu % ENVELOPE_SWEEP_RATE === 0) {
             this.channel1.envelopeSweepTick();
             this.channel2.envelopeSweepTick();
           }
@@ -192,6 +247,15 @@ export class APU {
   }
 
   private getDividerBit() {
-    return testBit(this.systemCounter.getValue(), 12);
+    return testBit(this.systemCounter.getValue(), APU_DIV_TRIGGER_BIT);
+  }
+
+  public readWaveRAM(offset: number) {
+    return this.channel3.wave[offset];
+  }
+
+  public writeWaveRAM(offset: number, data: number) {
+    this.channel3.wave[offset] = data;
+    this.channel3.waveChanged = true;
   }
 }

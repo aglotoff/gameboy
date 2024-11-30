@@ -1,11 +1,12 @@
 import { getLSB, getMSB, makeWord } from "../../utils";
 import { APU } from "./apu";
+import { EnvelopeOptions } from "./pulse-channel";
 
 export class APURegisters {
   public constructor(private apu: APU) {}
 
   public get nr10() {
-    const options = this.apu.getCH1PeriodSweepOptions();
+    const options = this.apu.channel1.getPeriodSweepOptions();
 
     let data = 0x80;
 
@@ -17,7 +18,7 @@ export class APURegisters {
   }
 
   public set nr10(data: number) {
-    this.apu.setCH1PeriodSweepOptions({
+    this.apu.channel1.setPeriodSweepOptions({
       pace: (data >> 4) & 0x3,
       direction: data & 0x8 ? -1 : 1,
       step: data & 0x7,
@@ -26,31 +27,21 @@ export class APURegisters {
 
   public get nr11() {
     let data = 0x3f;
-    data |= this.apu.getCH1WaveDuty() << 6;
+    data |= this.apu.channel1.getWaveDuty() << 6;
     return data;
   }
 
   public set nr11(data: number) {
-    this.apu.setCH1WaveDuty((data >> 6) & 0x3);
-    this.apu.setCH1LengthTimer(data & 0x1f);
+    this.apu.channel1.setWaveDuty((data >> 6) & 0x3);
+    this.apu.channel1.setInitialLengthTimer(data & 0x1f);
   }
 
   public get nr12() {
-    const options = this.apu.getCH1EnvelopeOptions();
-
-    let data = options.sweepPace;
-    data |= options.initialVolume << 4;
-    data |= options.direction === 1 ? 0x8 : 1;
-
-    return data;
+    return convertEnvelopeOptionsToBits(this.apu.channel1.getEnvelopeOptions());
   }
 
   public set nr12(data: number) {
-    this.apu.setCH1EnvelopeOptions({
-      direction: data & 0x8 ? 1 : -1,
-      sweepPace: data & 0x7,
-      initialVolume: data >> 4,
-    });
+    this.apu.channel1.setEnvelopeOptions(convertBitsToEnvelopeOptions(data));
   }
 
   public get nr13() {
@@ -58,7 +49,7 @@ export class APURegisters {
   }
 
   public set nr13(data: number) {
-    this.apu.setCH1Period(makeWord(getMSB(this.apu.getCH1Period()), data));
+    setPeriodLSB(this.apu.channel1, data);
   }
 
   public get nr14() {
@@ -68,10 +59,12 @@ export class APURegisters {
   }
 
   public set nr14(data: number) {
-    this.apu.setCH1Period(makeWord(data & 7, getLSB(this.apu.getCH1Period())));
-    this.apu.setCH1LengthEnable((data & 0x40) !== 0);
+    setPeriodMSB(this.apu.channel1, data);
+
+    this.apu.channel1.setLengthEnable((data & 0x40) !== 0);
+
     if (data & 0x80) {
-      this.apu.triggerCH1();
+      this.apu.channel1.trigger();
     }
   }
 
@@ -87,21 +80,11 @@ export class APURegisters {
   }
 
   public get nr22() {
-    const options = this.apu.getCH2EnvelopeOptions();
-
-    let data = options.sweepPace;
-    data |= options.initialVolume << 4;
-    data |= options.direction === 1 ? 0x8 : 1;
-
-    return data;
+    return convertEnvelopeOptionsToBits(this.apu.channel2.getEnvelopeOptions());
   }
 
   public set nr22(data: number) {
-    this.apu.setCH2EnvelopeOptions({
-      direction: data & 0x8 ? 1 : -1,
-      sweepPace: data & 0x7,
-      initialVolume: data >> 4,
-    });
+    this.apu.channel2.setEnvelopeOptions(convertBitsToEnvelopeOptions(data));
   }
 
   public get nr23() {
@@ -109,7 +92,7 @@ export class APURegisters {
   }
 
   public set nr23(data: number) {
-    this.apu.setCH2Period(makeWord(getMSB(this.apu.getCH2Period()), data));
+    setPeriodLSB(this.apu.channel2, data);
   }
 
   public get nr24() {
@@ -119,10 +102,12 @@ export class APURegisters {
   }
 
   public set nr24(data: number) {
-    this.apu.setCH2Period(makeWord(data & 7, getLSB(this.apu.getCH2Period())));
-    this.apu.setCH2LengthEnable((data & 0x40) !== 0);
+    setPeriodMSB(this.apu.channel2, data);
+
+    this.apu.channel2.setLengthEnable((data & 0x40) !== 0);
+
     if (data & 0x80) {
-      this.apu.triggerCH2();
+      this.apu.channel2.trigger();
     }
   }
 
@@ -135,10 +120,101 @@ export class APURegisters {
   }
 
   public get nr52() {
-    return this.apu.getAudioMasterControl();
+    let data = 0x70;
+    if (this.apu.isOn()) data |= 0x80;
+    if (this.apu.isCH1On()) data |= 0x01;
+    if (this.apu.isCH2On()) data |= 0x02;
+    if (this.apu.isCH3On()) data |= 0x04;
+    return data;
   }
 
   public set nr52(data: number) {
-    this.apu.setAudioMasterControl(data);
+    if ((data & 0x80) !== 0 && !this.apu.isOn()) {
+      this.apu.turnOn();
+    } else if ((data & 0x80) !== 0 && !this.apu.isOn()) {
+      this.apu.turnOff();
+    }
   }
+
+  public get nr30() {
+    let data = 0x7f;
+    if (this.apu.isCH3DACEnabled()) data |= 0x80;
+    return data;
+  }
+
+  public set nr30(data: number) {
+    this.apu.setCH3DACEnabled((data & 0x80) !== 0);
+  }
+
+  public get nr31() {
+    return 0xff;
+  }
+
+  public set nr31(data: number) {
+    this.apu.setCH3LengthTimer(data);
+  }
+
+  public get nr32() {
+    return [0, 1, 0.5, 0.25].indexOf(this.apu.getCH3Volume());
+  }
+
+  public set nr32(data: number) {
+    this.apu.setCH3Volume([0, 1, 0.5, 0.25][(data >> 5) & 0x3]);
+  }
+
+  public get nr33() {
+    return 0xff;
+  }
+
+  public set nr33(data: number) {
+    setPeriodLSB(this.apu.channel3, data);
+  }
+
+  public get nr34() {
+    let data = 0xbf;
+    data |= this.apu.getCH3LengthEnable() ? 0x40 : 0;
+    return data;
+  }
+
+  public set nr34(data: number) {
+    setPeriodMSB(this.apu.channel3, data);
+
+    this.apu.channel3.setLengthEnable((data & 0x40) !== 0);
+
+    if (data & 0x80) {
+      this.apu.channel3.trigger();
+    }
+  }
+}
+
+const INITIAL_VOLUME_SHIFT = 4;
+const ENVELOPE_SWEEP_PACE_MASK = 0b111;
+const ENVELOPE_DIRECTION_PACE_MASK = 0b1000;
+
+function convertEnvelopeOptionsToBits(options: EnvelopeOptions) {
+  let data = options.sweepPace;
+  data |= options.initialVolume << INITIAL_VOLUME_SHIFT;
+  data |= options.direction === 1 ? ENVELOPE_DIRECTION_PACE_MASK : 1;
+  return data;
+}
+
+function convertBitsToEnvelopeOptions(data: number): EnvelopeOptions {
+  return {
+    direction: data & ENVELOPE_DIRECTION_PACE_MASK ? 1 : -1,
+    sweepPace: data & ENVELOPE_SWEEP_PACE_MASK,
+    initialVolume: data >> INITIAL_VOLUME_SHIFT,
+  };
+}
+
+interface IChannel {
+  getPeriod(): number;
+  setPeriod(period: number): void;
+}
+
+function setPeriodLSB(channel: IChannel, data: number) {
+  channel.setPeriod(makeWord(getMSB(channel.getPeriod()), data));
+}
+
+function setPeriodMSB(channel: IChannel, data: number) {
+  channel.setPeriod(makeWord(data & 0b111, getLSB(channel.getPeriod())));
 }
