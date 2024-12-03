@@ -1,9 +1,9 @@
 export class WebAudio {
   private audioContext = new AudioContext();
 
-  public channel1 = new AudioChannel(this.audioContext);
-  public channel2 = new AudioChannel(this.audioContext);
-  public channel3 = new AudioChannel(this.audioContext);
+  public channel1 = new WebAudioChannel(this.audioContext);
+  public channel2 = new WebAudioChannel(this.audioContext);
+  public channel3 = new WebWaveChannel(this.audioContext);
 
   public turnOn() {
     this.audioContext.resume();
@@ -11,6 +11,72 @@ export class WebAudio {
 
   public turnOff() {
     this.audioContext.suspend();
+  }
+}
+
+export interface IAudioChannel {
+  setVolume(volume: number): void;
+}
+
+export class WebWaveChannel implements IAudioChannel {
+  private oscillator: OscillatorNode;
+  private gainNode: GainNode;
+
+  public constructor(private audioContext: AudioContext) {
+    this.oscillator = audioContext.createOscillator();
+    this.oscillator.frequency.value = 0;
+
+    this.gainNode = audioContext.createGain();
+    this.gainNode.gain.value = 0;
+
+    this.oscillator.connect(this.gainNode);
+
+    this.gainNode.connect(audioContext.destination);
+
+    this.oscillator.start();
+  }
+
+  public setWave(ram: Uint8Array) {
+    const x: number[] = [];
+
+    for (let i = 0; i < ram.length; i++) {
+      const hi = (ram[i] >> 4) & 0xf;
+      const lo = ram[i] & 0xf;
+
+      x[i * 16] = hi;
+      x[i * 16 + 1] = hi;
+      x[i * 16 + 2] = hi;
+      x[i * 16 + 3] = hi;
+      x[i * 16 + 4] = hi;
+      x[i * 16 + 5] = hi;
+      x[i * 16 + 6] = hi;
+      x[i * 16 + 7] = hi;
+      x[i * 16 + 8] = lo;
+      x[i * 16 + 9] = lo;
+      x[i * 16 + 10] = lo;
+      x[i * 16 + 11] = lo;
+      x[i * 16 + 12] = lo;
+      x[i * 16 + 13] = lo;
+      x[i * 16 + 14] = lo;
+      x[i * 16 + 15] = lo;
+    }
+
+    const result = fft(x);
+
+    const real = result.map((c) => c.getReal());
+    const imag = result.map((c) => c.getImag());
+
+    const wave = this.audioContext.createPeriodicWave(real, imag);
+
+    this.oscillator.setPeriodicWave(wave);
+  }
+
+  public setPeriod(period: number) {
+    this.oscillator.frequency.value = 65536 / (2048 - period);
+  }
+
+  public setVolume(volume: number) {
+    this.gainNode.gain.value = volume && volume / 10;
   }
 }
 
@@ -67,7 +133,7 @@ function fft(x: number[]): Complex[] {
   return y;
 }
 
-export class AudioChannel {
+export class WebAudioChannel implements IAudioChannel {
   private static waves: Partial<Record<number, PeriodicWave>> = {};
 
   private oscillator: OscillatorNode;
@@ -89,7 +155,7 @@ export class AudioChannel {
   }
 
   private getPeriodicWave(duty: number) {
-    const existingWave = AudioChannel.waves[duty];
+    const existingWave = WebAudioChannel.waves[duty];
     if (existingWave != null) {
       return existingWave;
     }
@@ -102,7 +168,7 @@ export class AudioChannel {
     }
 
     const wave = this.audioContext.createPeriodicWave(real, imag);
-    AudioChannel.waves[duty] = wave;
+    WebAudioChannel.waves[duty] = wave;
     return wave;
   }
 
@@ -151,11 +217,7 @@ export class AudioChannel {
     this.oscillator.frequency.value = 131072 / (2048 - period);
   }
 
-  public setPeriod2(period: number) {
-    this.oscillator.frequency.value = 65536 / (2048 - period);
-  }
-
   public setVolume(volume: number) {
-    this.gainNode.gain.value = volume && volume / 10;
+    this.gainNode.gain.value = volume && volume / 150;
   }
 }

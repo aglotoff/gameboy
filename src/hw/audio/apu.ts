@@ -1,11 +1,8 @@
 import { WebAudio } from "../../audio";
 import { testBit, wrappingIncrementByte } from "../../utils";
 import { SystemCounter } from "../system-counter";
-import {
-  EnvelopeOptions,
-  PeriodSweepOptions,
-  PulseChannel,
-} from "./pulse-channel";
+import { EnvelopeOptions } from "./envelope-channel";
+import { PeriodSweepOptions, PulseChannel } from "./pulse-channel";
 import { WaveChannel } from "./wave-channel";
 
 // TODO: 13 in double-speed mode

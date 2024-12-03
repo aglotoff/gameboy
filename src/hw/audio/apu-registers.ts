@@ -1,6 +1,6 @@
 import { getLSB, getMSB, makeWord } from "../../utils";
 import { APU } from "./apu";
-import { EnvelopeOptions } from "./pulse-channel";
+import { EnvelopeOptions } from "./envelope-channel";
 
 export class APURegisters {
   public constructor(private apu: APU) {}
