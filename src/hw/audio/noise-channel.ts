@@ -9,8 +9,16 @@ export interface RandomOptions {
 
 export class NoiseChannel extends EnvelopeChannel<WebNoiseChannel> {
   private clockShift = 0;
-  private lfsrWidth = 0;
+  private lfsrWidth = 15;
   private clockDivider = 0;
+
+  public reset() {
+    super.reset();
+
+    this.clockDivider = 0;
+    this.lfsrWidth = 15;
+    this.clockShift = 0;
+  }
 
   public setRandomOptions(options: RandomOptions) {
     this.clockShift = options.clockShift;

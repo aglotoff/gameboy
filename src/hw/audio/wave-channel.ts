@@ -9,6 +9,7 @@ export class WaveChannel extends BaseChannel<WebWaveChannel> {
 
   public reset() {
     super.reset();
+    this.dacEnabled = false;
     this.period = 0;
   }
 

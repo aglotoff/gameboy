@@ -1,9 +1,8 @@
 import { WebAudio } from "../../audio";
 import { testBit, wrappingIncrementByte } from "../../utils";
 import { SystemCounter } from "../system-counter";
-import { EnvelopeOptions } from "./envelope-channel";
 import { NoiseChannel } from "./noise-channel";
-import { PeriodSweepOptions, PulseChannel } from "./pulse-channel";
+import { PulseChannel } from "./pulse-channel";
 import { WaveChannel } from "./wave-channel";
 
 // TODO: 13 in double-speed mode
@@ -17,6 +16,7 @@ export class APU {
   private divApu = 0;
   private lastDividerBit = false;
 
+  private nr50 = 0;
   private nr51 = 0;
 
   public channel1 = new PulseChannel(this.audio.channel1);
@@ -32,137 +32,12 @@ export class APU {
   public reset() {
     this.channel1.reset();
     this.channel2.reset();
+    this.channel3.reset();
+    this.channel4.reset();
+
     this.divApu = 0;
     this.lastDividerBit = false;
     this.nr51 = 0;
-  }
-
-  public getCH1Period() {
-    return this.channel1.getPeriod();
-  }
-
-  public setCH1Period(period: number) {
-    this.channel1.setPeriod(period);
-  }
-
-  public getCH1LengthEnable() {
-    return this.channel1.getLengthEnable();
-  }
-
-  public setCH1LengthEnable(enable: boolean) {
-    this.channel1.setLengthEnable(enable);
-  }
-
-  public getCH1PeriodSweepOptions() {
-    return this.channel1.getPeriodSweepOptions();
-  }
-
-  public setCH1PeriodSweepOptions(options: PeriodSweepOptions) {
-    this.channel1.setPeriodSweepOptions(options);
-  }
-
-  public getCH1EnvelopeOptions() {
-    return this.channel1.getEnvelopeOptions();
-  }
-
-  public setCH1EnvelopeOptions(options: EnvelopeOptions) {
-    this.channel1.setEnvelopeOptions(options);
-  }
-
-  public getCH1WaveDuty() {
-    return this.channel1.getWaveDuty();
-  }
-
-  public setCH1WaveDuty(waveDuty: number) {
-    this.channel1.setWaveDuty(waveDuty);
-  }
-
-  public setCH1LengthTimer(lengthTimer: number) {
-    this.channel1.setInitialLengthTimer(lengthTimer);
-  }
-
-  public getCH2Period() {
-    return this.channel2.getPeriod();
-  }
-
-  public setCH2Period(period: number) {
-    this.channel2.setPeriod(period);
-  }
-
-  public getCH2LengthEnable() {
-    return this.channel2.getLengthEnable();
-  }
-
-  public setCH2LengthEnable(enable: boolean) {
-    this.channel2.setLengthEnable(enable);
-  }
-
-  public getCH2EnvelopeOptions() {
-    return this.channel2.getEnvelopeOptions();
-  }
-
-  public setCH2EnvelopeOptions(options: EnvelopeOptions) {
-    this.channel2.setEnvelopeOptions(options);
-  }
-
-  public getCH2WaveDuty() {
-    return this.channel2.getWaveDuty();
-  }
-
-  public setCH2WaveDuty(waveDuty: number) {
-    this.channel2.setWaveDuty(waveDuty);
-  }
-
-  public setCH2LengthTimer(lengthTimer: number) {
-    this.channel2.setInitialLengthTimer(lengthTimer);
-  }
-
-  public getCH3Period() {
-    return this.channel3.getPeriod();
-  }
-
-  public setCH3Period(period: number) {
-    this.channel3.setPeriod(period);
-  }
-
-  public getCH3LengthEnable() {
-    return this.channel3.getLengthEnable();
-  }
-
-  public setCH3LengthEnable(enable: boolean) {
-    this.channel3.setLengthEnable(enable);
-  }
-
-  public triggerCH1() {
-    this.channel1.trigger();
-  }
-
-  public triggerCH2() {
-    this.channel2.trigger();
-  }
-
-  public triggerCH3() {
-    this.channel3.trigger();
-  }
-
-  public isCH3DACEnabled() {
-    return this.channel3.isDACEnabled();
-  }
-
-  public setCH3DACEnabled(enabled: boolean) {
-    this.channel3.setDACEnabled(enabled);
-  }
-
-  public setCH3LengthTimer(timer: number) {
-    this.channel3.setInitialLengthTimer(timer);
-  }
-
-  public getCH3Volume() {
-    return this.channel3.getVolume();
-  }
-
-  public setCH3Volume(volume: number) {
-    this.channel3.setVolume(volume);
   }
 
   public getSoundPanning() {
@@ -170,47 +45,34 @@ export class APU {
   }
 
   public setSoundPanning(data: number) {
+    const onBits = (this.nr51 ^ data) & data;
+    const offBits = (this.nr51 ^ data) & ~data;
+
+    if (onBits & (1 << 0)) this.connectCH1Right(true);
+    else if (offBits & (1 << 0)) this.connectCH1Right(false);
+
+    if (onBits & (1 << 1)) this.connectCH2Right(true);
+    else if (offBits & (1 << 1)) this.connectCH2Right(false);
+
+    if (onBits & (1 << 2)) this.connectCH3Right(true);
+    else if (offBits & (1 << 2)) this.connectCH3Right(false);
+
+    if (onBits & (1 << 3)) this.connectCH4Right(true);
+    else if (offBits & (1 << 3)) this.connectCH4Right(false);
+
+    if (onBits & (1 << 4)) this.connectCH1Left(true);
+    else if (offBits & (1 << 4)) this.connectCH1Left(false);
+
+    if (onBits & (1 << 5)) this.connectCH2Left(true);
+    else if (offBits & (1 << 5)) this.connectCH2Left(false);
+
+    if (onBits & (1 << 6)) this.connectCH3Left(true);
+    else if (offBits & (1 << 6)) this.connectCH3Left(false);
+
+    if (onBits & (1 << 7)) this.connectCH4Left(true);
+    else if (offBits & (1 << 7)) this.connectCH4Left(false);
+
     this.nr51 = data;
-
-    if (data & 0x11) {
-      this.channel1.unmute();
-    } else {
-      this.channel1.mute();
-    }
-
-    if (data & 0x22) {
-      this.channel2.unmute();
-    } else {
-      this.channel2.mute();
-    }
-
-    if (data & 0x44) {
-      this.channel3.unmute();
-    } else {
-      this.channel3.mute();
-    }
-
-    if (data & 0x88) {
-      this.channel4.unmute();
-    } else {
-      this.channel4.mute();
-    }
-  }
-
-  public isCH1On() {
-    return this.channel1.isOn();
-  }
-
-  public isCH2On() {
-    return this.channel2.isOn();
-  }
-
-  public isCH3On() {
-    return this.channel3.isOn();
-  }
-
-  public isCH4On() {
-    return this.channel4.isOn();
   }
 
   private on = false;
@@ -268,5 +130,79 @@ export class APU {
   public writeWaveRAM(offset: number, data: number) {
     this.channel3.wave[offset] = data;
     this.channel3.waveChanged = true;
+  }
+
+  public connectCH1Left(value: boolean) {
+    if (value) {
+      this.audio.channel1.connect(this.audio.left);
+    } else {
+      this.audio.channel1.disconnect(this.audio.left);
+    }
+  }
+
+  public connectCH1Right(value: boolean) {
+    if (value) {
+      this.audio.channel1.connect(this.audio.right);
+    } else {
+      this.audio.channel1.disconnect(this.audio.right);
+    }
+  }
+
+  public connectCH2Left(value: boolean) {
+    if (value) {
+      this.audio.channel2.connect(this.audio.left);
+    } else {
+      this.audio.channel2.disconnect(this.audio.left);
+    }
+  }
+
+  public connectCH2Right(value: boolean) {
+    if (value) {
+      this.audio.channel2.connect(this.audio.right);
+    } else {
+      this.audio.channel2.disconnect(this.audio.right);
+    }
+  }
+
+  public connectCH3Left(value: boolean) {
+    if (value) {
+      this.audio.channel3.connect(this.audio.left);
+    } else {
+      this.audio.channel3.disconnect(this.audio.left);
+    }
+  }
+
+  public connectCH3Right(value: boolean) {
+    if (value) {
+      this.audio.channel3.connect(this.audio.right);
+    } else {
+      this.audio.channel3.disconnect(this.audio.right);
+    }
+  }
+
+  public connectCH4Left(value: boolean) {
+    if (value) {
+      this.audio.channel4.connect(this.audio.left);
+    } else {
+      this.audio.channel4.disconnect(this.audio.left);
+    }
+  }
+
+  public connectCH4Right(value: boolean) {
+    if (value) {
+      this.audio.channel4.connect(this.audio.right);
+    } else {
+      this.audio.channel4.disconnect(this.audio.right);
+    }
+  }
+
+  public getMasterVolume() {
+    return this.nr50;
+  }
+
+  public setMasterVolume(data: number) {
+    this.audio.left.gain.value = ((data >> 4) & 7) / 7;
+    this.audio.right.gain.value = (data & 7) / 7;
+    this.nr50 = data;
   }
 }

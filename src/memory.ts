@@ -210,44 +210,67 @@ export class Memory implements IBus {
           return this.interruptController.getEnableRegister();
 
         case HWRegister.NR10:
+          // console.log("NR10 = ", this.apuRegs.nr10.toString(16));
           return this.apuRegs.nr10;
         case HWRegister.NR11:
+          //console.log("NR11 = ", this.apuRegs.nr11.toString(16));
           return this.apuRegs.nr11;
         case HWRegister.NR12:
+          //console.log("NR12 = ", this.apuRegs.nr12.toString(16));
           return this.apuRegs.nr12;
         case HWRegister.NR13:
+          // console.log("NR13 = ", this.apuRegs.nr13.toString(16));
           return this.apuRegs.nr13;
         case HWRegister.NR14:
+          // console.log("NR14 = ", this.apuRegs.nr14.toString(16));
           return this.apuRegs.nr14;
         case HWRegister.NR21:
+          // console.log("NR21 = ", this.apuRegs.nr21.toString(16));
           return this.apuRegs.nr21;
         case HWRegister.NR22:
+          // console.log("NR22 = ", this.apuRegs.nr22.toString(16));
           return this.apuRegs.nr22;
         case HWRegister.NR23:
+          // console.log("NR23 = ", this.apuRegs.nr23.toString(16));
           return this.apuRegs.nr23;
         case HWRegister.NR24:
+          // console.log("NR24 = ", this.apuRegs.nr24.toString(16));
           return this.apuRegs.nr24;
         case HWRegister.NR30:
+          //console.log("NR30 = ", this.apuRegs.nr30.toString(16));
           return this.apuRegs.nr30;
         case HWRegister.NR31:
+          // console.log("NR31 = ", this.apuRegs.nr31.toString(16));
           return this.apuRegs.nr31;
         case HWRegister.NR32:
+          // console.log("NR32 = ", this.apuRegs.nr32.toString(16));
           return this.apuRegs.nr32;
         case HWRegister.NR33:
+          //console.log("NR33 = ", this.apuRegs.nr33.toString(16));
           return this.apuRegs.nr33;
         case HWRegister.NR34:
+          // console.log("NR34 = ", this.apuRegs.nr34.toString(16));
           return this.apuRegs.nr34;
         case HWRegister.NR41:
+          //console.log("NR41 = ", this.apuRegs.nr41.toString(16));
           return this.apuRegs.nr41;
         case HWRegister.NR42:
+          //console.log("NR42 = ", this.apuRegs.nr42.toString(16));
           return this.apuRegs.nr42;
         case HWRegister.NR43:
+          //console.log("NR43 = ", this.apuRegs.nr43.toString(16));
           return this.apuRegs.nr43;
         case HWRegister.NR44:
+          //console.log("NR44 = ", this.apuRegs.nr44.toString(16));
           return this.apuRegs.nr44;
+        case HWRegister.NR50:
+          //console.log("NR50 = ", this.apuRegs.nr50.toString(16));
+          return this.apuRegs.nr50;
         case HWRegister.NR51:
+          //console.log("NR51 = ", this.apuRegs.nr51.toString(16));
           return this.apuRegs.nr51;
         case HWRegister.NR52:
+          // console.log("NR52 = ", this.apuRegs.nr52.toString(16));
           return this.apuRegs.nr52;
 
         case 0xff30:
@@ -414,13 +437,6 @@ export class Memory implements IBus {
         case HWRegister.NR24:
           this.apuRegs.nr24 = data;
           break;
-        case HWRegister.NR51:
-          this.apuRegs.nr51 = data;
-          break;
-        case HWRegister.NR52:
-          this.apuRegs.nr52 = data;
-          break;
-
         case HWRegister.NR30:
           this.apuRegs.nr30 = data;
           break;
@@ -436,11 +452,6 @@ export class Memory implements IBus {
         case HWRegister.NR34:
           this.apuRegs.nr34 = data;
           break;
-
-        case HWRegister.NR50:
-          //console.log("NR50 = ", data.toString(16));
-          break;
-
         case HWRegister.NR41:
           this.apuRegs.nr41 = data;
           break;
@@ -452,6 +463,15 @@ export class Memory implements IBus {
           break;
         case HWRegister.NR44:
           this.apuRegs.nr44 = data;
+          break;
+        case HWRegister.NR50:
+          this.apuRegs.nr50 = data;
+          break;
+        case HWRegister.NR51:
+          this.apuRegs.nr51 = data;
+          break;
+        case HWRegister.NR52:
+          this.apuRegs.nr52 = data;
           break;
 
         case 0xff30:

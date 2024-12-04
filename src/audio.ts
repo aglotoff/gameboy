@@ -6,6 +6,33 @@ export class WebAudio {
   public channel3 = new WebWaveChannel(this.audioContext);
   public channel4 = new WebNoiseChannel(this.audioContext);
 
+  public left = this.audioContext.createGain();
+  public right = this.audioContext.createGain();
+
+  private merger = this.audioContext.createChannelMerger(2);
+
+  public constructor() {
+    this.left.gain.value = 1;
+    this.left.connect(this.merger, 0, 0);
+
+    this.right.gain.value = 1;
+    this.right.connect(this.merger, 0, 1);
+
+    this.merger.connect(this.audioContext.destination);
+
+    // this.channel1.connect(this.left);
+    // this.channel1.connect(this.right);
+
+    // this.channel2.connect(this.left);
+    // this.channel2.connect(this.right);
+
+    // this.channel3.connect(this.left);
+    // this.channel3.connect(this.right);
+
+    // this.channel4.connect(this.left);
+    // this.channel4.connect(this.right);
+  }
+
   public turnOn() {
     this.audioContext.resume();
   }
@@ -32,9 +59,15 @@ export class WebWaveChannel implements IAudioChannel {
 
     this.oscillator.connect(this.gainNode);
 
-    this.gainNode.connect(audioContext.destination);
-
     this.oscillator.start();
+  }
+
+  public connect(destination: GainNode) {
+    this.gainNode.connect(destination);
+  }
+
+  public disconnect(destination: GainNode) {
+    this.gainNode.disconnect(destination);
   }
 
   public setWave(ram: Uint8Array) {
@@ -150,9 +183,15 @@ export class WebAudioChannel implements IAudioChannel {
 
     this.oscillator.connect(this.gainNode);
 
-    this.gainNode.connect(audioContext.destination);
-
     this.oscillator.start();
+  }
+
+  public connect(destination: GainNode) {
+    this.gainNode.connect(destination);
+  }
+
+  public disconnect(destination: GainNode) {
+    this.gainNode.disconnect(destination);
   }
 
   private getPeriodicWave(duty: number) {
@@ -270,9 +309,15 @@ export class WebNoiseChannel implements IAudioChannel {
 
     this.source.connect(this.gainNode);
 
-    this.gainNode.connect(audioContext.destination);
-
     this.source.start();
+  }
+
+  public connect(destination: GainNode) {
+    this.gainNode.connect(destination);
+  }
+
+  public disconnect(destination: GainNode) {
+    this.gainNode.disconnect(destination);
   }
 
   public setRate(rate: number) {
