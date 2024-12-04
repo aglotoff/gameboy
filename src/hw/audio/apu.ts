@@ -20,7 +20,7 @@ export class APU {
   private nr51 = 0;
 
   public channel1 = new PulseChannel(this.audio.channel1);
-  public channel2 = new PulseChannel(this.audio.channel2);
+  public channel2 = new PulseChannel(this.audio.channel2, 64, true);
   public channel3 = new WaveChannel(this.audio.channel3);
   public channel4 = new NoiseChannel(this.audio.channel4);
 

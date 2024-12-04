@@ -37,7 +37,7 @@ export class APURegisters {
     if (!this.apu.isOn()) return;
 
     this.apu.channel1.setWaveDuty((data >> 6) & 0x3);
-    this.apu.channel1.setInitialLengthTimer(data & 0x1f);
+    this.apu.channel1.setInitialLengthTimer(data & 0x3f);
   }
 
   public get nr12() {
@@ -87,7 +87,7 @@ export class APURegisters {
     if (!this.apu.isOn()) return;
 
     this.apu.channel2.setWaveDuty((data >> 6) & 0x3);
-    this.apu.channel2.setInitialLengthTimer(data & 0x1f);
+    this.apu.channel2.setInitialLengthTimer(data & 0x3f);
   }
 
   public get nr22() {
@@ -145,6 +145,7 @@ export class APURegisters {
 
   public set nr31(data: number) {
     if (!this.apu.isOn()) return;
+    // FIXME: ticks up to 256!!!!
     this.apu.channel3.setInitialLengthTimer(data);
   }
 
@@ -192,7 +193,7 @@ export class APURegisters {
 
   public set nr41(data: number) {
     if (!this.apu.isOn()) return;
-    this.apu.channel4.setInitialLengthTimer(data & 0x1f);
+    this.apu.channel4.setInitialLengthTimer(data & 0x3f);
   }
 
   public get nr42() {

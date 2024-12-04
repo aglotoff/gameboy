@@ -294,7 +294,7 @@ export class WebNoiseChannel implements IAudioChannel {
 
         lfsr >>= 1;
 
-        nowBuffering[i] = bit15 ? 1 : 0.25;
+        nowBuffering[i] = bit15 ? 1 : -0.5;
       }
     }
 

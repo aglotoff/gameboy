@@ -3,18 +3,20 @@ import { IAudioChannel } from "../../audio";
 export abstract class BaseChannel<ChannelType extends IAudioChannel> {
   private on = false;
 
-  private initialLengthTimer = 0;
   private lengthTimer = 0;
   private lengthEnable = false;
 
   private currentVolume = 0;
 
-  public constructor(protected chan: ChannelType) {}
+  public constructor(
+    protected chan: ChannelType,
+    private maxLengthTimer = 64,
+    public debug = false
+  ) {}
 
   public reset() {
     this.on = false;
 
-    this.initialLengthTimer = 0;
     this.lengthTimer = 0;
     this.lengthEnable = false;
 
@@ -30,12 +32,8 @@ export abstract class BaseChannel<ChannelType extends IAudioChannel> {
     }
   }
 
-  public getInitialLengthTimer() {
-    return this.lengthTimer;
-  }
-
   public setInitialLengthTimer(lengthTimer: number) {
-    this.lengthTimer = lengthTimer;
+    this.lengthTimer = this.maxLengthTimer - lengthTimer;
   }
 
   public getLengthEnable() {
@@ -51,11 +49,10 @@ export abstract class BaseChannel<ChannelType extends IAudioChannel> {
   }
 
   public lengthIncrementTick() {
-    if (this.on && this.lengthEnable) {
-      this.lengthTimer += 1;
+    if (this.lengthEnable && this.lengthTimer > 0) {
+      this.lengthTimer -= 1;
 
-      if (this.lengthTimer === 64) {
-        this.lengthTimer = 0;
+      if (this.lengthTimer === 0) {
         this.turnOff();
       }
     }
@@ -67,7 +64,10 @@ export abstract class BaseChannel<ChannelType extends IAudioChannel> {
   }
 
   public trigger() {
-    this.lengthTimer = this.initialLengthTimer;
+    if (this.lengthTimer === 0) {
+      this.lengthTimer = this.maxLengthTimer;
+    }
+
     this.on = true;
     this.chan.setVolume(this.currentVolume);
   }

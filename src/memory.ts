@@ -270,7 +270,7 @@ export class Memory implements IBus {
           //console.log("NR51 = ", this.apuRegs.nr51.toString(16));
           return this.apuRegs.nr51;
         case HWRegister.NR52:
-          // console.log("NR52 = ", this.apuRegs.nr52.toString(16));
+          console.log("NR52 = ", this.apuRegs.nr52.toString(16));
           return this.apuRegs.nr52;
 
         case 0xff30:
@@ -423,6 +423,7 @@ export class Memory implements IBus {
           this.apuRegs.nr13 = data;
           break;
         case HWRegister.NR14:
+          //console.log("wchn 14", data.toString(16));
           this.apuRegs.nr14 = data;
           break;
         case HWRegister.NR21:
@@ -435,6 +436,7 @@ export class Memory implements IBus {
           this.apuRegs.nr23 = data;
           break;
         case HWRegister.NR24:
+          //console.log("wchn 24", data.toString(16));
           this.apuRegs.nr24 = data;
           break;
         case HWRegister.NR30:
@@ -450,6 +452,7 @@ export class Memory implements IBus {
           this.apuRegs.nr33 = data;
           break;
         case HWRegister.NR34:
+          //console.log("wchn 34", data.toString(16));
           this.apuRegs.nr34 = data;
           break;
         case HWRegister.NR41:
@@ -462,6 +465,7 @@ export class Memory implements IBus {
           this.apuRegs.nr43 = data;
           break;
         case HWRegister.NR44:
+          //console.log("wchn 44", data.toString(16));
           this.apuRegs.nr44 = data;
           break;
         case HWRegister.NR50:
