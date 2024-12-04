@@ -40,13 +40,13 @@ export class WaveChannel extends BaseChannel<WebWaveChannel> {
   }
 
   public trigger() {
+    super.trigger();
+
     if (!this.isDACEnabled()) return;
 
     if (this.waveChanged) {
       this.chan.setWave(this.wave);
       this.waveChanged = false;
     }
-
-    super.trigger();
   }
 }

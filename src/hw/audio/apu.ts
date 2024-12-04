@@ -8,10 +8,6 @@ import { WaveChannel } from "./wave-channel";
 // TODO: 13 in double-speed mode
 const APU_DIV_TRIGGER_BIT = 12;
 
-const SOUND_LENGTH_RATE = 2;
-const PERIOD_SWEEP_RATE = 4;
-const ENVELOPE_SWEEP_RATE = 8;
-
 export class APU {
   private divApu = 0;
   private lastDividerBit = false;
@@ -98,22 +94,10 @@ export class APU {
     if (isFallingEdge) {
       this.divApu = wrappingIncrementByte(this.divApu);
 
-      if (this.divApu % SOUND_LENGTH_RATE === 0) {
-        this.channel1.lengthIncrementTick();
-        this.channel2.lengthIncrementTick();
-        this.channel3.lengthIncrementTick();
-        this.channel4.lengthIncrementTick();
-
-        if (this.divApu % PERIOD_SWEEP_RATE === 0) {
-          this.channel1.periodSweepTick();
-
-          if (this.divApu % ENVELOPE_SWEEP_RATE === 0) {
-            this.channel1.envelopeSweepTick();
-            this.channel2.envelopeSweepTick();
-            this.channel4.envelopeSweepTick();
-          }
-        }
-      }
+      this.channel1.tick(this.divApu);
+      this.channel2.tick(this.divApu);
+      this.channel3.tick(this.divApu);
+      this.channel4.tick(this.divApu);
     }
 
     this.lastDividerBit = dividerBit;

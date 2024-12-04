@@ -7,6 +7,8 @@ export interface PeriodSweepOptions {
   step: number;
 }
 
+const PERIOD_SWEEP_RATE = 4;
+
 export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
   private period = 0;
 
@@ -89,5 +91,13 @@ export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
   public trigger() {
     super.trigger();
     this.ticksToPeriodSweep = this.periodSweepPace;
+  }
+
+  public override tick(divApu: number) {
+    super.tick(divApu);
+
+    if (divApu % PERIOD_SWEEP_RATE === 0) {
+      this.periodSweepTick();
+    }
   }
 }

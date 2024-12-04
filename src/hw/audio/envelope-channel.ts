@@ -7,6 +7,8 @@ export interface EnvelopeOptions {
   initialVolume: number;
 }
 
+const ENVELOPE_SWEEP_RATE = 8;
+
 export class EnvelopeChannel<
   ChannelType extends IAudioChannel
 > extends BaseChannel<ChannelType> {
@@ -61,15 +63,23 @@ export class EnvelopeChannel<
   }
 
   public trigger() {
+    super.trigger();
+
     if (!this.isDACEnabled()) return;
 
     this.setVolume(this.initialVolume);
     this.ticksToEnvelopeSweep = this.envelopeSweepPace;
-
-    super.trigger();
   }
 
-  private isDACEnabled() {
+  public isDACEnabled() {
     return this.initialVolume > 0 || this.envelopeDirection > 0;
+  }
+
+  public override tick(divApu: number) {
+    super.tick(divApu);
+
+    if (divApu % ENVELOPE_SWEEP_RATE === 0) {
+      this.envelopeSweepTick();
+    }
   }
 }
