@@ -4,6 +4,7 @@ export class WebAudio {
   public channel1 = new WebAudioChannel(this.audioContext);
   public channel2 = new WebAudioChannel(this.audioContext);
   public channel3 = new WebWaveChannel(this.audioContext);
+  public channel4 = new WebNoiseChannel(this.audioContext);
 
   public turnOn() {
     this.audioContext.resume();
@@ -215,6 +216,92 @@ export class WebAudioChannel implements IAudioChannel {
 
   public setPeriod(period: number) {
     this.oscillator.frequency.value = 131072 / (2048 - period);
+  }
+
+  public setVolume(volume: number) {
+    this.gainNode.gain.value = volume && volume / 150;
+  }
+}
+
+export class WebNoiseChannel implements IAudioChannel {
+  private source: AudioBufferSourceNode;
+  private gainNode: GainNode;
+
+  private buffer7: AudioBuffer | null = null;
+  private buffer15: AudioBuffer | null = null;
+
+  private createBuffer(width: number) {
+    let lfsr = 127;
+
+    const myArrayBuffer = this.audioContext.createBuffer(
+      1,
+      width === 7 ? 128 : 32768,
+      524288
+    );
+
+    for (let channel = 0; channel < myArrayBuffer.numberOfChannels; channel++) {
+      const nowBuffering = myArrayBuffer.getChannelData(channel);
+
+      for (let i = 0; i < myArrayBuffer.length; i++) {
+        let bit15 = lfsr % 2 !== (lfsr >> 1) % 2 ? 1 : 0;
+
+        lfsr &= ~(1 << 15);
+        lfsr |= bit15 << 15;
+
+        if (width === 7) {
+          lfsr &= ~(1 << 7);
+          lfsr |= bit15 << 7;
+        }
+
+        lfsr >>= 1;
+
+        nowBuffering[i] = bit15 ? 1 : 0.25;
+      }
+    }
+
+    return myArrayBuffer;
+  }
+
+  public constructor(private audioContext: AudioContext) {
+    this.source = audioContext.createBufferSource();
+
+    this.gainNode = audioContext.createGain();
+    this.gainNode.gain.value = 0;
+
+    this.source.connect(this.gainNode);
+
+    this.gainNode.connect(audioContext.destination);
+
+    this.source.start();
+  }
+
+  public setRate(rate: number) {
+    this.source.playbackRate.value = rate;
+  }
+
+  public setWidth(width: number) {
+    this.source.stop();
+    this.source.disconnect(this.gainNode);
+    this.source = this.audioContext.createBufferSource();
+
+    switch (width) {
+      case 7:
+        if (this.buffer7 == null) {
+          this.buffer7 = this.createBuffer(7);
+        }
+        this.source.buffer = this.buffer7;
+        break;
+      case 15:
+        if (this.buffer15 == null) {
+          this.buffer15 = this.createBuffer(15);
+        }
+        this.source.buffer = this.buffer15;
+        break;
+    }
+
+    this.source.loop = true;
+    this.source.connect(this.gainNode);
+    this.source.start();
   }
 
   public setVolume(volume: number) {

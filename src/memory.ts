@@ -237,6 +237,14 @@ export class Memory implements IBus {
           return this.apuRegs.nr33;
         case HWRegister.NR34:
           return this.apuRegs.nr34;
+        case HWRegister.NR41:
+          return this.apuRegs.nr41;
+        case HWRegister.NR42:
+          return this.apuRegs.nr42;
+        case HWRegister.NR43:
+          return this.apuRegs.nr43;
+        case HWRegister.NR44:
+          return this.apuRegs.nr44;
         case HWRegister.NR51:
           return this.apuRegs.nr51;
         case HWRegister.NR52:
@@ -434,9 +442,17 @@ export class Memory implements IBus {
           break;
 
         case HWRegister.NR41:
+          this.apuRegs.nr41 = data;
+          break;
         case HWRegister.NR42:
+          this.apuRegs.nr42 = data;
+          break;
         case HWRegister.NR43:
+          this.apuRegs.nr43 = data;
+          break;
         case HWRegister.NR44:
+          this.apuRegs.nr44 = data;
+          break;
 
         case 0xff30:
         case 0xff31:

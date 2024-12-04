@@ -125,6 +125,7 @@ export class APURegisters {
     if (this.apu.isCH1On()) data |= 0x01;
     if (this.apu.isCH2On()) data |= 0x02;
     if (this.apu.isCH3On()) data |= 0x04;
+    if (this.apu.isCH4On()) data |= 0x08;
     return data;
   }
 
@@ -183,6 +184,57 @@ export class APURegisters {
 
     if (data & 0x80) {
       this.apu.channel3.trigger();
+    }
+  }
+
+  public get nr41() {
+    let data = 0x3f;
+    data |= this.apu.channel4.getInitialLengthTimer() << 6;
+    return data;
+  }
+
+  public set nr41(data: number) {
+    this.apu.channel4.setInitialLengthTimer(data & 0x1f);
+  }
+
+  public get nr42() {
+    return convertEnvelopeOptionsToBits(this.apu.channel4.getEnvelopeOptions());
+  }
+
+  public set nr42(data: number) {
+    console.log("Set envelope", data.toString(2));
+    this.apu.channel4.setEnvelopeOptions(convertBitsToEnvelopeOptions(data));
+  }
+
+  public get nr43() {
+    const options = this.apu.channel4.getRandomOptions();
+
+    let data = options.clockShift << 4;
+    data |= options.lfsrWidth === 7 ? 0x8 : 0;
+    data |= options.clockDivider;
+
+    return data;
+  }
+
+  public set nr43(data: number) {
+    this.apu.channel4.setRandomOptions({
+      clockShift: data >> 4,
+      lfsrWidth: (data & 0x80) !== 0 ? 7 : 15,
+      clockDivider: data & 0x7,
+    });
+  }
+
+  public get nr44() {
+    let data = 0xbf;
+    data |= this.apu.channel4.getLengthEnable() ? 0x40 : 0;
+    return data;
+  }
+
+  public set nr44(data: number) {
+    this.apu.channel4.setLengthEnable((data & 0x40) !== 0);
+
+    if (data & 0x80) {
+      this.apu.channel4.trigger();
     }
   }
 }

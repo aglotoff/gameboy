@@ -2,6 +2,7 @@ import { WebAudio } from "../../audio";
 import { testBit, wrappingIncrementByte } from "../../utils";
 import { SystemCounter } from "../system-counter";
 import { EnvelopeOptions } from "./envelope-channel";
+import { NoiseChannel } from "./noise-channel";
 import { PeriodSweepOptions, PulseChannel } from "./pulse-channel";
 import { WaveChannel } from "./wave-channel";
 
@@ -21,6 +22,7 @@ export class APU {
   public channel1 = new PulseChannel(this.audio.channel1);
   public channel2 = new PulseChannel(this.audio.channel2);
   public channel3 = new WaveChannel(this.audio.channel3);
+  public channel4 = new NoiseChannel(this.audio.channel4);
 
   public constructor(
     private systemCounter: SystemCounter,
@@ -187,6 +189,12 @@ export class APU {
     } else {
       this.channel3.mute();
     }
+
+    if (data & 0x88) {
+      this.channel4.unmute();
+    } else {
+      this.channel4.mute();
+    }
   }
 
   public isCH1On() {
@@ -199,6 +207,10 @@ export class APU {
 
   public isCH3On() {
     return this.channel3.isOn();
+  }
+
+  public isCH4On() {
+    return this.channel4.isOn();
   }
 
   private on = false;
@@ -228,6 +240,7 @@ export class APU {
         this.channel1.lengthIncrementTick();
         this.channel2.lengthIncrementTick();
         this.channel3.lengthIncrementTick();
+        this.channel4.lengthIncrementTick();
 
         if (this.divApu % PERIOD_SWEEP_RATE === 0) {
           this.channel1.periodSweepTick();
@@ -235,6 +248,7 @@ export class APU {
           if (this.divApu % ENVELOPE_SWEEP_RATE === 0) {
             this.channel1.envelopeSweepTick();
             this.channel2.envelopeSweepTick();
+            this.channel4.envelopeSweepTick();
           }
         }
       }
