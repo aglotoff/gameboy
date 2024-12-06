@@ -18,6 +18,7 @@ export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
   private periodSweepDirection = 0;
   private periodSweepStep = 0;
   private shadowPeriod = 0;
+  private negateSweepCalculated = false;
 
   public getPeriodSweepOptions(): PeriodSweepOptions {
     return {
@@ -28,6 +29,14 @@ export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
   }
 
   public setPeriodSweepOptions(options: PeriodSweepOptions) {
+    if (
+      this.periodSweepDirection < 0 &&
+      options.direction > 0 &&
+      this.negateSweepCalculated
+    ) {
+      this.turnOff();
+    }
+
     this.periodSweepPace = options.pace;
     this.periodSweepDirection = options.direction;
     this.periodSweepStep = options.step;
@@ -43,6 +52,7 @@ export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
     this.ticksToPeriodSweep = 0;
     this.period = 0;
     this.shadowPeriod = 0;
+    this.negateSweepCalculated = false;
 
     this.setPeriod(0);
     this.setWaveDuty(0);
@@ -74,13 +84,17 @@ export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
       this.ticksToPeriodSweep -= 1;
 
       if (this.ticksToPeriodSweep == 0) {
-        this.ticksToPeriodSweep = this.periodSweepPace || 8;
+        this.ticksToPeriodSweep = this.getSweepPeriodTicks();
         this.periodSweep();
       }
     }
   }
 
   private calculateNewPeriod() {
+    if (this.periodSweepDirection < 0) {
+      this.negateSweepCalculated = true;
+    }
+
     const newPeriod =
       this.shadowPeriod +
       this.periodSweepDirection * (this.shadowPeriod >> this.periodSweepStep);
@@ -106,10 +120,15 @@ export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
     }
   }
 
+  private getSweepPeriodTicks() {
+    return this.periodSweepPace || 8;
+  }
+
   public trigger() {
     super.trigger();
 
-    this.ticksToPeriodSweep = this.periodSweepPace || 8;
+    this.ticksToPeriodSweep = this.getSweepPeriodTicks();
+    this.negateSweepCalculated = false;
 
     this.shadowPeriod = this.period;
     this.chan.setPeriod(this.shadowPeriod);

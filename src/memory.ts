@@ -4,7 +4,6 @@ import { PPU, OAM, PPURegisters } from "./hw/graphics";
 import { IBus } from "./cpu";
 import { MBC } from "./cartridge";
 import { Joypad } from "./hw/joypad";
-import { APU } from "./hw/audio";
 import { SystemCounter } from "./hw/system-counter";
 import { getMSB } from "./utils";
 import { APURegisters } from "./hw/audio/apu-registers";
