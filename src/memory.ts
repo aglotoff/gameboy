@@ -268,7 +268,7 @@ export class Memory implements IBus {
           //console.log("NR51 = ", this.apu.nr51.toString(16));
           return this.apu.nr51;
         case HWRegister.NR52:
-          console.log("NR52 = ", this.apu.nr52.toString(16));
+          //console.log("NR52 = ", this.apu.nr52.toString(16));
           return this.apu.nr52;
 
         case 0xff30:
