@@ -8,6 +8,11 @@ import { ActionButton, DirectionButton, Joypad } from "./hw/joypad";
 import { APU } from "./hw/audio";
 import { SystemCounter } from "./hw/system-counter";
 import { WebAudio } from "./audio";
+import { PulseChannel } from "./hw/audio/pulse-channel";
+import { WaveChannel } from "./hw/audio/wave-channel";
+import { NoiseChannel } from "./hw/audio/noise-channel";
+import { APURegisters } from "./hw/audio/apu-registers";
+import { APUChannels } from "./hw/audio/apu";
 
 export enum InterruptSource {
   VBlank = 0,
@@ -83,7 +88,18 @@ export class Emulator {
       this.interruptController.requestInterrupt(InterruptSource.Timer);
     });
 
-    this.apu = new APU(this.systemCounter, new WebAudio());
+    const audio = new WebAudio();
+
+    const channels: APUChannels = [
+      new PulseChannel(audio.channel1),
+      new PulseChannel(audio.channel2, 64, true),
+      new WaveChannel(audio.channel3),
+      new NoiseChannel(audio.channel4),
+    ];
+
+    this.apu = new APU(this.systemCounter, audio, channels);
+
+    const apuRegs = new APURegisters(this.apu, channels);
 
     this.joypad = new Joypad();
 
@@ -93,7 +109,7 @@ export class Emulator {
       new TimerRegisters(this.timer),
       this.oam,
       this.joypad,
-      this.apu,
+      apuRegs,
       this.systemCounter
     );
 

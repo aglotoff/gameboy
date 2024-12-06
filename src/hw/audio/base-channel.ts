@@ -4,8 +4,8 @@ const SOUND_LENGTH_RATE = 2;
 
 export abstract class BaseChannel<ChannelType extends IAudioChannel> {
   private on = false;
-  private stepsToLengthTimerTick = 0;
 
+  private ticksToLengthDecrement = 0;
   private lengthTimer = 0;
   private lengthEnable = false;
 
@@ -20,11 +20,16 @@ export abstract class BaseChannel<ChannelType extends IAudioChannel> {
   public reset() {
     this.on = false;
 
+    this.ticksToLengthDecrement = 0;
     this.lengthTimer = 0;
     this.lengthEnable = false;
 
     this.currentVolume = 0;
     this.chan.setVolume(0);
+  }
+
+  public getVolume() {
+    return this.currentVolume;
   }
 
   public setVolume(volume: number) {
@@ -35,9 +40,8 @@ export abstract class BaseChannel<ChannelType extends IAudioChannel> {
     }
   }
 
-  public setInitialLengthTimer(lengthTimer: number) {
-    this.lengthTimer =
-      this.maxLengthTimer - (lengthTimer % this.maxLengthTimer);
+  public setLengthTimer(data: number) {
+    this.lengthTimer = this.maxLengthTimer - (data % this.maxLengthTimer);
   }
 
   public getLengthEnable() {
@@ -45,7 +49,7 @@ export abstract class BaseChannel<ChannelType extends IAudioChannel> {
   }
 
   public setLengthEnable(lengthEnable: boolean) {
-    if (this.stepsToLengthTimerTick !== 0) {
+    if (this.ticksToLengthDecrement !== 0) {
       if (!this.lengthEnable && lengthEnable && this.lengthTimer > 0) {
         this.lengthTimer -= 1;
 
@@ -58,39 +62,19 @@ export abstract class BaseChannel<ChannelType extends IAudioChannel> {
     this.lengthEnable = lengthEnable;
   }
 
+  public isDACEnabled() {
+    return true;
+  }
+
   public isOn() {
     return this.on;
-  }
-
-  public tick(_divApu: number) {
-    if (this.stepsToLengthTimerTick === 0) {
-      this.stepsToLengthTimerTick = SOUND_LENGTH_RATE;
-      this.lengthIncrementTick();
-    }
-
-    this.stepsToLengthTimerTick -= 1;
-  }
-
-  public lengthIncrementTick() {
-    if (this.lengthEnable && this.lengthTimer > 0) {
-      this.lengthTimer -= 1;
-
-      if (this.lengthTimer === 0) {
-        this.turnOff();
-      }
-    }
-  }
-
-  public turnOff() {
-    this.on = false;
-    this.chan.setVolume(0);
   }
 
   public trigger() {
     if (this.lengthTimer === 0) {
       this.lengthTimer = this.maxLengthTimer;
 
-      if (this.lengthEnable && this.stepsToLengthTimerTick !== 0) {
+      if (this.lengthEnable && this.ticksToLengthDecrement !== 0) {
         this.lengthTimer -= 1;
       }
     }
@@ -101,11 +85,27 @@ export abstract class BaseChannel<ChannelType extends IAudioChannel> {
     }
   }
 
-  public getVolume() {
-    return this.currentVolume;
+  public turnOff() {
+    this.on = false;
+    this.chan.setVolume(0);
   }
 
-  public isDACEnabled() {
-    return true;
+  public tick(_divApu: number) {
+    if (this.ticksToLengthDecrement === 0) {
+      this.ticksToLengthDecrement = SOUND_LENGTH_RATE;
+      this.lengthTimerTick();
+    }
+
+    this.ticksToLengthDecrement -= 1;
+  }
+
+  private lengthTimerTick() {
+    if (this.lengthEnable && this.lengthTimer > 0) {
+      this.lengthTimer -= 1;
+
+      if (this.lengthTimer === 0) {
+        this.turnOff();
+      }
+    }
   }
 }

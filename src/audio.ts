@@ -40,6 +40,35 @@ export class WebAudio {
   public turnOff() {
     this.audioContext.suspend();
   }
+
+  private getChannel(no: number) {
+    switch (no) {
+      case 0:
+        return this.channel1;
+      case 1:
+        return this.channel2;
+      case 2:
+        return this.channel3;
+      case 3:
+        return this.channel4;
+    }
+  }
+
+  public connectChannelLeft(chan: number) {
+    this.getChannel(chan)!.connect(this.left);
+  }
+
+  public connectChannelRight(chan: number) {
+    this.getChannel(chan)!.connect(this.right);
+  }
+
+  public disconnectChannelLeft(chan: number) {
+    this.getChannel(chan)!.disconnect(this.left);
+  }
+
+  public disconnectChannelRight(chan: number) {
+    this.getChannel(chan)!.disconnect(this.right);
+  }
 }
 
 export interface IAudioChannel {

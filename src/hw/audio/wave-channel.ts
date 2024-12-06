@@ -2,8 +2,17 @@ import { WebWaveChannel } from "../../audio";
 import { BaseChannel } from "./base-channel";
 
 export class WaveChannel extends BaseChannel<WebWaveChannel> {
-  public wave = new Uint8Array(16);
-  public waveChanged = true;
+  private wave = new Uint8Array(16);
+  private waveChanged = true;
+
+  public readWaveRAM(offset: number) {
+    return this.wave[offset];
+  }
+
+  public writeWaveRAM(offset: number, data: number) {
+    this.wave[offset] = data;
+    this.waveChanged = true;
+  }
 
   private period = 0;
 

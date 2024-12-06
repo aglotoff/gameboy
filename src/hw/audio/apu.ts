@@ -8,6 +8,13 @@ import { WaveChannel } from "./wave-channel";
 // TODO: 13 in double-speed mode
 const APU_DIV_TRIGGER_BIT = 12;
 
+export type APUChannels = [
+  PulseChannel,
+  PulseChannel,
+  WaveChannel,
+  NoiseChannel
+];
+
 export class APU {
   private divApu = 0;
   private lastDividerBit = false;
@@ -15,21 +22,17 @@ export class APU {
   private nr50 = 0;
   private nr51 = 0;
 
-  public channel1 = new PulseChannel(this.audio.channel1);
-  public channel2 = new PulseChannel(this.audio.channel2, 64, true);
-  public channel3 = new WaveChannel(this.audio.channel3);
-  public channel4 = new NoiseChannel(this.audio.channel4);
-
   public constructor(
     private systemCounter: SystemCounter,
-    private audio: WebAudio
+    private audio: WebAudio,
+    private channels: APUChannels
   ) {}
 
   public reset() {
-    this.channel1.reset();
-    this.channel2.reset();
-    this.channel3.reset();
-    this.channel4.reset();
+    this.channels[0].reset();
+    this.channels[1].reset();
+    this.channels[2].reset();
+    this.channels[3].reset();
 
     this.divApu = 0;
     this.lastDividerBit = false;
@@ -41,32 +44,24 @@ export class APU {
   }
 
   public setSoundPanning(data: number) {
-    const onBits = (this.nr51 ^ data) & data;
-    const offBits = (this.nr51 ^ data) & ~data;
+    const enabledBitMask = (this.nr51 ^ data) & data;
+    const disabledBitMask = (this.nr51 ^ data) & ~data;
 
-    if (onBits & (1 << 0)) this.connectCH1Right(true);
-    else if (offBits & (1 << 0)) this.connectCH1Right(false);
+    for (let i = 0; i < 4; i++) {
+      if (enabledBitMask & (1 << i)) {
+        this.audio.connectChannelRight(i);
+      } else if (disabledBitMask & (1 << i)) {
+        this.audio.disconnectChannelRight(i);
+      }
+    }
 
-    if (onBits & (1 << 1)) this.connectCH2Right(true);
-    else if (offBits & (1 << 1)) this.connectCH2Right(false);
-
-    if (onBits & (1 << 2)) this.connectCH3Right(true);
-    else if (offBits & (1 << 2)) this.connectCH3Right(false);
-
-    if (onBits & (1 << 3)) this.connectCH4Right(true);
-    else if (offBits & (1 << 3)) this.connectCH4Right(false);
-
-    if (onBits & (1 << 4)) this.connectCH1Left(true);
-    else if (offBits & (1 << 4)) this.connectCH1Left(false);
-
-    if (onBits & (1 << 5)) this.connectCH2Left(true);
-    else if (offBits & (1 << 5)) this.connectCH2Left(false);
-
-    if (onBits & (1 << 6)) this.connectCH3Left(true);
-    else if (offBits & (1 << 6)) this.connectCH3Left(false);
-
-    if (onBits & (1 << 7)) this.connectCH4Left(true);
-    else if (offBits & (1 << 7)) this.connectCH4Left(false);
+    for (let i = 4; i < 8; i++) {
+      if (enabledBitMask & (1 << i)) {
+        this.audio.connectChannelLeft(i - 4);
+      } else if (disabledBitMask & (1 << i)) {
+        this.audio.disconnectChannelLeft(i - 4);
+      }
+    }
 
     this.nr51 = data;
   }
@@ -94,10 +89,10 @@ export class APU {
     if (isFallingEdge) {
       this.divApu = wrappingIncrementByte(this.divApu);
 
-      this.channel1.tick(this.divApu);
-      this.channel2.tick(this.divApu);
-      this.channel3.tick(this.divApu);
-      this.channel4.tick(this.divApu);
+      this.channels[0].tick(this.divApu);
+      this.channels[1].tick(this.divApu);
+      this.channels[2].tick(this.divApu);
+      this.channels[3].tick(this.divApu);
     }
 
     this.lastDividerBit = dividerBit;
@@ -105,79 +100,6 @@ export class APU {
 
   private getDividerBit() {
     return testBit(this.systemCounter.getValue(), APU_DIV_TRIGGER_BIT);
-  }
-
-  public readWaveRAM(offset: number) {
-    return this.channel3.wave[offset];
-  }
-
-  public writeWaveRAM(offset: number, data: number) {
-    this.channel3.wave[offset] = data;
-    this.channel3.waveChanged = true;
-  }
-
-  public connectCH1Left(value: boolean) {
-    if (value) {
-      this.audio.channel1.connect(this.audio.left);
-    } else {
-      this.audio.channel1.disconnect(this.audio.left);
-    }
-  }
-
-  public connectCH1Right(value: boolean) {
-    if (value) {
-      this.audio.channel1.connect(this.audio.right);
-    } else {
-      this.audio.channel1.disconnect(this.audio.right);
-    }
-  }
-
-  public connectCH2Left(value: boolean) {
-    if (value) {
-      this.audio.channel2.connect(this.audio.left);
-    } else {
-      this.audio.channel2.disconnect(this.audio.left);
-    }
-  }
-
-  public connectCH2Right(value: boolean) {
-    if (value) {
-      this.audio.channel2.connect(this.audio.right);
-    } else {
-      this.audio.channel2.disconnect(this.audio.right);
-    }
-  }
-
-  public connectCH3Left(value: boolean) {
-    if (value) {
-      this.audio.channel3.connect(this.audio.left);
-    } else {
-      this.audio.channel3.disconnect(this.audio.left);
-    }
-  }
-
-  public connectCH3Right(value: boolean) {
-    if (value) {
-      this.audio.channel3.connect(this.audio.right);
-    } else {
-      this.audio.channel3.disconnect(this.audio.right);
-    }
-  }
-
-  public connectCH4Left(value: boolean) {
-    if (value) {
-      this.audio.channel4.connect(this.audio.left);
-    } else {
-      this.audio.channel4.disconnect(this.audio.left);
-    }
-  }
-
-  public connectCH4Right(value: boolean) {
-    if (value) {
-      this.audio.channel4.connect(this.audio.right);
-    } else {
-      this.audio.channel4.disconnect(this.audio.right);
-    }
   }
 
   public getMasterVolume() {
