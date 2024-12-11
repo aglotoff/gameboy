@@ -143,7 +143,7 @@ export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
   public override tick(divApu: number) {
     super.tick(divApu);
 
-    if (divApu % PERIOD_SWEEP_RATE === 0) {
+    if (divApu % PERIOD_SWEEP_RATE === 2) {
       this.periodSweepTick();
     }
   }

@@ -78,7 +78,7 @@ export class EnvelopeChannel<
   public override tick(divApu: number) {
     super.tick(divApu);
 
-    if (divApu % ENVELOPE_SWEEP_RATE === 0) {
+    if (divApu % ENVELOPE_SWEEP_RATE === 7) {
       this.envelopeSweepTick();
     }
   }
