@@ -34,10 +34,10 @@ export class APURegisters {
   }
 
   public set nr11(data: number) {
-    if (!this.apu.isOn()) return;
-
-    this.channels[0].setWaveDuty((data >> 6) & 0x3);
     this.channels[0].setLengthTimer(data & 0x3f);
+
+    if (!this.apu.isOn()) return;
+    this.channels[0].setWaveDuty((data >> 6) & 0x3);
   }
 
   public get nr12() {
@@ -84,10 +84,10 @@ export class APURegisters {
   }
 
   public set nr21(data: number) {
-    if (!this.apu.isOn()) return;
-
-    this.channels[1].setWaveDuty((data >> 6) & 0x3);
     this.channels[1].setLengthTimer(data & 0x3f);
+
+    if (!this.apu.isOn()) return;
+    this.channels[1].setWaveDuty((data >> 6) & 0x3);
   }
 
   public get nr22() {
@@ -144,8 +144,7 @@ export class APURegisters {
   }
 
   public set nr31(data: number) {
-    if (!this.apu.isOn()) return;
-    // FIXME: ticks up to 256!!!!
+    //if (!this.apu.isOn()) return;
     this.channels[2].setLengthTimer(data);
   }
 
@@ -192,7 +191,7 @@ export class APURegisters {
   }
 
   public set nr41(data: number) {
-    if (!this.apu.isOn()) return;
+    //if (!this.apu.isOn()) return;
     this.channels[3].setLengthTimer(data & 0x3f);
   }
 

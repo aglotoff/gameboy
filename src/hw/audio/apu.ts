@@ -5,6 +5,8 @@ import { NoiseChannel } from "./noise-channel";
 import { PulseChannel } from "./pulse-channel";
 import { WaveChannel } from "./wave-channel";
 
+// https://gbdev.gg8.se/wiki/articles/Gameboy_sound_hardware
+
 // TODO: 13 in double-speed mode
 const APU_DIV_TRIGGER_BIT = 12;
 
@@ -18,6 +20,7 @@ export type APUChannels = [
 export class APU {
   private divApu = 0;
   private lastDividerBit = false;
+  private frameSequencerStep = 0;
 
   private nr50 = 0;
   private nr51 = 0;
@@ -69,6 +72,7 @@ export class APU {
   private on = false;
 
   public turnOn() {
+    this.frameSequencerStep = 0;
     this.on = true;
     this.audio.turnOn();
   }
@@ -87,12 +91,14 @@ export class APU {
 
     const isFallingEdge = this.lastDividerBit && !dividerBit;
     if (isFallingEdge) {
+      this.channels[0].tick(this.frameSequencerStep);
+      this.channels[1].tick(this.frameSequencerStep);
+      this.channels[2].tick(this.frameSequencerStep);
+      this.channels[3].tick(this.frameSequencerStep);
+
       this.divApu = wrappingIncrementByte(this.divApu);
 
-      this.channels[0].tick(this.divApu);
-      this.channels[1].tick(this.divApu);
-      this.channels[2].tick(this.divApu);
-      this.channels[3].tick(this.divApu);
+      this.frameSequencerStep = (this.frameSequencerStep + 1) % 8;
     }
 
     this.lastDividerBit = dividerBit;

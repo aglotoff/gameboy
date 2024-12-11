@@ -20,7 +20,7 @@ export abstract class BaseChannel<ChannelType extends IAudioChannel> {
   public reset() {
     this.on = false;
 
-    this.ticksToLengthDecrement = 0;
+    // this.ticksToLengthDecrement = 0;
     this.lengthTimer = 0;
     this.lengthEnable = false;
 
@@ -90,13 +90,13 @@ export abstract class BaseChannel<ChannelType extends IAudioChannel> {
     this.chan.setVolume(0);
   }
 
-  public tick(_divApu: number) {
-    if (this.ticksToLengthDecrement === 0) {
-      this.ticksToLengthDecrement = SOUND_LENGTH_RATE;
+  public tick(divApu: number) {
+    if (divApu % SOUND_LENGTH_RATE === 0) {
       this.lengthTimerTick();
+      this.ticksToLengthDecrement = 1;
+    } else {
+      this.ticksToLengthDecrement = 0;
     }
-
-    this.ticksToLengthDecrement -= 1;
   }
 
   private lengthTimerTick() {
