@@ -64,6 +64,7 @@ export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
 
   public setPeriod(period: number) {
     this.period = period;
+    this.chan.setPeriod(period);
   }
 
   private waveDuty = 0.125;
@@ -90,7 +91,7 @@ export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
     }
   }
 
-  private calculateNewPeriod() {
+  private calculateNewPeriodAndCheckOverflow() {
     if (this.periodSweepDirection < 0) {
       this.negateSweepCalculated = true;
     }
@@ -109,14 +110,13 @@ export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
   private periodSweep() {
     if (!this.periodSweepEnabled || this.periodSweepPace === 0) return;
 
-    const newPeriod = this.calculateNewPeriod();
+    const newPeriod = this.calculateNewPeriodAndCheckOverflow();
 
     if (newPeriod <= 0x7ff && this.periodSweepStep !== 0) {
-      this.period = newPeriod;
       this.shadowPeriod = newPeriod;
-      this.chan.setPeriod(newPeriod);
+      this.setPeriod(newPeriod);
 
-      this.calculateNewPeriod();
+      this.calculateNewPeriodAndCheckOverflow();
     }
   }
 
@@ -131,13 +131,12 @@ export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
     this.negateSweepCalculated = false;
 
     this.shadowPeriod = this.period;
-    this.chan.setPeriod(this.shadowPeriod);
 
     this.periodSweepEnabled =
       this.periodSweepPace !== 0 || this.periodSweepStep !== 0;
 
     if (this.periodSweepStep !== 0) {
-      this.calculateNewPeriod();
+      this.calculateNewPeriodAndCheckOverflow();
     }
   }
 
