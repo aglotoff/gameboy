@@ -15,6 +15,7 @@ export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
   private periodSweepEnabled = false;
   private periodSweepPace = 0;
   private ticksToPeriodSweep = 0;
+  private ticksToPeriodSweepCheck = 0;
   private periodSweepDirection = 0;
   private periodSweepStep = 0;
   private shadowPeriod = 0;
@@ -53,6 +54,7 @@ export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
     this.period = 0;
     this.shadowPeriod = 0;
     this.negateSweepCalculated = false;
+    this.ticksToPeriodSweepCheck = 0;
 
     this.setPeriod(0);
     this.setWaveDuty(0);
@@ -144,8 +146,11 @@ export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
   public override tick(divApu: number) {
     super.tick(divApu);
 
-    if (divApu % PERIOD_SWEEP_RATE === 0) {
+    if (this.ticksToPeriodSweepCheck === 0) {
+      this.ticksToPeriodSweepCheck = PERIOD_SWEEP_RATE;
       this.periodSweepTick();
     }
+
+    this.ticksToPeriodSweepCheck -= 1;
   }
 }
