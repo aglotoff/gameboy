@@ -140,10 +140,10 @@ export class PulseChannel extends EnvelopeChannel<WebAudioChannel> {
     }
   }
 
-  public override tick(divApu: number) {
-    super.tick(divApu);
+  public override frameSequencerTick(step: number) {
+    super.frameSequencerTick(step);
 
-    if (divApu % PERIOD_SWEEP_RATE === 2) {
+    if (step % PERIOD_SWEEP_RATE === 2) {
       this.periodSweepTick();
     }
   }

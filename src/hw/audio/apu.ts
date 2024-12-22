@@ -91,12 +91,12 @@ export class APU {
 
     const isFallingEdge = this.lastDividerBit && !dividerBit;
     if (isFallingEdge) {
-      this.channels[0].tick(this.frameSequencerStep);
-      this.channels[1].tick(this.frameSequencerStep);
-      this.channels[2].tick(this.frameSequencerStep);
-      this.channels[3].tick(this.frameSequencerStep);
-
       this.divApu = wrappingIncrementByte(this.divApu);
+
+      this.channels[0].frameSequencerTick(this.frameSequencerStep);
+      this.channels[1].frameSequencerTick(this.frameSequencerStep);
+      this.channels[2].frameSequencerTick(this.frameSequencerStep);
+      this.channels[3].frameSequencerTick(this.frameSequencerStep);
 
       this.frameSequencerStep = (this.frameSequencerStep + 1) % 8;
     }

@@ -90,8 +90,8 @@ export abstract class BaseChannel<ChannelType extends IAudioChannel> {
     this.chan.setVolume(0);
   }
 
-  public tick(divApu: number) {
-    if (divApu % SOUND_LENGTH_RATE === 0) {
+  public frameSequencerTick(step: number) {
+    if (step % SOUND_LENGTH_RATE === 0) {
       this.lengthTimerTick();
       this.ticksToLengthDecrement = 1;
     } else {

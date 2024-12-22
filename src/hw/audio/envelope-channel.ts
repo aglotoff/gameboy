@@ -1,8 +1,13 @@
 import { IAudioChannel } from "../../audio";
 import { BaseChannel } from "./base-channel";
 
+export enum EnvelopeDirection {
+  DOWN,
+  UP,
+}
+
 export interface EnvelopeOptions {
-  direction: number;
+  direction: EnvelopeDirection;
   sweepPace: number;
   initialVolume: number;
 }
@@ -13,28 +18,29 @@ export class EnvelopeChannel<
   ChannelType extends IAudioChannel
 > extends BaseChannel<ChannelType> {
   private initialVolume = 0;
-  private envelopeDirection = 0;
-  private ticksToEnvelopeSweep = 0;
-  private envelopeSweepPace = 0;
+  private envelopeDirection = EnvelopeDirection.DOWN;
+  private envelopePeriod = 0;
+  private ticksToEnvelope = 0;
 
   public reset() {
     super.reset();
+
     this.initialVolume = 0;
-    this.envelopeDirection = 0;
-    this.ticksToEnvelopeSweep = 0;
-    this.envelopeSweepPace = 0;
+    this.envelopeDirection = EnvelopeDirection.DOWN;
+    this.envelopePeriod = 0;
+    this.ticksToEnvelope = 0;
   }
 
   public getEnvelopeOptions(): EnvelopeOptions {
     return {
-      sweepPace: this.envelopeSweepPace,
+      sweepPace: this.envelopePeriod,
       direction: this.envelopeDirection,
       initialVolume: this.initialVolume,
     };
   }
 
   public setEnvelopeOptions(options: EnvelopeOptions) {
-    this.envelopeSweepPace = options.sweepPace;
+    this.envelopePeriod = options.sweepPace;
     this.envelopeDirection = options.direction;
     this.initialVolume = options.initialVolume;
 
@@ -43,23 +49,26 @@ export class EnvelopeChannel<
     }
   }
 
-  public envelopeSweepTick() {
+  public envelopeTick() {
     if (!this.isOn()) return;
 
-    if (this.ticksToEnvelopeSweep > 0 && this.envelopeSweepPace) {
-      this.ticksToEnvelopeSweep -= 1;
+    if (this.ticksToEnvelope > 0 && this.envelopePeriod) {
+      this.ticksToEnvelope -= 1;
 
-      if (this.ticksToEnvelopeSweep === 0) {
-        this.ticksToEnvelopeSweep = this.envelopeSweepPace;
+      if (this.ticksToEnvelope === 0) {
+        this.ticksToEnvelope = this.envelopePeriod;
         this.envelopeSweep();
       }
     }
   }
 
   private envelopeSweep() {
-    this.setVolume(
-      Math.min(Math.max(this.getVolume() + this.envelopeDirection, 0), 15)
-    );
+    const newVolume =
+      this.envelopeDirection === EnvelopeDirection.DOWN
+        ? this.getVolume() - 1
+        : this.getVolume() + 1;
+
+    this.setVolume(Math.min(Math.max(newVolume, 0), 15));
   }
 
   public trigger() {
@@ -68,18 +77,18 @@ export class EnvelopeChannel<
     if (!this.isDACEnabled()) return;
 
     this.setVolume(this.initialVolume);
-    this.ticksToEnvelopeSweep = this.envelopeSweepPace;
+    this.ticksToEnvelope = this.envelopePeriod;
   }
 
   public isDACEnabled() {
     return this.initialVolume > 0 || this.envelopeDirection > 0;
   }
 
-  public override tick(divApu: number) {
-    super.tick(divApu);
+  public override frameSequencerTick(step: number) {
+    super.frameSequencerTick(step);
 
-    if (divApu % ENVELOPE_SWEEP_RATE === 7) {
-      this.envelopeSweepTick();
+    if (step % ENVELOPE_SWEEP_RATE === 7) {
+      this.envelopeTick();
     }
   }
 }

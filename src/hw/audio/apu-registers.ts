@@ -1,6 +1,6 @@
 import { getLSB, getMSB, makeWord } from "../../utils";
 import { APU, APUChannels } from "./apu";
-import { EnvelopeOptions } from "./envelope-channel";
+import { EnvelopeDirection, EnvelopeOptions } from "./envelope-channel";
 
 export class APURegisters {
   public constructor(private apu: APU, private channels: APUChannels) {}
@@ -310,7 +310,10 @@ function convertEnvelopeOptionsToBits(options: EnvelopeOptions) {
 
 function convertBitsToEnvelopeOptions(data: number): EnvelopeOptions {
   return {
-    direction: data & ENVELOPE_DIRECTION_PACE_MASK ? 1 : -1,
+    direction:
+      data & ENVELOPE_DIRECTION_PACE_MASK
+        ? EnvelopeDirection.UP
+        : EnvelopeDirection.DOWN,
     sweepPace: data & ENVELOPE_SWEEP_PACE_MASK,
     initialVolume: data >> INITIAL_VOLUME_SHIFT,
   };
