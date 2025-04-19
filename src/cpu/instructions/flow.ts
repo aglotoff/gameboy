@@ -12,105 +12,99 @@ import {
   pushWord,
 } from "./lib";
 
-export const jump = instructionWithImmediateWord(function (address) {
-  this.writeRegisterPair(RegisterPair.PC, address);
-  this.cycle();
+export const jump = instructionWithImmediateWord((cpu, address) => {
+  cpu.writeRegisterPair(RegisterPair.PC, address);
+  cpu.cycle();
 });
 
-export const jumpToHL = instruction(function () {
-  this.writeRegisterPair(
-    RegisterPair.PC,
-    this.readRegisterPair(RegisterPair.HL)
-  );
+export const jumpToHL = instruction((cpu) => {
+  cpu.writeRegisterPair(RegisterPair.PC, cpu.readRegisterPair(RegisterPair.HL));
 });
 
-export const jumpConditional = instructionWithImmediateWord(function (
-  address,
-  condition: Condition
-) {
-  if (!checkCondition(this, condition)) {
-    return;
+export const jumpConditional = instructionWithImmediateWord(
+  (cpu, address, condition: Condition) => {
+    if (!checkCondition(cpu, condition)) {
+      return;
+    }
+
+    cpu.writeRegisterPair(RegisterPair.PC, address);
+    cpu.cycle();
   }
+);
 
-  this.writeRegisterPair(RegisterPair.PC, address);
-  this.cycle();
-});
-
-export const relativeJump = instructionWithImmediateByte(function (offset) {
+export const relativeJump = instructionWithImmediateByte((cpu, offset) => {
   const { result } = addSignedByteToWord(
-    this.readRegisterPair(RegisterPair.PC),
+    cpu.readRegisterPair(RegisterPair.PC),
     offset
   );
 
-  this.writeRegisterPair(RegisterPair.PC, result);
-  this.cycle();
+  cpu.writeRegisterPair(RegisterPair.PC, result);
+  cpu.cycle();
 });
 
-export const relativeJumpConditional = instructionWithImmediateByte(function (
-  offset,
-  condition: Condition
-) {
-  if (!checkCondition(this, condition)) {
-    return;
+export const relativeJumpConditional = instructionWithImmediateByte(
+  (cpu, offset, condition: Condition) => {
+    if (!checkCondition(cpu, condition)) {
+      return;
+    }
+
+    const { result } = addSignedByteToWord(
+      cpu.readRegisterPair(RegisterPair.PC),
+      offset
+    );
+
+    cpu.writeRegisterPair(RegisterPair.PC, result);
+    cpu.cycle();
   }
+);
 
-  const { result } = addSignedByteToWord(
-    this.readRegisterPair(RegisterPair.PC),
-    offset
-  );
-
-  this.writeRegisterPair(RegisterPair.PC, result);
-  this.cycle();
+export const callFunction = instructionWithImmediateWord((cpu, address) => {
+  pushProgramCounter(cpu);
+  cpu.writeRegisterPair(RegisterPair.PC, address);
 });
 
-export const callFunction = instructionWithImmediateWord(function (address) {
-  pushProgramCounter.call(this);
-  this.writeRegisterPair(RegisterPair.PC, address);
-});
+export const callFunctionConditional = instructionWithImmediateWord(
+  (cpu, address, condition: Condition) => {
+    if (!checkCondition(cpu, condition)) {
+      return;
+    }
 
-export const callFunctionConditional = instructionWithImmediateWord(function (
-  address,
-  condition: Condition
-) {
-  if (!checkCondition(this, condition)) {
-    return;
+    pushProgramCounter(cpu);
+    cpu.writeRegisterPair(RegisterPair.PC, address);
   }
+);
 
-  pushProgramCounter.call(this);
-  this.writeRegisterPair(RegisterPair.PC, address);
+export const returnFromFunction = instruction((cpu) => {
+  popProgramCounter(cpu);
 });
 
-export const returnFromFunction = instruction(function () {
-  popProgramCounter.call(this);
-});
+export const returnFromFunctionConditional = instruction(
+  (cpu, condition: Condition) => {
+    let result = checkCondition(cpu, condition);
+    cpu.cycle();
 
-export const returnFromFunctionConditional = instruction(function (
-  condition: Condition
-) {
-  let result = checkCondition(this, condition);
-  this.cycle();
-
-  if (result) {
-    popProgramCounter.call(this);
+    if (result) {
+      popProgramCounter(cpu);
+    }
   }
+);
+
+export const returnFromInterruptHandler = instruction((cpu) => {
+  popProgramCounter(cpu);
+  cpu.setInterruptMasterEnable(true);
 });
 
-export const returnFromInterruptHandler = instruction(function () {
-  popProgramCounter.call(this);
-  this.setInterruptMasterEnable(true);
-});
-
-function popProgramCounter(this: CpuState) {
-  this.writeRegisterPair(RegisterPair.PC, popWord(this));
-  this.cycle();
+function popProgramCounter(cpu: CpuState) {
+  cpu.writeRegisterPair(RegisterPair.PC, popWord(cpu));
+  cpu.cycle();
 }
 
-export const restartFunction = instruction(function (address: number) {
-  pushProgramCounter.call(this);
+export const restartFunction = instruction((cpu, address: number) => {
+  pushProgramCounter(cpu);
 
-  this.writeRegisterPair(RegisterPair.PC, makeWord(0x00, address));
+  cpu.writeRegisterPair(RegisterPair.PC, makeWord(0x00, address));
 });
 
-function pushProgramCounter(this: CpuState) {
-  pushWord(this, this.readRegisterPair(RegisterPair.PC));
+function pushProgramCounter(cpu: CpuState) {
+  pushWord(cpu, cpu.readRegisterPair(RegisterPair.PC));
 }

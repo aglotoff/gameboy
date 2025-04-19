@@ -11,13 +11,13 @@ import { testInstruction } from "./test-lib";
 
 describe("Miscellaneous instructions", () => {
   testInstruction("HALT", ({ state }) => {
-    halt.call(state);
+    halt(state);
 
     expect(state.isHalted()).toBe(true);
   });
 
   testInstruction("STOP", ({ state }) => {
-    stop.call(state);
+    stop(state);
 
     expect(state.isStopped()).toBe(true);
   });
@@ -25,14 +25,14 @@ describe("Miscellaneous instructions", () => {
   testInstruction("DI", ({ state }) => {
     state.setInterruptMasterEnable(true);
 
-    disableInterrupts.call(state);
+    disableInterrupts(state);
 
     expect(state.isInterruptMasterEnabled()).toBe(false);
     expect(state.getElapsedCycles()).toBe(1);
   });
 
   testInstruction("EI", ({ state }) => {
-    enableInterrupts.call(state);
+    enableInterrupts(state);
 
     expect(state.isInterruptMasterEnableScheduled()).toBe(true);
     expect(state.isInterruptMasterEnabled()).toBe(false);
@@ -45,7 +45,7 @@ describe("Miscellaneous instructions", () => {
   });
 
   testInstruction("NOP", ({ state }) => {
-    noOperation.call(state);
+    noOperation(state);
 
     expect(state.getElapsedCycles()).toBe(1);
   });

@@ -7,47 +7,47 @@ import {
   instructionWithImmediateByte,
 } from "./lib";
 
-export const incrementRegisterPair = instruction(function (pair: RegisterPair) {
-  this.writeRegisterPair(
+export const incrementRegisterPair = instruction((cpu, pair: RegisterPair) => {
+  cpu.writeRegisterPair(
     pair,
-    wrappingIncrementWord(this.readRegisterPair(pair))
+    wrappingIncrementWord(cpu.readRegisterPair(pair))
   );
-  this.cycle();
+  cpu.cycle();
 });
 
-export const decrementRegisterPair = instruction(function (pair: RegisterPair) {
-  this.writeRegisterPair(pair, this.readRegisterPair(pair) - 1);
-  this.cycle();
+export const decrementRegisterPair = instruction((cpu, pair: RegisterPair) => {
+  cpu.writeRegisterPair(pair, cpu.readRegisterPair(pair) - 1);
+  cpu.cycle();
 });
 
-export const addRegisterPair = instruction(function (pair: RegisterPair) {
+export const addRegisterPair = instruction((cpu, pair: RegisterPair) => {
   const { result, carryFrom11, carryFrom15 } = addWords(
-    this.readRegisterPair(RegisterPair.HL),
-    this.readRegisterPair(pair)
+    cpu.readRegisterPair(RegisterPair.HL),
+    cpu.readRegisterPair(pair)
   );
 
-  this.writeRegisterPair(RegisterPair.HL, result);
+  cpu.writeRegisterPair(RegisterPair.HL, result);
   // TODO: L on the first cycle, H on the second
-  this.cycle();
+  cpu.cycle();
 
-  this.setFlag(Flag.N, false);
-  this.setFlag(Flag.H, carryFrom11);
-  this.setFlag(Flag.CY, carryFrom15);
+  cpu.setFlag(Flag.N, false);
+  cpu.setFlag(Flag.H, carryFrom11);
+  cpu.setFlag(Flag.CY, carryFrom15);
 });
 
-export const addToStackPointer = instructionWithImmediateByte(function (e) {
+export const addToStackPointer = instructionWithImmediateByte((cpu, e) => {
   const { result, carryFrom3, carryFrom7 } = addSignedByteToWord(
-    this.readRegisterPair(RegisterPair.SP),
+    cpu.readRegisterPair(RegisterPair.SP),
     e
   );
 
   // TODO: addition split in two steps
-  this.cycle();
-  this.cycle();
+  cpu.cycle();
+  cpu.cycle();
 
-  this.writeRegisterPair(RegisterPair.SP, result);
-  this.setFlag(Flag.Z, false);
-  this.setFlag(Flag.N, false);
-  this.setFlag(Flag.H, carryFrom3);
-  this.setFlag(Flag.CY, carryFrom7);
+  cpu.writeRegisterPair(RegisterPair.SP, result);
+  cpu.setFlag(Flag.Z, false);
+  cpu.setFlag(Flag.N, false);
+  cpu.setFlag(Flag.H, carryFrom3);
+  cpu.setFlag(Flag.CY, carryFrom7);
 });

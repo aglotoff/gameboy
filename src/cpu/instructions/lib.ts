@@ -9,36 +9,36 @@ import {
 import { Flag, RegisterPair } from "../register";
 
 export type OpTable = Partial<
-  Record<number, [string, (this: CpuState) => void]>
+  Record<number, [string, (cpu: CpuState) => void]>
 >;
 
 export function instruction<T extends unknown[]>(
-  cb: (this: CpuState, ...args: T) => void
+  cb: (cpu: CpuState, ...args: T) => void
 ) {
-  return function (this: CpuState, ...args: T) {
-    this.cycle();
-    cb.call(this, ...args);
-    this.fetchNextOpcode();
+  return function (cpu: CpuState, ...args: T) {
+    cpu.cycle();
+    cb(cpu, ...args);
+    cpu.fetchNextOpcode();
   };
 }
 
 export function instructionWithImmediateByte<T extends unknown[]>(
-  cb: (this: CpuState, byte: number, ...args: T) => void
+  cb: (cpu: CpuState, byte: number, ...args: T) => void
 ) {
-  return function (this: CpuState, ...args: T) {
-    this.cycle();
-    cb.call(this, this.fetchImmediateByte(), ...args);
-    this.fetchNextOpcode();
+  return (cpu: CpuState, ...args: T) => {
+    cpu.cycle();
+    cb(cpu, cpu.fetchImmediateByte(), ...args);
+    cpu.fetchNextOpcode();
   };
 }
 
 export function instructionWithImmediateWord<T extends unknown[]>(
-  cb: (this: CpuState, word: number, ...args: T) => void
+  cb: (cpu: CpuState, word: number, ...args: T) => void
 ) {
-  return function (this: CpuState, ...args: T) {
-    this.cycle();
-    cb.call(this, fetchImmediateWord(this), ...args);
-    this.fetchNextOpcode();
+  return (cpu: CpuState, ...args: T) => {
+    cpu.cycle();
+    cb(cpu, fetchImmediateWord(cpu), ...args);
+    cpu.fetchNextOpcode();
   };
 }
 
@@ -49,11 +49,11 @@ function fetchImmediateWord(state: CpuState) {
 }
 
 export function bindInstructionArgs<T extends unknown[]>(
-  instruction: (this: CpuState, ...args: T) => void,
+  instruction: (cpu: CpuState, ...args: T) => void,
   ...args: T
 ) {
-  return function (this: CpuState) {
-    instruction.call(this, ...args);
+  return (cpu: CpuState) => {
+    instruction(cpu, ...args);
   };
 }
 

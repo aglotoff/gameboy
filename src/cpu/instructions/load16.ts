@@ -9,53 +9,49 @@ import {
   pushWord,
 } from "./lib";
 
-export const loadRegisterPair = instructionWithImmediateWord(function (
-  data,
-  dst: RegisterPair
-) {
-  this.writeRegisterPair(dst, data);
-});
-
-export const loadDirectFromStackPointer = instructionWithImmediateWord(
-  function (address) {
-    const data = this.readRegisterPair(RegisterPair.SP);
-    this.writeBus(address, getLSB(data));
-    this.cycle();
-    this.writeBus(address + 1, getMSB(data));
-    this.cycle();
+export const loadRegisterPair = instructionWithImmediateWord(
+  (cpu, data, dst: RegisterPair) => {
+    cpu.writeRegisterPair(dst, data);
   }
 );
 
-export const loadStackPointerFromHL = instruction(function () {
-  this.writeRegisterPair(
-    RegisterPair.SP,
-    this.readRegisterPair(RegisterPair.HL)
-  );
-  this.cycle();
+export const loadDirectFromStackPointer = instructionWithImmediateWord(
+  (cpu, address) => {
+    const data = cpu.readRegisterPair(RegisterPair.SP);
+    cpu.writeBus(address, getLSB(data));
+    cpu.cycle();
+    cpu.writeBus(address + 1, getMSB(data));
+    cpu.cycle();
+  }
+);
+
+export const loadStackPointerFromHL = instruction((cpu) => {
+  cpu.writeRegisterPair(RegisterPair.SP, cpu.readRegisterPair(RegisterPair.HL));
+  cpu.cycle();
 });
 
-export const pushToStack = instruction(function (pair: RegisterPair) {
-  pushWord(this, this.readRegisterPair(pair));
+export const pushToStack = instruction((cpu, pair: RegisterPair) => {
+  pushWord(cpu, cpu.readRegisterPair(pair));
 });
 
-export const popFromStack = instruction(function (rr: RegisterPair) {
-  this.writeRegisterPair(rr, popWord(this));
+export const popFromStack = instruction((cpu, rr: RegisterPair) => {
+  cpu.writeRegisterPair(rr, popWord(cpu));
 });
 
 export const loadHLFromAdjustedStackPointer = instructionWithImmediateByte(
-  function (e) {
+  (cpu, e) => {
     const { result, carryFrom3, carryFrom7 } = addSignedByteToWord(
-      this.readRegisterPair(RegisterPair.SP),
+      cpu.readRegisterPair(RegisterPair.SP),
       e
     );
 
-    this.writeRegisterPair(RegisterPair.HL, result);
+    cpu.writeRegisterPair(RegisterPair.HL, result);
     // Loading L on first cycle, H on second
-    this.cycle();
+    cpu.cycle();
 
-    this.setFlag(Flag.Z, false);
-    this.setFlag(Flag.N, false);
-    this.setFlag(Flag.H, carryFrom3);
-    this.setFlag(Flag.CY, carryFrom7);
+    cpu.setFlag(Flag.Z, false);
+    cpu.setFlag(Flag.N, false);
+    cpu.setFlag(Flag.H, carryFrom3);
+    cpu.setFlag(Flag.CY, carryFrom7);
   }
 );

@@ -42,7 +42,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegister(Register.A, 0x3a);
     state.writeRegister(Register.B, 0xc6);
 
-    addRegister.call(state, Register.B);
+    addRegister(state, Register.B);
 
     expect(state.readRegister(Register.A)).toBe(0);
     expect(state.isFlagSet(Flag.Z)).toBe(true);
@@ -57,7 +57,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x3ab6);
     state.writeBus(0x3ab6, 0x12);
 
-    addIndirectHL.call(state);
+    addIndirectHL(state);
 
     expect(state.readRegister(Register.A)).toBe(0x4e);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -71,7 +71,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegister(Register.A, 0x3c);
     state.writeBus(0, 0xff);
 
-    addImmediate.call(state);
+    addImmediate(state);
 
     expect(state.readRegister(Register.A)).toBe(0x3b);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -86,7 +86,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegister(Register.E, 0x0f);
     state.setFlag(Flag.CY, true);
 
-    addRegisterWithCarry.call(state, Register.E);
+    addRegisterWithCarry(state, Register.E);
 
     expect(state.readRegister(Register.A)).toBe(0xf1);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -102,7 +102,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeBus(0x8ac5, 0x1e);
     state.setFlag(Flag.CY, true);
 
-    addIndirectHLWithCarry.call(state);
+    addIndirectHLWithCarry(state);
 
     expect(state.readRegister(Register.A)).toBe(0x00);
     expect(state.isFlagSet(Flag.Z)).toBe(true);
@@ -117,7 +117,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeBus(0, 0x3b);
     state.setFlag(Flag.CY, true);
 
-    addImmediateWithCarry.call(state);
+    addImmediateWithCarry(state);
 
     expect(state.readRegister(Register.A)).toBe(0x1d);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -131,7 +131,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegister(Register.A, 0x3e);
     state.writeRegister(Register.E, 0x3e);
 
-    subtractRegister.call(state, Register.E);
+    subtractRegister(state, Register.E);
 
     expect(state.readRegister(Register.A)).toBe(0);
     expect(state.isFlagSet(Flag.Z)).toBe(true);
@@ -146,7 +146,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeBus(0x8ac5, 0x40);
 
-    subtractIndirectHL.call(state);
+    subtractIndirectHL(state);
 
     expect(state.readRegister(Register.A)).toBe(0xfe);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -160,7 +160,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegister(Register.A, 0x3e);
     state.writeBus(0, 0x0f);
 
-    subtractImmediate.call(state);
+    subtractImmediate(state);
 
     expect(state.readRegister(Register.A)).toBe(0x2f);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -175,7 +175,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegister(Register.H, 0x2a);
     state.setFlag(Flag.CY, true);
 
-    subtractRegisterWithCarry.call(state, Register.H);
+    subtractRegisterWithCarry(state, Register.H);
 
     expect(state.readRegister(Register.A)).toBe(0x10);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -191,7 +191,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeBus(0x8ac5, 0x4f);
     state.setFlag(Flag.CY, true);
 
-    subtractIndirectHLWithCarry.call(state);
+    subtractIndirectHLWithCarry(state);
 
     expect(state.readRegister(Register.A)).toBe(0xeb);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -206,7 +206,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeBus(0, 0x3a);
     state.setFlag(Flag.CY, true);
 
-    subtractImmediateWithCarry.call(state);
+    subtractImmediateWithCarry(state);
 
     expect(state.readRegister(Register.A)).toBe(0x00);
     expect(state.isFlagSet(Flag.Z)).toBe(true);
@@ -220,7 +220,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegister(Register.A, 0x3c);
     state.writeRegister(Register.B, 0x2f);
 
-    compareRegister.call(state, Register.B);
+    compareRegister(state, Register.B);
 
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(true);
@@ -234,7 +234,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x3ab6);
     state.writeBus(0x3ab6, 0x40);
 
-    compareIndirectHL.call(state);
+    compareIndirectHL(state);
 
     expect(state.isFlagSet(Flag.Z)).toBe(false);
     expect(state.isFlagSet(Flag.H)).toBe(false);
@@ -247,7 +247,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegister(Register.A, 0x3c);
     state.writeBus(0, 0x3c);
 
-    compareImmediate.call(state);
+    compareImmediate(state);
 
     expect(state.isFlagSet(Flag.Z)).toBe(true);
     expect(state.isFlagSet(Flag.H)).toBe(false);
@@ -259,7 +259,7 @@ describe("8-bit arithmetic and logical instructions", () => {
   testInstruction("INC r", ({ state }) => {
     state.writeRegister(Register.A, 0xff);
 
-    incrementRegister.call(state, Register.A);
+    incrementRegister(state, Register.A);
 
     expect(state.readRegister(Register.A)).toBe(0x00);
     expect(state.isFlagSet(Flag.Z)).toBe(true);
@@ -272,7 +272,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeBus(0x8ac5, 0x50);
 
-    incrementIndirectHL.call(state);
+    incrementIndirectHL(state);
 
     expect(state.readBus(state.readRegisterPair(RegisterPair.HL))).toBe(0x51);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -284,7 +284,7 @@ describe("8-bit arithmetic and logical instructions", () => {
   testInstruction("DEC r", ({ state }) => {
     state.writeRegister(Register.L, 0x01);
 
-    decrementRegister.call(state, Register.L);
+    decrementRegister(state, Register.L);
 
     expect(state.readRegister(Register.L)).toBe(0x00);
     expect(state.isFlagSet(Flag.Z)).toBe(true);
@@ -297,7 +297,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0xff34);
     state.writeBus(0xff34, 0x00);
 
-    decrementIndirectHL.call(state);
+    decrementIndirectHL(state);
 
     expect(state.readBus(state.readRegisterPair(RegisterPair.HL))).toBe(0xff);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -310,7 +310,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegister(Register.A, 0x5a);
     state.writeRegister(Register.L, 0x3f);
 
-    andRegister.call(state, Register.L);
+    andRegister(state, Register.L);
 
     expect(state.readRegister(Register.A)).toBe(0x1a);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -325,7 +325,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeBus(0x8ac5, 0x00);
 
-    andIndirectHL.call(state);
+    andIndirectHL(state);
 
     expect(state.readRegister(Register.A)).toBe(0x00);
     expect(state.isFlagSet(Flag.Z)).toBe(true);
@@ -339,7 +339,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegister(Register.A, 0x5a);
     state.writeBus(0, 0x38);
 
-    andImmediate.call(state);
+    andImmediate(state);
 
     expect(state.readRegister(Register.A)).toBe(0x18);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -352,7 +352,7 @@ describe("8-bit arithmetic and logical instructions", () => {
   testInstruction("OR r", ({ state }) => {
     state.writeRegister(Register.A, 0x5a);
 
-    orRegister.call(state, Register.A);
+    orRegister(state, Register.A);
 
     expect(state.readRegister(Register.A)).toBe(0x5a);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -367,7 +367,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac2);
     state.writeBus(0x8ac2, 0x0f);
 
-    orIndirectHL.call(state);
+    orIndirectHL(state);
 
     expect(state.readRegister(Register.A)).toBe(0x5f);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -381,7 +381,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegister(Register.A, 0x5a);
     state.writeBus(0, 0x3);
 
-    orImmediate.call(state);
+    orImmediate(state);
 
     expect(state.readRegister(Register.A)).toBe(0x5b);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -394,7 +394,7 @@ describe("8-bit arithmetic and logical instructions", () => {
   testInstruction("XOR r", ({ state }) => {
     state.writeRegister(Register.A, 0xff);
 
-    xorRegister.call(state, Register.A);
+    xorRegister(state, Register.A);
 
     expect(state.readRegister(Register.A)).toBe(0x00);
     expect(state.isFlagSet(Flag.Z)).toBe(true);
@@ -409,7 +409,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeBus(0x8ac5, 0x8a);
 
-    xorIndirectHL.call(state);
+    xorIndirectHL(state);
 
     expect(state.readRegister(Register.A)).toBe(0x75);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -423,7 +423,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegister(Register.A, 0xff);
     state.writeBus(0, 0xf);
 
-    xorImmediate.call(state);
+    xorImmediate(state);
 
     expect(state.readRegister(Register.A)).toBe(0xf0);
     expect(state.isFlagSet(Flag.Z)).toBe(false);
@@ -436,12 +436,12 @@ describe("8-bit arithmetic and logical instructions", () => {
   testInstruction("CCF", ({ state }) => {
     state.setFlag(Flag.CY, true);
 
-    complementCarryFlag.call(state);
+    complementCarryFlag(state);
 
     expect(state.isFlagSet(Flag.CY)).toBe(false);
     expect(state.getElapsedCycles()).toBe(1);
 
-    complementCarryFlag.call(state);
+    complementCarryFlag(state);
 
     expect(state.isFlagSet(Flag.CY)).toBe(true);
     expect(state.getElapsedCycles()).toBe(2);
@@ -450,12 +450,12 @@ describe("8-bit arithmetic and logical instructions", () => {
   testInstruction("SCF", ({ state }) => {
     state.setFlag(Flag.CY, false);
 
-    setCarryFlag.call(state);
+    setCarryFlag(state);
 
     expect(state.isFlagSet(Flag.CY)).toBe(true);
     expect(state.getElapsedCycles()).toBe(1);
 
-    setCarryFlag.call(state);
+    setCarryFlag(state);
 
     expect(state.isFlagSet(Flag.CY)).toBe(true);
     expect(state.getElapsedCycles()).toBe(2);
@@ -465,25 +465,25 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegister(Register.A, 0x45);
     state.writeRegister(Register.B, 0x38);
 
-    addRegister.call(state, Register.B);
+    addRegister(state, Register.B);
 
     expect(state.readRegister(Register.A)).toBe(0x7d);
     expect(state.isFlagSet(Flag.N)).toBe(false);
     expect(state.getElapsedCycles()).toBe(1);
 
-    decimalAdjustAccumulator.call(state);
+    decimalAdjustAccumulator(state);
 
     expect(state.readRegister(Register.A)).toBe(0x83);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
     expect(state.getElapsedCycles()).toBe(2);
 
-    subtractRegister.call(state, Register.B);
+    subtractRegister(state, Register.B);
 
     expect(state.readRegister(Register.A)).toBe(0x4b);
     expect(state.isFlagSet(Flag.N)).toBe(true);
     expect(state.getElapsedCycles()).toBe(3);
 
-    decimalAdjustAccumulator.call(state);
+    decimalAdjustAccumulator(state);
 
     expect(state.readRegister(Register.A)).toBe(0x45);
     expect(state.isFlagSet(Flag.CY)).toBe(false);
@@ -493,7 +493,7 @@ describe("8-bit arithmetic and logical instructions", () => {
   testInstruction("CPL", ({ state }) => {
     state.writeRegister(Register.A, 0x35);
 
-    complementAccumulator.call(state);
+    complementAccumulator(state);
 
     expect(state.readRegister(Register.A)).toBe(0xca);
     expect(state.isFlagSet(Flag.H)).toBe(true);

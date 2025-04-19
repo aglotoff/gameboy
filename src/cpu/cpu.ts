@@ -34,7 +34,7 @@ export class Cpu extends CpuState {
 
   private executeNextInstruction() {
     const instruction = this.decodeInstruction(this.getOpcode());
-    instruction[1].call(this);
+    instruction[1](this);
   }
 
   private decodeInstruction(opcode: number) {

@@ -6,140 +6,138 @@ import {
   instructionWithImmediateWord,
 } from "./lib";
 
-export const loadRegisterFromRegister = instruction(function (
-  dst: Register,
-  src: Register
-) {
-  this.writeRegister(dst, this.readRegister(src));
-});
-
-export const loadRegisterFromImmediate = instructionWithImmediateByte(function (
-  data,
-  dst: Register
-) {
-  this.writeRegister(dst, data);
-});
-
-export const loadRegisterFromIndirectHL = instruction(function (dst: Register) {
-  const data = this.readBus(this.readRegisterPair(RegisterPair.HL));
-  this.cycle();
-  this.writeRegister(dst, data);
-});
-
-export const loadIndirectHLFromRegister = instruction(function (src: Register) {
-  this.writeBus(this.readRegisterPair(RegisterPair.HL), this.readRegister(src));
-  this.cycle();
-});
-
-export const loadIndirectHLFromImmediateData = instructionWithImmediateByte(
-  function (data) {
-    this.writeBus(this.readRegisterPair(RegisterPair.HL), data);
-    this.cycle();
+export const loadRegisterFromRegister = instruction(
+  (cpu, dst: Register, src: Register) => {
+    cpu.writeRegister(dst, cpu.readRegister(src));
   }
 );
 
-export const loadAccumulatorFromIndirectBC = instruction(function () {
-  const data = this.readBus(this.readRegisterPair(RegisterPair.BC));
-  this.cycle();
-  this.writeRegister(Register.A, data);
+export const loadRegisterFromImmediate = instructionWithImmediateByte(
+  (cpu, data, dst: Register) => {
+    cpu.writeRegister(dst, data);
+  }
+);
+
+export const loadRegisterFromIndirectHL = instruction((cpu, dst: Register) => {
+  const data = cpu.readBus(cpu.readRegisterPair(RegisterPair.HL));
+  cpu.cycle();
+  cpu.writeRegister(dst, data);
 });
 
-export const loadAccumulatorFromIndirectDE = instruction(function () {
-  const data = this.readBus(this.readRegisterPair(RegisterPair.DE));
-  this.cycle();
-  this.writeRegister(Register.A, data);
+export const loadIndirectHLFromRegister = instruction((cpu, src: Register) => {
+  cpu.writeBus(cpu.readRegisterPair(RegisterPair.HL), cpu.readRegister(src));
+  cpu.cycle();
 });
 
-export const loadIndirectBCFromAccumulator = instruction(function () {
-  this.writeBus(
-    this.readRegisterPair(RegisterPair.BC),
-    this.readRegister(Register.A)
+export const loadIndirectHLFromImmediateData = instructionWithImmediateByte(
+  (cpu, data) => {
+    cpu.writeBus(cpu.readRegisterPair(RegisterPair.HL), data);
+    cpu.cycle();
+  }
+);
+
+export const loadAccumulatorFromIndirectBC = instruction((cpu) => {
+  const data = cpu.readBus(cpu.readRegisterPair(RegisterPair.BC));
+  cpu.cycle();
+  cpu.writeRegister(Register.A, data);
+});
+
+export const loadAccumulatorFromIndirectDE = instruction((cpu) => {
+  const data = cpu.readBus(cpu.readRegisterPair(RegisterPair.DE));
+  cpu.cycle();
+  cpu.writeRegister(Register.A, data);
+});
+
+export const loadIndirectBCFromAccumulator = instruction((cpu) => {
+  cpu.writeBus(
+    cpu.readRegisterPair(RegisterPair.BC),
+    cpu.readRegister(Register.A)
   );
-  this.cycle();
+  cpu.cycle();
 });
 
-export const loadIndirectDEFromAccumulator = instruction(function () {
-  this.writeBus(
-    this.readRegisterPair(RegisterPair.DE),
-    this.readRegister(Register.A)
+export const loadIndirectDEFromAccumulator = instruction((cpu) => {
+  cpu.writeBus(
+    cpu.readRegisterPair(RegisterPair.DE),
+    cpu.readRegister(Register.A)
   );
-  this.cycle();
+  cpu.cycle();
 });
 
 export const loadAccumulatorFromDirectWord = instructionWithImmediateWord(
-  function (address) {
-    const data = this.readBus(address);
-    this.cycle();
-    this.writeRegister(Register.A, data);
+  (cpu, address) => {
+    const data = cpu.readBus(address);
+    cpu.cycle();
+    cpu.writeRegister(Register.A, data);
   }
 );
 
 export const loadDirectWordFromAccumulator = instructionWithImmediateWord(
-  function (address) {
-    this.writeBus(address, this.readRegister(Register.A));
-    this.cycle();
+  (cpu, address) => {
+    cpu.writeBus(address, cpu.readRegister(Register.A));
+    cpu.cycle();
   }
 );
 
-export const loadAccumulatorFromIndirectC = instruction(function () {
-  const address = 0xff00 + this.readRegister(Register.C);
-  const data = this.readBus(address);
-  this.writeRegister(Register.A, data);
-  this.cycle();
+export const loadAccumulatorFromIndirectC = instruction((cpu) => {
+  const address = 0xff00 + cpu.readRegister(Register.C);
+  const data = cpu.readBus(address);
+  cpu.writeRegister(Register.A, data);
+  cpu.cycle();
 });
 
-export const loadIndirectCFromAccumulator = instruction(function () {
-  const address = 0xff00 + this.readRegister(Register.C);
-  this.writeBus(address, this.readRegister(Register.A));
-  this.cycle();
+export const loadIndirectCFromAccumulator = instruction((cpu) => {
+  const address = 0xff00 + cpu.readRegister(Register.C);
+  cpu.writeBus(address, cpu.readRegister(Register.A));
+  cpu.cycle();
 });
 
 export const loadAccumulatorFromDirectByte = instructionWithImmediateByte(
-  function (offset) {
+  (cpu, offset) => {
     const address = 0xff00 + offset;
-    const data = this.readBus(address);
-    this.cycle();
-    this.writeRegister(Register.A, data);
+    const data = cpu.readBus(address);
+    cpu.cycle();
+    cpu.writeRegister(Register.A, data);
   }
 );
 
 export const loadDirectByteFromAccumulator = instructionWithImmediateByte(
-  function (offset) {
+  (cpu, offset) => {
     const address = 0xff00 + offset;
-    this.writeBus(address, this.readRegister(Register.A));
-    this.cycle();
+    cpu.writeBus(address, cpu.readRegister(Register.A));
+    cpu.cycle();
   }
 );
 
-export const loadAccumulatorFromIndirectHLDecrement = instruction(function () {
-  const address = this.readRegisterPair(RegisterPair.HL);
-  const data = this.readBus(address);
+export const loadAccumulatorFromIndirectHLDecrement = instruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const data = cpu.readBus(address);
 
-  this.writeRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
-  this.cycle();
+  cpu.writeRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
+  cpu.cycle();
 
-  this.writeRegister(Register.A, data);
+  cpu.writeRegister(Register.A, data);
 });
 
-export const loadAccumulatorFromIndirectHLIncrement = instruction(function () {
-  const address = this.readRegisterPair(RegisterPair.HL);
-  const data = this.readBus(address);
-  this.writeRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
-  this.cycle();
+export const loadAccumulatorFromIndirectHLIncrement = instruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const data = cpu.readBus(address);
+  cpu.writeRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
+  cpu.cycle();
 
-  this.writeRegister(Register.A, data);
+  cpu.writeRegister(Register.A, data);
 });
 
-export const loadIndirectHLDecrementFromAccumulator = instruction(function () {
-  const address = this.readRegisterPair(RegisterPair.HL);
-  this.writeBus(address, this.readRegister(Register.A));
-  this.writeRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
-  this.cycle();
+export const loadIndirectHLDecrementFromAccumulator = instruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  cpu.writeBus(address, cpu.readRegister(Register.A));
+  cpu.writeRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
+  cpu.cycle();
 });
 
-export const loadIndirectHLIncrementFromAccumulator = instruction(function () {
-  const address = this.readRegisterPair(RegisterPair.HL);
-  this.writeBus(address, this.readRegister(Register.A));
-  this.writeRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
-  this.cycle();
+export const loadIndirectHLIncrementFromAccumulator = instruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  cpu.writeBus(address, cpu.readRegister(Register.A));
+  cpu.writeRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
+  cpu.cycle();
 });
