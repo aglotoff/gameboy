@@ -1,13 +1,14 @@
 import { CpuState } from "../cpu-state";
-import { RegisterPair } from "../register";
+import { Register, RegisterPair } from "../register";
 import { makeWord } from "../../utils";
 import {
-  addSignedByteToWord,
+  addBytes,
   checkCondition,
   Condition,
   instruction,
   instructionWithImmediateByte,
   instructionWithImmediateWord,
+  isNegative,
   popWord,
   pushWord,
 } from "./lib";
@@ -33,12 +34,18 @@ export const jumpConditional = instructionWithImmediateWord(
 );
 
 export const relativeJump = instructionWithImmediateByte((cpu, offset) => {
-  const { result } = addSignedByteToWord(
-    cpu.readRegisterPair(RegisterPair.PC),
+  const { result: lsb, carryFrom7 } = addBytes(
+    cpu.readRegister(Register.PC_L),
     offset
   );
 
-  cpu.writeRegisterPair(RegisterPair.PC, result);
+  const { result: msb } = addBytes(
+    cpu.readRegister(Register.PC_H),
+    isNegative(offset) ? 0xff : 0x00,
+    carryFrom7
+  );
+
+  cpu.writeRegisterPair(RegisterPair.PC, makeWord(msb, lsb));
   cpu.cycle();
 });
 
@@ -48,12 +55,18 @@ export const relativeJumpConditional = instructionWithImmediateByte(
       return;
     }
 
-    const { result } = addSignedByteToWord(
-      cpu.readRegisterPair(RegisterPair.PC),
+    const { result: lsb, carryFrom7 } = addBytes(
+      cpu.readRegister(Register.PC_L),
       offset
     );
 
-    cpu.writeRegisterPair(RegisterPair.PC, result);
+    const { result: msb } = addBytes(
+      cpu.readRegister(Register.PC_H),
+      isNegative(offset) ? 0xff : 0x00,
+      carryFrom7
+    );
+
+    cpu.writeRegisterPair(RegisterPair.PC, makeWord(msb, lsb));
     cpu.cycle();
   }
 );

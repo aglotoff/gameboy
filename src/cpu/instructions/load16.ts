@@ -1,10 +1,11 @@
-import { Flag, RegisterPair } from "../register";
-import { getLSB, getMSB } from "../../utils";
+import { Flag, Register, RegisterPair } from "../register";
+import { getLSB, getMSB, makeWord } from "../../utils";
 import {
-  addSignedByteToWord,
+  addBytes,
   instruction,
   instructionWithImmediateByte,
   instructionWithImmediateWord,
+  isNegative,
   popWord,
   pushWord,
 } from "./lib";
@@ -40,12 +41,19 @@ export const popFromStack = instruction((cpu, rr: RegisterPair) => {
 
 export const loadHLFromAdjustedStackPointer = instructionWithImmediateByte(
   (cpu, e) => {
-    const { result, carryFrom3, carryFrom7 } = addSignedByteToWord(
-      cpu.readRegisterPair(RegisterPair.SP),
-      e
+    const {
+      result: lsb,
+      carryFrom3,
+      carryFrom7,
+    } = addBytes(cpu.readRegister(Register.SP_L), e);
+
+    const { result: msb } = addBytes(
+      cpu.readRegister(Register.SP_H),
+      isNegative(e) ? 0xff : 0x00,
+      carryFrom7
     );
 
-    cpu.writeRegisterPair(RegisterPair.HL, result);
+    cpu.writeRegisterPair(RegisterPair.HL, makeWord(msb, lsb));
     // Loading L on first cycle, H on second
     cpu.cycle();
 

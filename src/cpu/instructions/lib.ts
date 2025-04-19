@@ -3,6 +3,7 @@ import {
   getLSB,
   getMSB,
   makeWord,
+  testBit,
   wrappingDecrementWord,
   wrappingIncrementWord,
 } from "../../utils";
@@ -58,7 +59,6 @@ export function bindInstructionArgs<T extends unknown[]>(
 }
 
 const BYTE_MASK = 0xff;
-const BYTE_SIGN_MASK = 0x80;
 const NIBBLE_MASK = 0xf;
 
 export function addBytes(a: number, b: number, carryFlag = false) {
@@ -71,34 +71,8 @@ export function addBytes(a: number, b: number, carryFlag = false) {
   };
 }
 
-export function addSignedByteToWord(a: number, b: number) {
-  const { result: lsb, carryFrom3, carryFrom7 } = addBytes(getLSB(a), b);
-
-  const isNegative = b & BYTE_SIGN_MASK;
-  const adj = isNegative ? BYTE_MASK : 0;
-  const msb = (getMSB(a) + adj + +carryFrom7) & BYTE_MASK;
-
-  return {
-    carryFrom3,
-    carryFrom7,
-    result: makeWord(msb, lsb),
-  };
-}
-
-export function addWords(a: number, b: number) {
-  const { result: lsb, carryFrom7 } = addBytes(getLSB(a), getLSB(b));
-
-  const {
-    result: msb,
-    carryFrom3: carryFrom11,
-    carryFrom7: carryFrom15,
-  } = addBytes(getMSB(a), getMSB(b), carryFrom7);
-
-  return {
-    result: makeWord(msb, lsb),
-    carryFrom11,
-    carryFrom15,
-  };
+export function isNegative(a: number) {
+  return testBit(a, 7);
 }
 
 export function subtractBytes(a: number, b: number, carryFlag = false) {

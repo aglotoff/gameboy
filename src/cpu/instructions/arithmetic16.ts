@@ -1,10 +1,10 @@
-import { RegisterPair, Flag } from "../register";
-import { wrappingIncrementWord } from "../../utils";
+import { RegisterPair, Flag, Register } from "../register";
+import { getLSB, getMSB, makeWord, wrappingIncrementWord } from "../../utils";
 import {
-  addSignedByteToWord,
-  addWords,
+  addBytes,
   instruction,
   instructionWithImmediateByte,
+  isNegative,
 } from "./lib";
 
 export const incrementRegisterPair = instruction((cpu, pair: RegisterPair) => {
@@ -21,12 +21,18 @@ export const decrementRegisterPair = instruction((cpu, pair: RegisterPair) => {
 });
 
 export const addRegisterPair = instruction((cpu, pair: RegisterPair) => {
-  const { result, carryFrom11, carryFrom15 } = addWords(
-    cpu.readRegisterPair(RegisterPair.HL),
-    cpu.readRegisterPair(pair)
-  );
+  const a = cpu.readRegisterPair(RegisterPair.HL);
+  const b = cpu.readRegisterPair(pair);
 
-  cpu.writeRegisterPair(RegisterPair.HL, result);
+  const { result: lsb, carryFrom7 } = addBytes(getLSB(a), getLSB(b));
+
+  const {
+    result: msb,
+    carryFrom3: carryFrom11,
+    carryFrom7: carryFrom15,
+  } = addBytes(getMSB(a), getMSB(b), carryFrom7);
+
+  cpu.writeRegisterPair(RegisterPair.HL, makeWord(msb, lsb));
   // TODO: L on the first cycle, H on the second
   cpu.cycle();
 
@@ -36,16 +42,23 @@ export const addRegisterPair = instruction((cpu, pair: RegisterPair) => {
 });
 
 export const addToStackPointer = instructionWithImmediateByte((cpu, e) => {
-  const { result, carryFrom3, carryFrom7 } = addSignedByteToWord(
-    cpu.readRegisterPair(RegisterPair.SP),
-    e
+  const {
+    result: lsb,
+    carryFrom3,
+    carryFrom7,
+  } = addBytes(cpu.readRegister(Register.SP_L), e);
+
+  const { result: msb } = addBytes(
+    cpu.readRegister(Register.SP_H),
+    isNegative(e) ? 0xff : 0x00,
+    carryFrom7
   );
 
   // TODO: addition split in two steps
   cpu.cycle();
   cpu.cycle();
 
-  cpu.writeRegisterPair(RegisterPair.SP, result);
+  cpu.writeRegisterPair(RegisterPair.SP, makeWord(msb, lsb));
   cpu.setFlag(Flag.Z, false);
   cpu.setFlag(Flag.N, false);
   cpu.setFlag(Flag.H, carryFrom3);
