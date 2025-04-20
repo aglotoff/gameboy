@@ -1,4 +1,4 @@
-import { getLSB, getMSB, makeWord, resetBit, setBit, testBit } from "../utils";
+import { getLSB, getMSB, makeWord } from "../utils";
 
 export enum Register {
   A = 0,
@@ -9,76 +9,80 @@ export enum Register {
   E = 5,
   H = 6,
   L = 7,
-  SP_L = 8,
-  SP_H = 9,
-  PC_L = 10,
-  PC_H = 11,
+  SP_H = 8,
+  SP_L = 9,
+  PC_H = 10,
+  PC_L = 11,
   IR = 12,
   IE = 13,
 }
 
+// High byte is always (pair + 0), low byte is always (pair + 1)
 export enum RegisterPair {
   AF = 0,
-  BC = 1,
-  DE = 2,
-  HL = 3,
-  SP = 4,
-  PC = 5,
+  BC = 2,
+  DE = 4,
+  HL = 6,
+  SP = 8,
+  PC = 10,
 }
 
-const pairToRegisters: Record<RegisterPair, [Register, Register]> = {
-  [RegisterPair.AF]: [Register.A, Register.F],
-  [RegisterPair.BC]: [Register.B, Register.C],
-  [RegisterPair.DE]: [Register.D, Register.E],
-  [RegisterPair.HL]: [Register.H, Register.L],
-  [RegisterPair.SP]: [Register.SP_H, Register.SP_L],
-  [RegisterPair.PC]: [Register.PC_H, Register.PC_L],
-};
+export function highRegister(pair: RegisterPair): Register {
+  return pair + 0;
+}
 
+export function lowRegister(pair: RegisterPair): Register {
+  return pair + 1;
+}
+
+// Use bit masks for flag names to avoid extra arithmetic
 export enum Flag {
-  Z = 7,
-  N = 6,
-  H = 5,
-  CY = 4,
+  Z = 0b1000_0000,
+  N = 0b0100_0000,
+  H = 0b0010_0000,
+  CY = 0b0001_0000,
 }
 
-const FLAG_MASK = 0xf0;
+const FLAG_MASK = 0b1111_0000;
 
 export class RegisterFile {
   private registers = new Uint8Array(14);
 
-  public read(register: Register) {
+  public getRegister(register: Register) {
     return this.registers[register];
   }
 
-  public write(register: Register, value: number) {
+  public setRegister(register: Register, value: number) {
     if (register === Register.F) {
+      // High 4 bits of flags are always zero
+      // TODO: re-check that
       this.registers[register] = value & FLAG_MASK;
     } else {
       this.registers[register] = value;
     }
   }
 
-  public readPair(pair: RegisterPair) {
-    const [high, low] = pairToRegisters[pair];
-    return makeWord(this.read(high), this.read(low));
+  public getRegisterPair(pair: RegisterPair) {
+    return makeWord(
+      this.getRegister(highRegister(pair)),
+      this.getRegister(lowRegister(pair))
+    );
   }
 
-  public writePair(pair: RegisterPair, value: number) {
-    const [high, low] = pairToRegisters[pair];
-    this.write(high, getMSB(value));
-    this.write(low, getLSB(value));
+  public setRegisterPair(pair: RegisterPair, value: number) {
+    this.setRegister(highRegister(pair), getMSB(value));
+    this.setRegister(lowRegister(pair), getLSB(value));
   }
 
-  public isFlagSet(flag: Flag) {
-    return testBit(this.registers[Register.F], flag);
+  public getFlag(flag: Flag) {
+    return (this.registers[Register.F] & flag) !== 0;
   }
 
   public setFlag(flag: Flag, value: boolean) {
     if (value) {
-      this.registers[Register.F] = setBit(this.registers[Register.F], flag);
+      this.registers[Register.F] |= flag;
     } else {
-      this.registers[Register.F] = resetBit(this.registers[Register.F], flag);
+      this.registers[Register.F] &= ~flag;
     }
   }
 }

@@ -12,13 +12,13 @@ import {
 
 export const loadRegisterPair = instructionWithImmediateWord(
   (cpu, data, dst: RegisterPair) => {
-    cpu.writeRegisterPair(dst, data);
+    cpu.setRegisterPair(dst, data);
   }
 );
 
 export const loadDirectFromStackPointer = instructionWithImmediateWord(
   (cpu, address) => {
-    const data = cpu.readRegisterPair(RegisterPair.SP);
+    const data = cpu.getRegisterPair(RegisterPair.SP);
     cpu.writeBus(address, getLSB(data));
     cpu.beginNextCycle();
     cpu.writeBus(address + 1, getMSB(data));
@@ -27,17 +27,17 @@ export const loadDirectFromStackPointer = instructionWithImmediateWord(
 );
 
 export const loadStackPointerFromHL = instruction((cpu) => {
-  cpu.writeRegisterPair(RegisterPair.SP, cpu.readRegisterPair(RegisterPair.HL));
+  cpu.setRegisterPair(RegisterPair.SP, cpu.getRegisterPair(RegisterPair.HL));
   cpu.beginNextCycle();
 });
 
 export const pushToStack = instruction((cpu, pair: RegisterPair) => {
-  pushWord(cpu, cpu.readRegisterPair(pair));
+  pushWord(cpu, cpu.getRegisterPair(pair));
   cpu.beginNextCycle();
 });
 
 export const popFromStack = instruction((cpu, rr: RegisterPair) => {
-  cpu.writeRegisterPair(rr, popWord(cpu));
+  cpu.setRegisterPair(rr, popWord(cpu));
 });
 
 export const loadHLFromAdjustedStackPointer = instructionWithImmediateByte(
@@ -46,15 +46,15 @@ export const loadHLFromAdjustedStackPointer = instructionWithImmediateByte(
       result: lsb,
       carryFrom3,
       carryFrom7,
-    } = addBytes(cpu.readRegister(Register.SP_L), e);
+    } = addBytes(cpu.getRegister(Register.SP_L), e);
 
     const { result: msb } = addBytes(
-      cpu.readRegister(Register.SP_H),
+      cpu.getRegister(Register.SP_H),
       isNegative(e) ? 0xff : 0x00,
       carryFrom7
     );
 
-    cpu.writeRegisterPair(RegisterPair.HL, makeWord(msb, lsb));
+    cpu.setRegisterPair(RegisterPair.HL, makeWord(msb, lsb));
     // Loading L on first cycle, H on second
     cpu.beginNextCycle();
 

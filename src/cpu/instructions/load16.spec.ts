@@ -19,13 +19,13 @@ describe("16-bit load instructions", () => {
 
     loadRegisterPair(state, RegisterPair.HL);
 
-    expect(state.readRegister(Register.H)).toBe(0x3a);
-    expect(state.readRegister(Register.L)).toBe(0x5b);
+    expect(state.getRegister(Register.H)).toBe(0x3a);
+    expect(state.getRegister(Register.L)).toBe(0x5b);
     expect(state.getElapsedCycles()).toBe(3);
   });
 
   testInstruction("LD (nn),SP", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.SP, 0xfff8);
+    state.setRegisterPair(RegisterPair.SP, 0xfff8);
     state.writeBus(0x00, 0x00);
     state.writeBus(0x01, 0xc1);
 
@@ -37,49 +37,49 @@ describe("16-bit load instructions", () => {
   });
 
   testInstruction("LD SP,HL", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.HL, 0x3a5b);
+    state.setRegisterPair(RegisterPair.HL, 0x3a5b);
 
     loadStackPointerFromHL(state);
 
-    expect(state.readRegisterPair(RegisterPair.SP)).toBe(0x3a5b);
+    expect(state.getRegisterPair(RegisterPair.SP)).toBe(0x3a5b);
     expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("PUSH qq", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.SP, 0xfffe);
-    state.writeRegisterPair(RegisterPair.BC, 0x8ac5);
+    state.setRegisterPair(RegisterPair.SP, 0xfffe);
+    state.setRegisterPair(RegisterPair.BC, 0x8ac5);
 
     pushToStack(state, RegisterPair.BC);
 
     expect(state.readBus(0xfffd)).toBe(0x8a);
     expect(state.readBus(0xfffc)).toBe(0xc5);
-    expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffc);
+    expect(state.getRegisterPair(RegisterPair.SP)).toBe(0xfffc);
     expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("POP qq", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.SP, 0xfffc);
+    state.setRegisterPair(RegisterPair.SP, 0xfffc);
     state.writeBus(0xfffc, 0x5f);
     state.writeBus(0xfffd, 0x3c);
 
     popFromStack(state, RegisterPair.BC);
 
-    expect(state.readRegisterPair(RegisterPair.BC)).toBe(0x3c5f);
-    expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffe);
+    expect(state.getRegisterPair(RegisterPair.BC)).toBe(0x3c5f);
+    expect(state.getRegisterPair(RegisterPair.SP)).toBe(0xfffe);
     expect(state.getElapsedCycles()).toBe(3);
   });
 
   testInstruction("LDHL SP,e", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.SP, 0xfff8);
+    state.setRegisterPair(RegisterPair.SP, 0xfff8);
     state.writeBus(0x00, 0x2);
 
     loadHLFromAdjustedStackPointer(state);
 
-    expect(state.readRegisterPair(RegisterPair.HL)).toBe(0xfffa);
-    expect(state.isFlagSet(Flag.Z)).toBe(false);
-    expect(state.isFlagSet(Flag.H)).toBe(false);
-    expect(state.isFlagSet(Flag.N)).toBe(false);
-    expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getRegisterPair(RegisterPair.HL)).toBe(0xfffa);
+    expect(state.getFlag(Flag.Z)).toBe(false);
+    expect(state.getFlag(Flag.H)).toBe(false);
+    expect(state.getFlag(Flag.N)).toBe(false);
+    expect(state.getFlag(Flag.CY)).toBe(false);
     expect(state.getElapsedCycles()).toBe(3);
   });
 });

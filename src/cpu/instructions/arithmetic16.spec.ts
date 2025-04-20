@@ -11,57 +11,57 @@ import { testInstruction } from "./test-lib";
 
 describe("16-bit arithmetic instructions", () => {
   testInstruction("INC rr", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.DE, 0x235f);
+    state.setRegisterPair(RegisterPair.DE, 0x235f);
 
     incrementRegisterPair(state, RegisterPair.DE);
 
-    expect(state.readRegisterPair(RegisterPair.DE)).toBe(0x2360);
+    expect(state.getRegisterPair(RegisterPair.DE)).toBe(0x2360);
     expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("DEC rr", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.DE, 0x235f);
+    state.setRegisterPair(RegisterPair.DE, 0x235f);
 
     decrementRegisterPair(state, RegisterPair.DE);
 
-    expect(state.readRegisterPair(RegisterPair.DE)).toBe(0x235e);
+    expect(state.getRegisterPair(RegisterPair.DE)).toBe(0x235e);
     expect(state.getElapsedCycles()).toBe(2);
   });
 
   testInstruction("ADD HL,rr", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.HL, 0x8a23);
-    state.writeRegisterPair(RegisterPair.BC, 0x0605);
+    state.setRegisterPair(RegisterPair.HL, 0x8a23);
+    state.setRegisterPair(RegisterPair.BC, 0x0605);
 
     addRegisterPair(state, RegisterPair.BC);
 
-    expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x9028);
-    expect(state.isFlagSet(Flag.H)).toBe(true);
-    expect(state.isFlagSet(Flag.N)).toBe(false);
-    expect(state.isFlagSet(Flag.CY)).toBe(false);
+    expect(state.getRegisterPair(RegisterPair.HL)).toBe(0x9028);
+    expect(state.getFlag(Flag.H)).toBe(true);
+    expect(state.getFlag(Flag.N)).toBe(false);
+    expect(state.getFlag(Flag.CY)).toBe(false);
     expect(state.getElapsedCycles()).toBe(2);
 
-    state.writeRegisterPair(RegisterPair.HL, 0x8a23);
+    state.setRegisterPair(RegisterPair.HL, 0x8a23);
 
     addRegisterPair(state, RegisterPair.HL);
 
-    expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x1446);
-    expect(state.isFlagSet(Flag.H)).toBe(true);
-    expect(state.isFlagSet(Flag.N)).toBe(false);
-    expect(state.isFlagSet(Flag.CY)).toBe(true);
+    expect(state.getRegisterPair(RegisterPair.HL)).toBe(0x1446);
+    expect(state.getFlag(Flag.H)).toBe(true);
+    expect(state.getFlag(Flag.N)).toBe(false);
+    expect(state.getFlag(Flag.CY)).toBe(true);
     expect(state.getElapsedCycles()).toBe(4);
   });
 
   testInstruction("ADD SP,e", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.SP, 0xfff8);
+    state.setRegisterPair(RegisterPair.SP, 0xfff8);
     state.writeBus(0, 0x2);
 
     addToStackPointer(state);
 
-    expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffa);
-    expect(state.isFlagSet(Flag.H)).toBe(false);
-    expect(state.isFlagSet(Flag.N)).toBe(false);
-    expect(state.isFlagSet(Flag.CY)).toBe(false);
-    expect(state.isFlagSet(Flag.Z)).toBe(false);
+    expect(state.getRegisterPair(RegisterPair.SP)).toBe(0xfffa);
+    expect(state.getFlag(Flag.H)).toBe(false);
+    expect(state.getFlag(Flag.N)).toBe(false);
+    expect(state.getFlag(Flag.CY)).toBe(false);
+    expect(state.getFlag(Flag.Z)).toBe(false);
     expect(state.getElapsedCycles()).toBe(4);
   });
 });

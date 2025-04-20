@@ -95,18 +95,18 @@ export enum Condition {
 export function checkCondition(state: CpuState, condition: Condition) {
   switch (condition) {
     case Condition.Z:
-      return state.isFlagSet(Flag.Z);
+      return state.getFlag(Flag.Z);
     case Condition.C:
-      return state.isFlagSet(Flag.CY);
+      return state.getFlag(Flag.CY);
     case Condition.NZ:
-      return !state.isFlagSet(Flag.Z);
+      return !state.getFlag(Flag.Z);
     case Condition.NC:
-      return !state.isFlagSet(Flag.CY);
+      return !state.getFlag(Flag.CY);
   }
 }
 
 export function pushWord(state: CpuState, data: number) {
-  let sp = state.readRegisterPair(RegisterPair.SP);
+  let sp = state.getRegisterPair(RegisterPair.SP);
 
   sp = wrappingDecrementWord(sp);
 
@@ -118,21 +118,21 @@ export function pushWord(state: CpuState, data: number) {
   state.beginNextCycle();
 
   state.writeBus(sp, getLSB(data));
-  state.writeRegisterPair(RegisterPair.SP, sp);
+  state.setRegisterPair(RegisterPair.SP, sp);
 }
 
 export function popWord(state: CpuState) {
-  let sp = state.readRegisterPair(RegisterPair.SP);
+  let sp = state.getRegisterPair(RegisterPair.SP);
 
   const lsb = state.readBus(sp);
   sp = wrappingIncrementWord(sp);
-  state.writeRegisterPair(RegisterPair.SP, sp);
+  state.setRegisterPair(RegisterPair.SP, sp);
 
   state.beginNextCycle();
 
   const msb = state.readBus(sp);
   sp = wrappingIncrementWord(sp);
-  state.writeRegisterPair(RegisterPair.SP, sp);
+  state.setRegisterPair(RegisterPair.SP, sp);
 
   state.beginNextCycle();
 

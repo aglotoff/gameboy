@@ -50,24 +50,24 @@ export class CpuState {
     return this.elapsedCycles;
   }
 
-  public readRegister(register: Register) {
-    return this.regs.read(register);
+  public getRegister(register: Register) {
+    return this.regs.getRegister(register);
   }
 
-  public writeRegister(register: Register, value: number) {
-    this.regs.write(register, value);
+  public setRegister(register: Register, value: number) {
+    this.regs.setRegister(register, value);
   }
 
-  public readRegisterPair(pair: RegisterPair) {
-    return this.regs.readPair(pair);
+  public getRegisterPair(pair: RegisterPair) {
+    return this.regs.getRegisterPair(pair);
   }
 
-  public writeRegisterPair(pair: RegisterPair, value: number) {
-    this.regs.writePair(pair, value);
+  public setRegisterPair(pair: RegisterPair, value: number) {
+    this.regs.setRegisterPair(pair, value);
   }
 
-  public isFlagSet(flag: Flag) {
-    return this.regs.isFlagSet(flag);
+  public getFlag(flag: Flag) {
+    return this.regs.getFlag(flag);
   }
 
   public setFlag(flag: Flag, value: boolean) {
@@ -120,22 +120,22 @@ export class CpuState {
   }
 
   public fetchImmediateByte() {
-    let pc = this.readRegisterPair(RegisterPair.PC);
+    let pc = this.getRegisterPair(RegisterPair.PC);
     const data = this.readBus(pc);
     this.beginNextCycle();
 
-    this.writeRegisterPair(RegisterPair.PC, wrappingIncrementWord(pc));
+    this.setRegisterPair(RegisterPair.PC, wrappingIncrementWord(pc));
     return data;
   }
 
   public fetchNextOpcode() {
-    let pc = this.readRegisterPair(RegisterPair.PC);
+    let pc = this.getRegisterPair(RegisterPair.PC);
     this.opcode = this.readBus(pc);
   }
 
   public advancePC() {
-    let pc = this.readRegisterPair(RegisterPair.PC);
-    this.writeRegisterPair(RegisterPair.PC, wrappingIncrementWord(pc));
+    let pc = this.getRegisterPair(RegisterPair.PC);
+    this.setRegisterPair(RegisterPair.PC, wrappingIncrementWord(pc));
 
     if (this.imeNext) {
       this.setInterruptMasterEnable(true);

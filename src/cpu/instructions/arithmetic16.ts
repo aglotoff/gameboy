@@ -14,33 +14,27 @@ import {
 } from "./lib";
 
 export const incrementRegisterPair = instruction((cpu, pair: RegisterPair) => {
-  cpu.writeRegisterPair(
-    pair,
-    wrappingIncrementWord(cpu.readRegisterPair(pair))
-  );
+  cpu.setRegisterPair(pair, wrappingIncrementWord(cpu.getRegisterPair(pair)));
 
   cpu.beginNextCycle();
 });
 
 export const decrementRegisterPair = instruction((cpu, pair: RegisterPair) => {
-  cpu.writeRegisterPair(
-    pair,
-    wrappingDecrementWord(cpu.readRegisterPair(pair))
-  );
+  cpu.setRegisterPair(pair, wrappingDecrementWord(cpu.getRegisterPair(pair)));
 
   cpu.beginNextCycle();
 });
 
 export const addRegisterPair = instruction((cpu, pair: RegisterPair) => {
-  const dataWord = cpu.readRegisterPair(pair);
+  const dataWord = cpu.getRegisterPair(pair);
 
   const {
     result: lsb,
     carryFrom3,
     carryFrom7,
-  } = addBytes(cpu.readRegister(Register.L), getLSB(dataWord));
+  } = addBytes(cpu.getRegister(Register.L), getLSB(dataWord));
 
-  cpu.writeRegister(Register.L, lsb);
+  cpu.setRegister(Register.L, lsb);
 
   cpu.setFlag(Flag.N, false);
   cpu.setFlag(Flag.H, carryFrom3);
@@ -52,9 +46,9 @@ export const addRegisterPair = instruction((cpu, pair: RegisterPair) => {
     result: msb,
     carryFrom3: carryFrom11,
     carryFrom7: carryFrom15,
-  } = addBytes(cpu.readRegister(Register.H), getMSB(dataWord), carryFrom7);
+  } = addBytes(cpu.getRegister(Register.H), getMSB(dataWord), carryFrom7);
 
-  cpu.writeRegister(Register.H, msb);
+  cpu.setRegister(Register.H, msb);
 
   cpu.setFlag(Flag.N, false);
   cpu.setFlag(Flag.H, carryFrom11);
@@ -66,7 +60,7 @@ export const addToStackPointer = instructionWithImmediateByte((cpu, e) => {
     result: lsb,
     carryFrom3,
     carryFrom7,
-  } = addBytes(cpu.readRegister(Register.SP_L), e);
+  } = addBytes(cpu.getRegister(Register.SP_L), e);
 
   cpu.setFlag(Flag.Z, false);
   cpu.setFlag(Flag.N, false);
@@ -76,12 +70,12 @@ export const addToStackPointer = instructionWithImmediateByte((cpu, e) => {
   cpu.beginNextCycle();
 
   const { result: msb } = addBytes(
-    cpu.readRegister(Register.SP_H),
+    cpu.getRegister(Register.SP_H),
     isNegative(e) ? 0xff : 0x00,
     carryFrom7
   );
 
   cpu.beginNextCycle();
 
-  cpu.writeRegisterPair(RegisterPair.SP, makeWord(msb, lsb));
+  cpu.setRegisterPair(RegisterPair.SP, makeWord(msb, lsb));
 });

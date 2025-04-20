@@ -3,9 +3,9 @@ import { resetBit, setBit, testBit } from "../../utils";
 import { instruction } from "./lib";
 
 export const rotateLeftCircularAccumulator = instruction((cpu) => {
-  const { result, carry } = rotateLeftCircular(cpu.readRegister(Register.A));
+  const { result, carry } = rotateLeftCircular(cpu.getRegister(Register.A));
 
-  cpu.writeRegister(Register.A, result);
+  cpu.setRegister(Register.A, result);
 
   cpu.setFlag(Flag.Z, false);
   cpu.setFlag(Flag.N, false);
@@ -14,9 +14,9 @@ export const rotateLeftCircularAccumulator = instruction((cpu) => {
 });
 
 export const rotateLeftCircularRegister = instruction((cpu, reg: Register) => {
-  const { result, carry } = rotateLeftCircular(cpu.readRegister(reg));
+  const { result, carry } = rotateLeftCircular(cpu.getRegister(reg));
 
-  cpu.writeRegister(reg, result);
+  cpu.setRegister(reg, result);
 
   cpu.setFlag(Flag.Z, result === 0);
   cpu.setFlag(Flag.N, false);
@@ -25,7 +25,7 @@ export const rotateLeftCircularRegister = instruction((cpu, reg: Register) => {
 });
 
 export const rotateLeftCircularIndirectHL = instruction((cpu) => {
-  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const address = cpu.getRegisterPair(RegisterPair.HL);
   const data = cpu.readBus(address);
 
   cpu.beginNextCycle();
@@ -50,9 +50,9 @@ function rotateLeftCircular(value: number) {
 }
 
 export const rotateRightCircularAccumulator = instruction((cpu) => {
-  const { result, carry } = rotateRightCircular(cpu.readRegister(Register.A));
+  const { result, carry } = rotateRightCircular(cpu.getRegister(Register.A));
 
-  cpu.writeRegister(Register.A, result);
+  cpu.setRegister(Register.A, result);
 
   cpu.setFlag(Flag.Z, false);
   cpu.setFlag(Flag.N, false);
@@ -61,9 +61,9 @@ export const rotateRightCircularAccumulator = instruction((cpu) => {
 });
 
 export const rotateRightCircularRegister = instruction((cpu, reg: Register) => {
-  const { result, carry } = rotateRightCircular(cpu.readRegister(reg));
+  const { result, carry } = rotateRightCircular(cpu.getRegister(reg));
 
-  cpu.writeRegister(reg, result);
+  cpu.setRegister(reg, result);
 
   cpu.setFlag(Flag.Z, result === 0);
   cpu.setFlag(Flag.N, false);
@@ -72,7 +72,7 @@ export const rotateRightCircularRegister = instruction((cpu, reg: Register) => {
 });
 
 export const rotateRightCircularIndirectHL = instruction((cpu) => {
-  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const address = cpu.getRegisterPair(RegisterPair.HL);
   const data = cpu.readBus(address);
 
   cpu.beginNextCycle();
@@ -98,11 +98,11 @@ function rotateRightCircular(value: number) {
 
 export const rotateLeftAccumulator = instruction((cpu) => {
   const { result, carry } = rotateLeft(
-    cpu.readRegister(Register.A),
-    cpu.isFlagSet(Flag.CY)
+    cpu.getRegister(Register.A),
+    cpu.getFlag(Flag.CY)
   );
 
-  cpu.writeRegister(Register.A, result);
+  cpu.setRegister(Register.A, result);
 
   cpu.setFlag(Flag.Z, false);
   cpu.setFlag(Flag.N, false);
@@ -112,11 +112,11 @@ export const rotateLeftAccumulator = instruction((cpu) => {
 
 export const rotateLeftRegister = instruction((cpu, reg: Register) => {
   const { result, carry } = rotateLeft(
-    cpu.readRegister(reg),
-    cpu.isFlagSet(Flag.CY)
+    cpu.getRegister(reg),
+    cpu.getFlag(Flag.CY)
   );
 
-  cpu.writeRegister(reg, result);
+  cpu.setRegister(reg, result);
 
   cpu.setFlag(Flag.Z, result === 0);
   cpu.setFlag(Flag.N, false);
@@ -125,12 +125,12 @@ export const rotateLeftRegister = instruction((cpu, reg: Register) => {
 });
 
 export const rotateLeftIndirectHL = instruction((cpu) => {
-  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const address = cpu.getRegisterPair(RegisterPair.HL);
   const data = cpu.readBus(address);
 
   cpu.beginNextCycle();
 
-  const { result, carry } = rotateLeft(data, cpu.isFlagSet(Flag.CY));
+  const { result, carry } = rotateLeft(data, cpu.getFlag(Flag.CY));
 
   cpu.writeBus(address, result);
 
@@ -151,11 +151,11 @@ function rotateLeft(value: number, carry: boolean) {
 
 export const rotateRightAccumulator = instruction((cpu) => {
   const { result, carry } = rotateRight(
-    cpu.readRegister(Register.A),
-    cpu.isFlagSet(Flag.CY)
+    cpu.getRegister(Register.A),
+    cpu.getFlag(Flag.CY)
   );
 
-  cpu.writeRegister(Register.A, result);
+  cpu.setRegister(Register.A, result);
 
   cpu.setFlag(Flag.Z, false);
   cpu.setFlag(Flag.N, false);
@@ -165,11 +165,11 @@ export const rotateRightAccumulator = instruction((cpu) => {
 
 export const rotateRightRegister = instruction((cpu, reg: Register) => {
   const { result, carry } = rotateRight(
-    cpu.readRegister(reg),
-    cpu.isFlagSet(Flag.CY)
+    cpu.getRegister(reg),
+    cpu.getFlag(Flag.CY)
   );
 
-  cpu.writeRegister(reg, result);
+  cpu.setRegister(reg, result);
 
   cpu.setFlag(Flag.Z, result === 0);
   cpu.setFlag(Flag.N, false);
@@ -178,12 +178,12 @@ export const rotateRightRegister = instruction((cpu, reg: Register) => {
 });
 
 export const rotateRightIndirectHL = instruction((cpu) => {
-  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const address = cpu.getRegisterPair(RegisterPair.HL);
   const data = cpu.readBus(address);
 
   cpu.beginNextCycle();
 
-  const { result, carry } = rotateRight(data, cpu.isFlagSet(Flag.CY));
+  const { result, carry } = rotateRight(data, cpu.getFlag(Flag.CY));
 
   cpu.writeBus(address, result);
 
@@ -203,9 +203,9 @@ function rotateRight(value: number, carry: boolean) {
 }
 
 export const shiftLeftArithmeticRegister = instruction((cpu, reg: Register) => {
-  const { result, carry } = shiftLeftArithmetic(cpu.readRegister(reg));
+  const { result, carry } = shiftLeftArithmetic(cpu.getRegister(reg));
 
-  cpu.writeRegister(reg, result);
+  cpu.setRegister(reg, result);
 
   cpu.setFlag(Flag.Z, result === 0);
   cpu.setFlag(Flag.N, false);
@@ -214,7 +214,7 @@ export const shiftLeftArithmeticRegister = instruction((cpu, reg: Register) => {
 });
 
 export const shiftLeftArithmeticIndirectHL = instruction((cpu) => {
-  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const address = cpu.getRegisterPair(RegisterPair.HL);
   const data = cpu.readBus(address);
 
   cpu.beginNextCycle();
@@ -240,9 +240,9 @@ function shiftLeftArithmetic(value: number) {
 
 export const shiftRightArithmeticRegister = instruction(
   (cpu, reg: Register) => {
-    const { result, carry } = shiftRightArithmetic(cpu.readRegister(reg));
+    const { result, carry } = shiftRightArithmetic(cpu.getRegister(reg));
 
-    cpu.writeRegister(reg, result);
+    cpu.setRegister(reg, result);
 
     cpu.setFlag(Flag.Z, result === 0);
     cpu.setFlag(Flag.N, false);
@@ -252,7 +252,7 @@ export const shiftRightArithmeticRegister = instruction(
 );
 
 export const shiftRightArithmeticIndirectHL = instruction((cpu) => {
-  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const address = cpu.getRegisterPair(RegisterPair.HL);
   const data = cpu.readBus(address);
 
   cpu.beginNextCycle();
@@ -277,9 +277,9 @@ function shiftRightArithmetic(value: number) {
 }
 
 export const shiftRightLogicalRegister = instruction((cpu, reg: Register) => {
-  const { result, carry } = shiftRightLogical(cpu.readRegister(reg));
+  const { result, carry } = shiftRightLogical(cpu.getRegister(reg));
 
-  cpu.writeRegister(reg, result);
+  cpu.setRegister(reg, result);
 
   cpu.setFlag(Flag.Z, result === 0);
   cpu.setFlag(Flag.N, false);
@@ -288,7 +288,7 @@ export const shiftRightLogicalRegister = instruction((cpu, reg: Register) => {
 });
 
 export const shiftRightLogicalIndirectHL = instruction((cpu) => {
-  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const address = cpu.getRegisterPair(RegisterPair.HL);
   const data = cpu.readBus(address);
 
   cpu.beginNextCycle();
@@ -313,9 +313,9 @@ function shiftRightLogical(value: number) {
 }
 
 export const swapNibblesRegister = instruction((cpu, reg: Register) => {
-  const result = swapNibbles(cpu.readRegister(reg));
+  const result = swapNibbles(cpu.getRegister(reg));
 
-  cpu.writeRegister(reg, result);
+  cpu.setRegister(reg, result);
 
   cpu.setFlag(Flag.Z, result === 0);
   cpu.setFlag(Flag.N, false);
@@ -324,7 +324,7 @@ export const swapNibblesRegister = instruction((cpu, reg: Register) => {
 });
 
 export const swapNibblesIndirectHL = instruction((cpu) => {
-  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const address = cpu.getRegisterPair(RegisterPair.HL);
   const data = cpu.readBus(address);
 
   cpu.beginNextCycle();
@@ -347,14 +347,14 @@ function swapNibbles(value: number) {
 
 export const testBitRegister = instruction(
   (cpu, bit: number, reg: Register) => {
-    cpu.setFlag(Flag.Z, !testBit(cpu.readRegister(reg), bit));
+    cpu.setFlag(Flag.Z, !testBit(cpu.getRegister(reg), bit));
     cpu.setFlag(Flag.N, false);
     cpu.setFlag(Flag.H, true);
   }
 );
 
 export const testBitIndirectHL = instruction((cpu, bit: number) => {
-  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const address = cpu.getRegisterPair(RegisterPair.HL);
   const data = cpu.readBus(address);
 
   cpu.beginNextCycle();
@@ -366,12 +366,12 @@ export const testBitIndirectHL = instruction((cpu, bit: number) => {
 
 export const resetBitRegister = instruction(
   (cpu, bit: number, reg: Register) => {
-    cpu.writeRegister(reg, resetBit(cpu.readRegister(reg), bit));
+    cpu.setRegister(reg, resetBit(cpu.getRegister(reg), bit));
   }
 );
 
 export const resetBitIndirectHL = instruction((cpu, bit: number) => {
-  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const address = cpu.getRegisterPair(RegisterPair.HL);
   const data = cpu.readBus(address);
 
   cpu.beginNextCycle();
@@ -382,11 +382,11 @@ export const resetBitIndirectHL = instruction((cpu, bit: number) => {
 });
 
 export const setBitRegister = instruction((cpu, bit: number, reg: Register) => {
-  cpu.writeRegister(reg, setBit(cpu.readRegister(reg), bit));
+  cpu.setRegister(reg, setBit(cpu.getRegister(reg), bit));
 });
 
 export const setBitIndirectHL = instruction((cpu, bit: number) => {
-  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const address = cpu.getRegisterPair(RegisterPair.HL);
   const data = cpu.readBus(address);
 
   cpu.beginNextCycle();

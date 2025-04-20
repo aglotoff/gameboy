@@ -8,11 +8,11 @@ import {
 } from "./lib";
 
 export const addRegister = instruction((cpu, reg: Register) => {
-  addToAccumulator(cpu, cpu.readRegister(reg));
+  addToAccumulator(cpu, cpu.getRegister(reg));
 });
 
 export const addIndirectHL = instruction((cpu) => {
-  const data = cpu.readBus(cpu.readRegisterPair(RegisterPair.HL));
+  const data = cpu.readBus(cpu.getRegisterPair(RegisterPair.HL));
 
   cpu.beginNextCycle();
 
@@ -24,31 +24,31 @@ export const addImmediate = instructionWithImmediateByte((cpu, data) => {
 });
 
 export const addRegisterWithCarry = instruction((cpu, reg: Register) => {
-  addToAccumulator(cpu, cpu.readRegister(reg), cpu.isFlagSet(Flag.CY));
+  addToAccumulator(cpu, cpu.getRegister(reg), cpu.getFlag(Flag.CY));
 });
 
 export const addIndirectHLWithCarry = instruction((cpu) => {
-  const data = cpu.readBus(cpu.readRegisterPair(RegisterPair.HL));
+  const data = cpu.readBus(cpu.getRegisterPair(RegisterPair.HL));
 
   cpu.beginNextCycle();
 
-  addToAccumulator(cpu, data, cpu.isFlagSet(Flag.CY));
+  addToAccumulator(cpu, data, cpu.getFlag(Flag.CY));
 });
 
 export const addImmediateWithCarry = instructionWithImmediateByte(
   (cpu, data) => {
-    addToAccumulator(cpu, data, cpu.isFlagSet(Flag.CY));
+    addToAccumulator(cpu, data, cpu.getFlag(Flag.CY));
   }
 );
 
 function addToAccumulator(cpu: CpuState, value: number, carry = false) {
   const { result, carryFrom3, carryFrom7 } = addBytes(
-    cpu.readRegister(Register.A),
+    cpu.getRegister(Register.A),
     value,
     carry
   );
 
-  cpu.writeRegister(Register.A, result);
+  cpu.setRegister(Register.A, result);
 
   cpu.setFlag(Flag.Z, result === 0);
   cpu.setFlag(Flag.N, false);
@@ -57,11 +57,11 @@ function addToAccumulator(cpu: CpuState, value: number, carry = false) {
 }
 
 export const subtractRegister = instruction((cpu, reg: Register) => {
-  subtractFromAccumulator(cpu, cpu.readRegister(reg));
+  subtractFromAccumulator(cpu, cpu.getRegister(reg));
 });
 
 export const subtractIndirectHL = instruction((cpu) => {
-  const data = cpu.readBus(cpu.readRegisterPair(RegisterPair.HL));
+  const data = cpu.readBus(cpu.getRegisterPair(RegisterPair.HL));
 
   cpu.beginNextCycle();
 
@@ -73,31 +73,31 @@ export const subtractImmediate = instructionWithImmediateByte((cpu, data) => {
 });
 
 export const subtractRegisterWithCarry = instruction((cpu, reg: Register) => {
-  subtractFromAccumulator(cpu, cpu.readRegister(reg), cpu.isFlagSet(Flag.CY));
+  subtractFromAccumulator(cpu, cpu.getRegister(reg), cpu.getFlag(Flag.CY));
 });
 
 export const subtractIndirectHLWithCarry = instruction((cpu) => {
-  const data = cpu.readBus(cpu.readRegisterPair(RegisterPair.HL));
+  const data = cpu.readBus(cpu.getRegisterPair(RegisterPair.HL));
 
   cpu.beginNextCycle();
 
-  subtractFromAccumulator(cpu, data, cpu.isFlagSet(Flag.CY));
+  subtractFromAccumulator(cpu, data, cpu.getFlag(Flag.CY));
 });
 
 export const subtractImmediateWithCarry = instructionWithImmediateByte(
   (cpu, data) => {
-    subtractFromAccumulator(cpu, data, cpu.isFlagSet(Flag.CY));
+    subtractFromAccumulator(cpu, data, cpu.getFlag(Flag.CY));
   }
 );
 
 function subtractFromAccumulator(cpu: CpuState, value: number, carry = false) {
   const { result, borrowTo3, borrowTo7 } = subtractBytes(
-    cpu.readRegister(Register.A),
+    cpu.getRegister(Register.A),
     value,
     carry
   );
 
-  cpu.writeRegister(Register.A, result);
+  cpu.setRegister(Register.A, result);
 
   cpu.setFlag(Flag.Z, result === 0);
   cpu.setFlag(Flag.N, true);
@@ -106,11 +106,11 @@ function subtractFromAccumulator(cpu: CpuState, value: number, carry = false) {
 }
 
 export const compareRegister = instruction((cpu, reg: Register) => {
-  compareWithAccumulator(cpu, cpu.readRegister(reg));
+  compareWithAccumulator(cpu, cpu.getRegister(reg));
 });
 
 export const compareIndirectHL = instruction((cpu) => {
-  const data = cpu.readBus(cpu.readRegisterPair(RegisterPair.HL));
+  const data = cpu.readBus(cpu.getRegisterPair(RegisterPair.HL));
 
   cpu.beginNextCycle();
 
@@ -123,7 +123,7 @@ export const compareImmediate = instructionWithImmediateByte((cpu, data) => {
 
 function compareWithAccumulator(cpu: CpuState, value: number) {
   const { result, borrowTo3, borrowTo7 } = subtractBytes(
-    cpu.readRegister(Register.A),
+    cpu.getRegister(Register.A),
     value
   );
 
@@ -134,11 +134,11 @@ function compareWithAccumulator(cpu: CpuState, value: number) {
 }
 
 export const incrementRegister = instruction((cpu, reg: Register) => {
-  cpu.writeRegister(reg, increment(cpu, cpu.readRegister(reg)));
+  cpu.setRegister(reg, increment(cpu, cpu.getRegister(reg)));
 });
 
 export const incrementIndirectHL = instruction((cpu) => {
-  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const address = cpu.getRegisterPair(RegisterPair.HL);
   const data = cpu.readBus(address);
 
   cpu.beginNextCycle();
@@ -159,11 +159,11 @@ function increment(cpu: CpuState, value: number) {
 }
 
 export const decrementRegister = instruction((cpu, reg: Register) => {
-  cpu.writeRegister(reg, decrement(cpu, cpu.readRegister(reg)));
+  cpu.setRegister(reg, decrement(cpu, cpu.getRegister(reg)));
 });
 
 export const decrementIndirectHL = instruction((cpu) => {
-  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const address = cpu.getRegisterPair(RegisterPair.HL);
   const data = cpu.readBus(address);
 
   cpu.beginNextCycle();
@@ -184,11 +184,11 @@ function decrement(cpu: CpuState, value: number) {
 }
 
 export const andRegister = instruction((cpu, reg: Register) => {
-  andAccumulator(cpu, cpu.readRegister(reg));
+  andAccumulator(cpu, cpu.getRegister(reg));
 });
 
 export const andIndirectHL = instruction((cpu) => {
-  const data = cpu.readBus(cpu.readRegisterPair(RegisterPair.HL));
+  const data = cpu.readBus(cpu.getRegisterPair(RegisterPair.HL));
 
   cpu.beginNextCycle();
 
@@ -200,9 +200,9 @@ export const andImmediate = instructionWithImmediateByte((cpu, value) => {
 });
 
 function andAccumulator(cpu: CpuState, value: number) {
-  const result = cpu.readRegister(Register.A) & value;
+  const result = cpu.getRegister(Register.A) & value;
 
-  cpu.writeRegister(Register.A, result);
+  cpu.setRegister(Register.A, result);
 
   cpu.setFlag(Flag.Z, result === 0);
   cpu.setFlag(Flag.N, false);
@@ -211,11 +211,11 @@ function andAccumulator(cpu: CpuState, value: number) {
 }
 
 export const orRegister = instruction((cpu, reg: Register) => {
-  orAccumulator(cpu, cpu.readRegister(reg));
+  orAccumulator(cpu, cpu.getRegister(reg));
 });
 
 export const orIndirectHL = instruction((cpu) => {
-  const data = cpu.readBus(cpu.readRegisterPair(RegisterPair.HL));
+  const data = cpu.readBus(cpu.getRegisterPair(RegisterPair.HL));
 
   cpu.beginNextCycle();
 
@@ -227,9 +227,9 @@ export const orImmediate = instructionWithImmediateByte((cpu, value) => {
 });
 
 function orAccumulator(cpu: CpuState, value: number) {
-  const result = cpu.readRegister(Register.A) | value;
+  const result = cpu.getRegister(Register.A) | value;
 
-  cpu.writeRegister(Register.A, result);
+  cpu.setRegister(Register.A, result);
 
   cpu.setFlag(Flag.Z, result === 0);
   cpu.setFlag(Flag.N, false);
@@ -238,11 +238,11 @@ function orAccumulator(cpu: CpuState, value: number) {
 }
 
 export const xorRegister = instruction((cpu, reg: Register) => {
-  xorAccumulator(cpu, cpu.readRegister(reg));
+  xorAccumulator(cpu, cpu.getRegister(reg));
 });
 
 export const xorIndirectHL = instruction((cpu) => {
-  const data = cpu.readBus(cpu.readRegisterPair(RegisterPair.HL));
+  const data = cpu.readBus(cpu.getRegisterPair(RegisterPair.HL));
 
   cpu.beginNextCycle();
 
@@ -254,9 +254,9 @@ export const xorImmediate = instructionWithImmediateByte((cpu, value) => {
 });
 
 function xorAccumulator(cpu: CpuState, value: number) {
-  const result = cpu.readRegister(Register.A) ^ value;
+  const result = cpu.getRegister(Register.A) ^ value;
 
-  cpu.writeRegister(Register.A, result);
+  cpu.setRegister(Register.A, result);
 
   cpu.setFlag(Flag.Z, result === 0);
   cpu.setFlag(Flag.N, false);
@@ -267,7 +267,7 @@ function xorAccumulator(cpu: CpuState, value: number) {
 export const complementCarryFlag = instruction((cpu) => {
   cpu.setFlag(Flag.N, false);
   cpu.setFlag(Flag.H, false);
-  cpu.setFlag(Flag.CY, !cpu.isFlagSet(Flag.CY));
+  cpu.setFlag(Flag.CY, !cpu.getFlag(Flag.CY));
 });
 
 export const setCarryFlag = instruction((cpu) => {
@@ -277,10 +277,10 @@ export const setCarryFlag = instruction((cpu) => {
 });
 
 export const decimalAdjustAccumulator = instruction((cpu) => {
-  let a = cpu.readRegister(Register.A);
-  const cy = cpu.isFlagSet(Flag.CY);
-  const h = cpu.isFlagSet(Flag.H);
-  const n = cpu.isFlagSet(Flag.N);
+  let a = cpu.getRegister(Register.A);
+  const cy = cpu.getFlag(Flag.CY);
+  const h = cpu.getFlag(Flag.H);
+  const n = cpu.getFlag(Flag.N);
 
   let offset = 0;
   let carry = false;
@@ -300,7 +300,7 @@ export const decimalAdjustAccumulator = instruction((cpu) => {
     a = (a - offset) & 0xff;
   }
 
-  cpu.writeRegister(Register.A, a);
+  cpu.setRegister(Register.A, a);
 
   cpu.setFlag(Flag.Z, a === 0);
   cpu.setFlag(Flag.H, false);
@@ -308,7 +308,7 @@ export const decimalAdjustAccumulator = instruction((cpu) => {
 });
 
 export const complementAccumulator = instruction((cpu) => {
-  cpu.writeRegister(Register.A, ~cpu.readRegister(Register.A));
+  cpu.setRegister(Register.A, ~cpu.getRegister(Register.A));
   cpu.setFlag(Flag.N, true);
   cpu.setFlag(Flag.H, true);
 });

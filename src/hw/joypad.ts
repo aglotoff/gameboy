@@ -33,11 +33,11 @@ export class Joypad {
     this.selectedButtons = 0;
   }
 
-  writeRegister(data: number) {
+  setRegister(data: number) {
     this.selectedButtons = data & 0x30;
   }
 
-  readRegister() {
+  getRegister() {
     let result = 0xcf;
 
     if (!testBit(this.selectedButtons, 5)) {

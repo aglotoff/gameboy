@@ -14,12 +14,12 @@ import {
 } from "./lib";
 
 export const jump = instructionWithImmediateWord((cpu, address) => {
-  cpu.writeRegisterPair(RegisterPair.PC, address);
+  cpu.setRegisterPair(RegisterPair.PC, address);
   cpu.beginNextCycle();
 });
 
 export const jumpToHL = instruction((cpu) => {
-  cpu.writeRegisterPair(RegisterPair.PC, cpu.readRegisterPair(RegisterPair.HL));
+  cpu.setRegisterPair(RegisterPair.PC, cpu.getRegisterPair(RegisterPair.HL));
 });
 
 export const jumpConditional = instructionWithImmediateWord(
@@ -28,7 +28,7 @@ export const jumpConditional = instructionWithImmediateWord(
       return;
     }
 
-    cpu.writeRegisterPair(RegisterPair.PC, address);
+    cpu.setRegisterPair(RegisterPair.PC, address);
 
     cpu.beginNextCycle();
   }
@@ -38,19 +38,19 @@ export const relativeJump = instructionWithImmediateByte((cpu, offset) => {
   // TODO: check timing
 
   const { result: lsb, carryFrom7 } = addBytes(
-    cpu.readRegister(Register.PC_L),
+    cpu.getRegister(Register.PC_L),
     offset
   );
 
   const { result: msb } = addBytes(
-    cpu.readRegister(Register.PC_H),
+    cpu.getRegister(Register.PC_H),
     isNegative(offset) ? 0xff : 0x00,
     carryFrom7
   );
 
   cpu.beginNextCycle();
 
-  cpu.writeRegisterPair(RegisterPair.PC, makeWord(msb, lsb));
+  cpu.setRegisterPair(RegisterPair.PC, makeWord(msb, lsb));
 });
 
 export const relativeJumpConditional = instructionWithImmediateByte(
@@ -60,25 +60,25 @@ export const relativeJumpConditional = instructionWithImmediateByte(
     }
 
     const { result: lsb, carryFrom7 } = addBytes(
-      cpu.readRegister(Register.PC_L),
+      cpu.getRegister(Register.PC_L),
       offset
     );
 
     const { result: msb } = addBytes(
-      cpu.readRegister(Register.PC_H),
+      cpu.getRegister(Register.PC_H),
       isNegative(offset) ? 0xff : 0x00,
       carryFrom7
     );
 
     cpu.beginNextCycle();
 
-    cpu.writeRegisterPair(RegisterPair.PC, makeWord(msb, lsb));
+    cpu.setRegisterPair(RegisterPair.PC, makeWord(msb, lsb));
   }
 );
 
 export const callFunction = instructionWithImmediateWord((cpu, address) => {
   pushProgramCounter(cpu);
-  cpu.writeRegisterPair(RegisterPair.PC, address);
+  cpu.setRegisterPair(RegisterPair.PC, address);
 
   cpu.beginNextCycle();
 });
@@ -90,7 +90,7 @@ export const callFunctionConditional = instructionWithImmediateWord(
     }
 
     pushProgramCounter(cpu);
-    cpu.writeRegisterPair(RegisterPair.PC, address);
+    cpu.setRegisterPair(RegisterPair.PC, address);
 
     cpu.beginNextCycle();
   }
@@ -117,18 +117,18 @@ export const returnFromInterruptHandler = instruction((cpu) => {
 });
 
 function popProgramCounter(cpu: CpuState) {
-  cpu.writeRegisterPair(RegisterPair.PC, popWord(cpu));
+  cpu.setRegisterPair(RegisterPair.PC, popWord(cpu));
   cpu.beginNextCycle();
 }
 
 export const restartFunction = instruction((cpu, address: number) => {
   pushProgramCounter(cpu);
 
-  cpu.writeRegisterPair(RegisterPair.PC, makeWord(0x00, address));
+  cpu.setRegisterPair(RegisterPair.PC, makeWord(0x00, address));
 
   cpu.beginNextCycle();
 });
 
 function pushProgramCounter(cpu: CpuState) {
-  pushWord(cpu, cpu.readRegisterPair(RegisterPair.PC));
+  pushWord(cpu, cpu.getRegisterPair(RegisterPair.PC));
 }
