@@ -17,7 +17,7 @@ export function instruction<T extends unknown[]>(
   cb: (cpu: CpuState, ...args: T) => void
 ) {
   return function (cpu: CpuState, ...args: T) {
-    cpu.cycle();
+    cpu.beginNextCycle();
     cb(cpu, ...args);
     cpu.fetchNextOpcode();
   };
@@ -27,7 +27,7 @@ export function instructionWithImmediateByte<T extends unknown[]>(
   cb: (cpu: CpuState, byte: number, ...args: T) => void
 ) {
   return (cpu: CpuState, ...args: T) => {
-    cpu.cycle();
+    cpu.beginNextCycle();
     cb(cpu, cpu.fetchImmediateByte(), ...args);
     cpu.fetchNextOpcode();
   };
@@ -37,7 +37,7 @@ export function instructionWithImmediateWord<T extends unknown[]>(
   cb: (cpu: CpuState, word: number, ...args: T) => void
 ) {
   return (cpu: CpuState, ...args: T) => {
-    cpu.cycle();
+    cpu.beginNextCycle();
     cb(cpu, fetchImmediateWord(cpu), ...args);
     cpu.fetchNextOpcode();
   };
@@ -109,15 +109,16 @@ export function pushWord(state: CpuState, data: number) {
   let sp = state.readRegisterPair(RegisterPair.SP);
 
   sp = wrappingDecrementWord(sp);
-  state.cycle();
+
+  state.beginNextCycle();
 
   state.writeBus(sp, getMSB(data));
   sp = wrappingDecrementWord(sp);
-  state.cycle();
+
+  state.beginNextCycle();
 
   state.writeBus(sp, getLSB(data));
   state.writeRegisterPair(RegisterPair.SP, sp);
-  state.cycle();
 }
 
 export function popWord(state: CpuState) {
@@ -126,12 +127,14 @@ export function popWord(state: CpuState) {
   const lsb = state.readBus(sp);
   sp = wrappingIncrementWord(sp);
   state.writeRegisterPair(RegisterPair.SP, sp);
-  state.cycle();
+
+  state.beginNextCycle();
 
   const msb = state.readBus(sp);
   sp = wrappingIncrementWord(sp);
   state.writeRegisterPair(RegisterPair.SP, sp);
-  state.cycle();
+
+  state.beginNextCycle();
 
   return makeWord(msb, lsb);
 }

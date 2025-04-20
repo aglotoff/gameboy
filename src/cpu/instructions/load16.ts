@@ -20,19 +20,20 @@ export const loadDirectFromStackPointer = instructionWithImmediateWord(
   (cpu, address) => {
     const data = cpu.readRegisterPair(RegisterPair.SP);
     cpu.writeBus(address, getLSB(data));
-    cpu.cycle();
+    cpu.beginNextCycle();
     cpu.writeBus(address + 1, getMSB(data));
-    cpu.cycle();
+    cpu.beginNextCycle();
   }
 );
 
 export const loadStackPointerFromHL = instruction((cpu) => {
   cpu.writeRegisterPair(RegisterPair.SP, cpu.readRegisterPair(RegisterPair.HL));
-  cpu.cycle();
+  cpu.beginNextCycle();
 });
 
 export const pushToStack = instruction((cpu, pair: RegisterPair) => {
   pushWord(cpu, cpu.readRegisterPair(pair));
+  cpu.beginNextCycle();
 });
 
 export const popFromStack = instruction((cpu, rr: RegisterPair) => {
@@ -55,7 +56,7 @@ export const loadHLFromAdjustedStackPointer = instructionWithImmediateByte(
 
     cpu.writeRegisterPair(RegisterPair.HL, makeWord(msb, lsb));
     // Loading L on first cycle, H on second
-    cpu.cycle();
+    cpu.beginNextCycle();
 
     cpu.setFlag(Flag.Z, false);
     cpu.setFlag(Flag.N, false);

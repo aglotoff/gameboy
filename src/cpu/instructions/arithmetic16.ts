@@ -1,5 +1,11 @@
 import { RegisterPair, Flag, Register } from "../register";
-import { getLSB, getMSB, makeWord, wrappingIncrementWord } from "../../utils";
+import {
+  getLSB,
+  getMSB,
+  makeWord,
+  wrappingDecrementWord,
+  wrappingIncrementWord,
+} from "../../utils";
 import {
   addBytes,
   instruction,
@@ -12,29 +18,43 @@ export const incrementRegisterPair = instruction((cpu, pair: RegisterPair) => {
     pair,
     wrappingIncrementWord(cpu.readRegisterPair(pair))
   );
-  cpu.cycle();
+
+  cpu.beginNextCycle();
 });
 
 export const decrementRegisterPair = instruction((cpu, pair: RegisterPair) => {
-  cpu.writeRegisterPair(pair, cpu.readRegisterPair(pair) - 1);
-  cpu.cycle();
+  cpu.writeRegisterPair(
+    pair,
+    wrappingDecrementWord(cpu.readRegisterPair(pair))
+  );
+
+  cpu.beginNextCycle();
 });
 
 export const addRegisterPair = instruction((cpu, pair: RegisterPair) => {
-  const a = cpu.readRegisterPair(RegisterPair.HL);
-  const b = cpu.readRegisterPair(pair);
+  const dataWord = cpu.readRegisterPair(pair);
 
-  const { result: lsb, carryFrom7 } = addBytes(getLSB(a), getLSB(b));
+  const {
+    result: lsb,
+    carryFrom3,
+    carryFrom7,
+  } = addBytes(cpu.readRegister(Register.L), getLSB(dataWord));
+
+  cpu.writeRegister(Register.L, lsb);
+
+  cpu.setFlag(Flag.N, false);
+  cpu.setFlag(Flag.H, carryFrom3);
+  cpu.setFlag(Flag.CY, carryFrom7);
+
+  cpu.beginNextCycle();
 
   const {
     result: msb,
     carryFrom3: carryFrom11,
     carryFrom7: carryFrom15,
-  } = addBytes(getMSB(a), getMSB(b), carryFrom7);
+  } = addBytes(cpu.readRegister(Register.H), getMSB(dataWord), carryFrom7);
 
-  cpu.writeRegisterPair(RegisterPair.HL, makeWord(msb, lsb));
-  // TODO: L on the first cycle, H on the second
-  cpu.cycle();
+  cpu.writeRegister(Register.H, msb);
 
   cpu.setFlag(Flag.N, false);
   cpu.setFlag(Flag.H, carryFrom11);
@@ -48,19 +68,20 @@ export const addToStackPointer = instructionWithImmediateByte((cpu, e) => {
     carryFrom7,
   } = addBytes(cpu.readRegister(Register.SP_L), e);
 
+  cpu.setFlag(Flag.Z, false);
+  cpu.setFlag(Flag.N, false);
+  cpu.setFlag(Flag.H, carryFrom3);
+  cpu.setFlag(Flag.CY, carryFrom7);
+
+  cpu.beginNextCycle();
+
   const { result: msb } = addBytes(
     cpu.readRegister(Register.SP_H),
     isNegative(e) ? 0xff : 0x00,
     carryFrom7
   );
 
-  // TODO: addition split in two steps
-  cpu.cycle();
-  cpu.cycle();
+  cpu.beginNextCycle();
 
   cpu.writeRegisterPair(RegisterPair.SP, makeWord(msb, lsb));
-  cpu.setFlag(Flag.Z, false);
-  cpu.setFlag(Flag.N, false);
-  cpu.setFlag(Flag.H, carryFrom3);
-  cpu.setFlag(Flag.CY, carryFrom7);
 });

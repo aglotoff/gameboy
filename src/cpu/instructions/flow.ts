@@ -15,7 +15,7 @@ import {
 
 export const jump = instructionWithImmediateWord((cpu, address) => {
   cpu.writeRegisterPair(RegisterPair.PC, address);
-  cpu.cycle();
+  cpu.beginNextCycle();
 });
 
 export const jumpToHL = instruction((cpu) => {
@@ -29,11 +29,14 @@ export const jumpConditional = instructionWithImmediateWord(
     }
 
     cpu.writeRegisterPair(RegisterPair.PC, address);
-    cpu.cycle();
+
+    cpu.beginNextCycle();
   }
 );
 
 export const relativeJump = instructionWithImmediateByte((cpu, offset) => {
+  // TODO: check timing
+
   const { result: lsb, carryFrom7 } = addBytes(
     cpu.readRegister(Register.PC_L),
     offset
@@ -45,8 +48,9 @@ export const relativeJump = instructionWithImmediateByte((cpu, offset) => {
     carryFrom7
   );
 
+  cpu.beginNextCycle();
+
   cpu.writeRegisterPair(RegisterPair.PC, makeWord(msb, lsb));
-  cpu.cycle();
 });
 
 export const relativeJumpConditional = instructionWithImmediateByte(
@@ -66,14 +70,17 @@ export const relativeJumpConditional = instructionWithImmediateByte(
       carryFrom7
     );
 
+    cpu.beginNextCycle();
+
     cpu.writeRegisterPair(RegisterPair.PC, makeWord(msb, lsb));
-    cpu.cycle();
   }
 );
 
 export const callFunction = instructionWithImmediateWord((cpu, address) => {
   pushProgramCounter(cpu);
   cpu.writeRegisterPair(RegisterPair.PC, address);
+
+  cpu.beginNextCycle();
 });
 
 export const callFunctionConditional = instructionWithImmediateWord(
@@ -84,6 +91,8 @@ export const callFunctionConditional = instructionWithImmediateWord(
 
     pushProgramCounter(cpu);
     cpu.writeRegisterPair(RegisterPair.PC, address);
+
+    cpu.beginNextCycle();
   }
 );
 
@@ -94,7 +103,7 @@ export const returnFromFunction = instruction((cpu) => {
 export const returnFromFunctionConditional = instruction(
   (cpu, condition: Condition) => {
     let result = checkCondition(cpu, condition);
-    cpu.cycle();
+    cpu.beginNextCycle();
 
     if (result) {
       popProgramCounter(cpu);
@@ -109,13 +118,15 @@ export const returnFromInterruptHandler = instruction((cpu) => {
 
 function popProgramCounter(cpu: CpuState) {
   cpu.writeRegisterPair(RegisterPair.PC, popWord(cpu));
-  cpu.cycle();
+  cpu.beginNextCycle();
 }
 
 export const restartFunction = instruction((cpu, address: number) => {
   pushProgramCounter(cpu);
 
   cpu.writeRegisterPair(RegisterPair.PC, makeWord(0x00, address));
+
+  cpu.beginNextCycle();
 });
 
 function pushProgramCounter(cpu: CpuState) {

@@ -16,7 +16,7 @@ export class Cpu extends CpuState {
   public step() {
     try {
       if (this.isHalted()) {
-        this.cycle();
+        this.beginNextCycle();
       } else {
         this.executeNextInstruction();
       }
@@ -74,24 +74,24 @@ export class Cpu extends CpuState {
   private handleInterrupt() {
     this.setInterruptMasterEnable(false);
 
-    this.cycle();
+    this.beginNextCycle();
 
     let sp = this.readRegisterPair(RegisterPair.SP);
     sp = wrappingDecrementWord(sp);
 
-    this.cycle();
+    this.beginNextCycle();
 
     this.writeBus(sp, getMSB(this.readRegisterPair(RegisterPair.PC)));
     sp = wrappingDecrementWord(sp);
 
-    this.cycle();
+    this.beginNextCycle();
 
     const irq = this.interruptController.getPendingInterrupt();
 
     this.writeBus(sp, getLSB(this.readRegisterPair(RegisterPair.PC)));
     this.writeRegisterPair(RegisterPair.SP, sp);
 
-    this.cycle();
+    this.beginNextCycle();
 
     if (irq < 0) {
       this.writeRegisterPair(RegisterPair.PC, 0);
@@ -100,7 +100,7 @@ export class Cpu extends CpuState {
       this.writeRegisterPair(RegisterPair.PC, getInterruptVectorAddress(irq));
     }
 
-    this.cycle();
+    this.beginNextCycle();
     this.fetchNextOpcode();
   }
 }

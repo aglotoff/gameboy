@@ -37,7 +37,7 @@ export class CpuState {
     this.onCycle = onCycle;
   }
 
-  public cycle() {
+  public beginNextCycle() {
     this.elapsedCycles += 1;
     this.onCycle();
   }
@@ -122,7 +122,7 @@ export class CpuState {
   public fetchImmediateByte() {
     let pc = this.readRegisterPair(RegisterPair.PC);
     const data = this.readBus(pc);
-    this.cycle();
+    this.beginNextCycle();
 
     this.writeRegisterPair(RegisterPair.PC, wrappingIncrementWord(pc));
     return data;
