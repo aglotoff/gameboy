@@ -21,6 +21,10 @@ export function wrappingIncrementByte(value: number) {
   return value == BYTE_MAX ? BYTE_MIN : value + 1;
 }
 
+export function wrappingDecrementByte(value: number) {
+  return value == BYTE_MIN ? BYTE_MAX : value - 1;
+}
+
 export function wrappingIncrementWord(value: number) {
   return value == WORD_MAX ? WORD_MIN : value + 1;
 }

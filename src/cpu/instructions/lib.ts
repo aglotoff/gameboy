@@ -107,7 +107,6 @@ export function checkCondition(state: CpuState, condition: Condition) {
 
 export function pushWord(state: CpuState, data: number) {
   let sp = state.getRegisterPair(RegisterPair.SP);
-
   sp = wrappingDecrementWord(sp);
 
   state.beginNextCycle();
@@ -126,12 +125,14 @@ export function popWord(state: CpuState) {
 
   const lsb = state.readBus(sp);
   sp = wrappingIncrementWord(sp);
+
   state.setRegisterPair(RegisterPair.SP, sp);
 
   state.beginNextCycle();
 
   const msb = state.readBus(sp);
   sp = wrappingIncrementWord(sp);
+
   state.setRegisterPair(RegisterPair.SP, sp);
 
   state.beginNextCycle();

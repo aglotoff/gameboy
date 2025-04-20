@@ -82,13 +82,16 @@ export const loadDirectWordFromAccumulator = instructionWithImmediateWord(
 export const loadAccumulatorFromIndirectC = instruction((cpu) => {
   const address = 0xff00 + cpu.getRegister(Register.C);
   const data = cpu.readBus(address);
-  cpu.setRegister(Register.A, data);
+
   cpu.beginNextCycle();
+
+  cpu.setRegister(Register.A, data);
 });
 
 export const loadIndirectCFromAccumulator = instruction((cpu) => {
   const address = 0xff00 + cpu.getRegister(Register.C);
   cpu.writeBus(address, cpu.getRegister(Register.A));
+
   cpu.beginNextCycle();
 });
 
@@ -96,7 +99,9 @@ export const loadAccumulatorFromDirectByte = instructionWithImmediateByte(
   (cpu, offset) => {
     const address = 0xff00 + offset;
     const data = cpu.readBus(address);
+
     cpu.beginNextCycle();
+
     cpu.setRegister(Register.A, data);
   }
 );
@@ -105,6 +110,7 @@ export const loadDirectByteFromAccumulator = instructionWithImmediateByte(
   (cpu, offset) => {
     const address = 0xff00 + offset;
     cpu.writeBus(address, cpu.getRegister(Register.A));
+
     cpu.beginNextCycle();
   }
 );
@@ -114,6 +120,7 @@ export const loadAccumulatorFromIndirectHLDecrement = instruction((cpu) => {
   const data = cpu.readBus(address);
 
   cpu.setRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
+
   cpu.beginNextCycle();
 
   cpu.setRegister(Register.A, data);
@@ -122,7 +129,9 @@ export const loadAccumulatorFromIndirectHLDecrement = instruction((cpu) => {
 export const loadAccumulatorFromIndirectHLIncrement = instruction((cpu) => {
   const address = cpu.getRegisterPair(RegisterPair.HL);
   const data = cpu.readBus(address);
+
   cpu.setRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
+
   cpu.beginNextCycle();
 
   cpu.setRegister(Register.A, data);
@@ -131,13 +140,17 @@ export const loadAccumulatorFromIndirectHLIncrement = instruction((cpu) => {
 export const loadIndirectHLDecrementFromAccumulator = instruction((cpu) => {
   const address = cpu.getRegisterPair(RegisterPair.HL);
   cpu.writeBus(address, cpu.getRegister(Register.A));
+
   cpu.setRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
+
   cpu.beginNextCycle();
 });
 
 export const loadIndirectHLIncrementFromAccumulator = instruction((cpu) => {
   const address = cpu.getRegisterPair(RegisterPair.HL);
   cpu.writeBus(address, cpu.getRegister(Register.A));
+
   cpu.setRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
+
   cpu.beginNextCycle();
 });

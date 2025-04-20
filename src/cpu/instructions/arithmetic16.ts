@@ -1,4 +1,10 @@
-import { RegisterPair, Flag, Register } from "../register";
+import {
+  RegisterPair,
+  Flag,
+  Register,
+  lowRegister,
+  highRegister,
+} from "../register";
 import {
   getLSB,
   getMSB,
@@ -15,24 +21,20 @@ import {
 
 export const incrementRegisterPair = instruction((cpu, pair: RegisterPair) => {
   cpu.setRegisterPair(pair, wrappingIncrementWord(cpu.getRegisterPair(pair)));
-
   cpu.beginNextCycle();
 });
 
 export const decrementRegisterPair = instruction((cpu, pair: RegisterPair) => {
   cpu.setRegisterPair(pair, wrappingDecrementWord(cpu.getRegisterPair(pair)));
-
   cpu.beginNextCycle();
 });
 
 export const addRegisterPair = instruction((cpu, pair: RegisterPair) => {
-  const dataWord = cpu.getRegisterPair(pair);
-
   const {
     result: lsb,
     carryFrom3,
     carryFrom7,
-  } = addBytes(cpu.getRegister(Register.L), getLSB(dataWord));
+  } = addBytes(cpu.getRegister(Register.L), cpu.getRegister(lowRegister(pair)));
 
   cpu.setRegister(Register.L, lsb);
 
@@ -46,7 +48,11 @@ export const addRegisterPair = instruction((cpu, pair: RegisterPair) => {
     result: msb,
     carryFrom3: carryFrom11,
     carryFrom7: carryFrom15,
-  } = addBytes(cpu.getRegister(Register.H), getMSB(dataWord), carryFrom7);
+  } = addBytes(
+    cpu.getRegister(Register.H),
+    cpu.getRegister(highRegister(pair)),
+    carryFrom7
+  );
 
   cpu.setRegister(Register.H, msb);
 
