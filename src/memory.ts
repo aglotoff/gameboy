@@ -162,7 +162,7 @@ export class Memory implements IBus {
     if (address <= 0xff7f || address === 0xffff) {
       switch (address) {
         case HWRegister.JOYP:
-          return this.joypad.getRegister();
+          return this.joypad.readRegister();
 
         case HWRegister.DMA:
           return this.oam.getDMASource();
@@ -342,7 +342,7 @@ export class Memory implements IBus {
       // I/O Registers
       switch (address) {
         case HWRegister.JOYP:
-          return this.joypad.setRegister(data);
+          return this.joypad.writeRegister(data);
         case HWRegister.SB:
           if (data == 10) {
             if (buf.length > 0) {

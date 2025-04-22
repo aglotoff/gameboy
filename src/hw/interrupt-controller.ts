@@ -1,47 +1,40 @@
-import { resetBit, setBit, testBit } from "../utils";
+// See https://gbdev.io/pandocs/Interrupts.html
 
 const INTERRUPT_SOURCE_MAX = 5;
-const INTERRUPT_SOURCE_MASK = 0x1f;
+const INTERRUPT_SOURCE_MASK = 0b00011111;
+const INTERRUPT_SOURCE_UNUSED_MASK = 0b11100000;
 
 export class InterruptController {
-  private enableRegister = 0;
-  private flagRegister = 0;
+  private enableRegister = INTERRUPT_SOURCE_UNUSED_MASK;
+  private flagRegister = INTERRUPT_SOURCE_UNUSED_MASK;
 
   public reset() {
-    this.enableRegister = 0;
-    this.flagRegister = 0;
+    this.enableRegister = INTERRUPT_SOURCE_UNUSED_MASK;
+    this.flagRegister = INTERRUPT_SOURCE_UNUSED_MASK;
   }
 
   public getEnableRegister() {
-    return 0xe0 | this.enableRegister;
+    return this.enableRegister;
   }
 
   public setEnableRegister(enable: number) {
-    this.enableRegister = enable & INTERRUPT_SOURCE_MASK;
+    this.enableRegister = enable | INTERRUPT_SOURCE_UNUSED_MASK;
   }
 
   public getFlagRegister() {
-    return 0xe0 | this.flagRegister;
+    return this.flagRegister;
   }
 
   public setFlagRegister(flag: number) {
-    this.flagRegister = flag & INTERRUPT_SOURCE_MASK;
+    this.flagRegister = flag | INTERRUPT_SOURCE_UNUSED_MASK;
   }
 
   public requestInterrupt(irq: number) {
-    if (irq < 0 || irq >= INTERRUPT_SOURCE_MAX) {
-      throw new Error(`Bad interrupt source: ${irq}`);
-    }
-
-    this.flagRegister = setBit(this.flagRegister, irq);
+    this.flagRegister |= 1 << irq;
   }
 
   public acknowledgeInterrupt(irq: number) {
-    if (irq < 0 || irq >= INTERRUPT_SOURCE_MAX) {
-      throw new Error(`Bad interrupt source: ${irq}`);
-    }
-
-    this.flagRegister = resetBit(this.flagRegister, irq);
+    this.flagRegister &= ~(1 << irq);
   }
 
   public hasPendingInterrupt() {
@@ -49,8 +42,11 @@ export class InterruptController {
   }
 
   public getPendingInterrupt() {
+    const pendingBits = this.getPendingBits();
+
+    // Lower bits correspond to interrupts with higher priority
     for (let i = 0; i < INTERRUPT_SOURCE_MAX; i++) {
-      if (testBit(this.getPendingBits(), i)) {
+      if (pendingBits & (1 << i)) {
         return i;
       }
     }
@@ -59,6 +55,6 @@ export class InterruptController {
   }
 
   private getPendingBits() {
-    return this.enableRegister & this.flagRegister;
+    return this.enableRegister & this.flagRegister & INTERRUPT_SOURCE_MASK;
   }
 }

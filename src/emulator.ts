@@ -101,7 +101,9 @@ export class Emulator {
 
     const apuRegs = new APURegisters(this.apu, channels);
 
-    this.joypad = new Joypad();
+    this.joypad = new Joypad(() =>
+      this.interruptController.requestInterrupt(InterruptSource.Joypad)
+    );
 
     this.memory = new Memory(
       this.ppu,

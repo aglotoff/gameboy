@@ -1,5 +1,7 @@
-import { testBit, wrappingIncrementByte } from "../../utils";
+import { wrappingIncrementByte } from "../../utils";
 import { SystemCounter } from "../system-counter";
+
+const DEFAULT_INPUT_CLOCK_MASK = 1 << 9;
 
 // References:
 // https://github.com/Hacktix/GBEDG/blob/master/timers/index.md
@@ -9,23 +11,23 @@ export class Timer {
   private counterEnabled = false;
   private counter = 0;
   private modulo = 0;
-  private inputClockBit = 9;
-  private oldInputClockSignal = false;
+  private inputClockMask = DEFAULT_INPUT_CLOCK_MASK;
+  private prevInputClockSignal = false;
 
   private reloadDelay = 0;
   private isReloading = false;
 
   public constructor(
     private systemCounter: SystemCounter,
-    private onInterruptRequest: () => void
+    private onInterruptRequest = () => {}
   ) {}
 
   public reset() {
     this.counterEnabled = false;
     this.counter = 0;
     this.modulo = 0;
-    this.inputClockBit = 0;
-    this.oldInputClockSignal = false;
+    this.inputClockMask = DEFAULT_INPUT_CLOCK_MASK;
+    this.prevInputClockSignal = false;
     this.reloadDelay = 0;
     this.isReloading = false;
   }
@@ -39,6 +41,7 @@ export class Timer {
     // register is ignored
     if (this.isReloading) return;
 
+    // Writing aborts reloading and interrupt request
     this.counter = data;
     this.reloadDelay = 0;
   }
@@ -59,7 +62,7 @@ export class Timer {
 
   public setParams(params: { counterEnabled: boolean; inputClockBit: number }) {
     this.counterEnabled = params.counterEnabled;
-    this.inputClockBit = params.inputClockBit;
+    this.setInputClockBit(params.inputClockBit);
 
     // Changing params may result in a counter increment (added to pass the
     // acceptance/timer/rapid_toggle test)
@@ -75,7 +78,7 @@ export class Timer {
   }
 
   public setInputClockBit(bit: number) {
-    this.inputClockBit = bit;
+    this.inputClockMask = 1 << bit;
   }
 
   public tick() {
@@ -99,21 +102,23 @@ export class Timer {
   }
 
   private checkClock() {
-    const newInputClockSignal =
-      testBit(this.systemCounter.getValue(), this.inputClockBit) &&
-      this.counterEnabled;
+    const nextInputClockSignal =
+      this.counterEnabled &&
+      (this.systemCounter.getValue() & this.inputClockMask) !== 0;
 
-    const isFallingEdge = this.oldInputClockSignal && !newInputClockSignal;
+    const isFallingEdge = this.prevInputClockSignal && !nextInputClockSignal;
     if (isFallingEdge) {
       this.incrementCounter();
     }
 
-    this.oldInputClockSignal = newInputClockSignal;
+    this.prevInputClockSignal = nextInputClockSignal;
   }
 
   private incrementCounter() {
     this.counter = wrappingIncrementByte(this.counter);
 
+    // After overflowing the counter remains zero for a duration of 4 T-cycles
+    // before it is reloaded
     if (this.counter === 0) {
       this.counter = 0;
       this.reloadDelay = 4;

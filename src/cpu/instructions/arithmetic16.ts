@@ -6,8 +6,6 @@ import {
   highRegister,
 } from "../register";
 import {
-  getLSB,
-  getMSB,
   makeWord,
   wrappingDecrementWord,
   wrappingIncrementWord,

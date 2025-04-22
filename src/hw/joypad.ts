@@ -1,31 +1,34 @@
-import { resetBit, setBit, testBit } from "../utils";
+// See https://gbdev.io/pandocs/Joypad_Input.html
 
-enum SelectedButtons {
-  Action = 0x10,
-  Direction = 0x20,
+const READONLY_MASK = 0b11001111;
+const WRITEONLY_MASK = 0b00110000;
+
+const enum SelectButtons {
+  Action = 1 << 4,
+  Direction = 1 << 5,
 }
 
 export enum ActionButton {
-  A = 0,
-  B = 1,
-  Select = 2,
-  Start = 3,
+  A = 1 << 0,
+  B = 1 << 1,
+  Select = 1 << 2,
+  Start = 1 << 3,
 }
 
 export enum DirectionButton {
-  Right = 0,
-  Left = 1,
-  Up = 2,
-  Down = 3,
+  Right = 1 << 0,
+  Left = 1 << 1,
+  Up = 1 << 2,
+  Down = 1 << 3,
 }
 
 export class Joypad {
-  private actionButtons = 0x0;
-  private directionButtons = 0x0;
+  private actionButtons = 0;
+  private directionButtons = 0;
 
   private selectedButtons = 0;
 
-  public constructor() {}
+  public constructor(private onPress = () => {}) {}
 
   public reset() {
     this.actionButtons = 0;
@@ -33,49 +36,49 @@ export class Joypad {
     this.selectedButtons = 0;
   }
 
-  setRegister(data: number) {
-    this.selectedButtons = data & 0x30;
+  writeRegister(data: number) {
+    this.selectedButtons = data & WRITEONLY_MASK;
   }
 
-  getRegister() {
-    let result = 0xcf;
+  readRegister() {
+    let result = READONLY_MASK;
 
-    if (!testBit(this.selectedButtons, 5)) {
+    if (!(this.selectedButtons & SelectButtons.Direction)) {
       result &= ~this.actionButtons;
     }
 
-    if (!testBit(this.selectedButtons, 4)) {
+    if (!(this.selectedButtons & SelectButtons.Action)) {
       result &= ~this.directionButtons;
     }
 
     return result;
   }
 
-  public pressActionButton(i: ActionButton) {
-    if (!testBit(this.actionButtons, i)) {
-      this.actionButtons = setBit(this.actionButtons, i);
+  public pressActionButton(btn: ActionButton) {
+    if (!(this.actionButtons & btn)) {
+      this.actionButtons |= btn;
 
-      if (this.selectedButtons === SelectedButtons.Action) {
-        //this.onPress();
+      if (this.selectedButtons === SelectButtons.Action) {
+        this.onPress();
       }
     }
   }
 
-  public releaseActionButton(i: ActionButton) {
-    this.actionButtons = resetBit(this.actionButtons, i);
+  public releaseActionButton(btn: ActionButton) {
+    this.actionButtons &= ~btn;
   }
 
-  public pressDirectionButton(i: DirectionButton) {
-    if (!testBit(this.directionButtons, i)) {
-      this.directionButtons = setBit(this.directionButtons, i);
+  public pressDirectionButton(btn: DirectionButton) {
+    if (!(this.directionButtons & btn)) {
+      this.directionButtons |= btn;
 
-      if (this.selectedButtons === SelectedButtons.Direction) {
-        //this.onPress();
+      if (this.selectedButtons === SelectButtons.Direction) {
+        this.onPress();
       }
     }
   }
 
-  public releaseDirectionButton(i: DirectionButton) {
-    this.directionButtons = resetBit(this.directionButtons, i);
+  public releaseDirectionButton(btn: DirectionButton) {
+    this.directionButtons &= ~btn;
   }
 }
