@@ -3,7 +3,6 @@ import {
   getLSB,
   getMSB,
   makeWord,
-  testBit,
   wrappingDecrementWord,
   wrappingIncrementWord,
 } from "../../utils";
@@ -13,7 +12,7 @@ export type OpTable = Partial<
   Record<number, [string, (cpu: CpuState) => void]>
 >;
 
-export function instruction<T extends unknown[]>(
+export function makeInstruction<T extends unknown[]>(
   cb: (cpu: CpuState, ...args: T) => void
 ) {
   return function (cpu: CpuState, ...args: T) {
@@ -23,7 +22,7 @@ export function instruction<T extends unknown[]>(
   };
 }
 
-export function instructionWithImmediateByte<T extends unknown[]>(
+export function makeInstructionWithImmediateByte<T extends unknown[]>(
   cb: (cpu: CpuState, byte: number, ...args: T) => void
 ) {
   return (cpu: CpuState, ...args: T) => {
@@ -33,20 +32,14 @@ export function instructionWithImmediateByte<T extends unknown[]>(
   };
 }
 
-export function instructionWithImmediateWord<T extends unknown[]>(
+export function makeInstructionWithImmediateWord<T extends unknown[]>(
   cb: (cpu: CpuState, word: number, ...args: T) => void
 ) {
   return (cpu: CpuState, ...args: T) => {
     cpu.beginNextCycle();
-    cb(cpu, fetchImmediateWord(cpu), ...args);
+    cb(cpu, cpu.fetchImmediateWord(), ...args);
     cpu.fetchNextOpcode();
   };
-}
-
-function fetchImmediateWord(state: CpuState) {
-  let lowByte = state.fetchImmediateByte();
-  let highByte = state.fetchImmediateByte();
-  return makeWord(highByte, lowByte);
 }
 
 export function bindInstructionArgs<T extends unknown[]>(
@@ -60,6 +53,7 @@ export function bindInstructionArgs<T extends unknown[]>(
 
 const BYTE_MASK = 0xff;
 const NIBBLE_MASK = 0xf;
+const BYTE_SIGN_MASK = 0b10000000;
 
 export function addBytes(a: number, b: number, carryFlag = false) {
   const c = carryFlag ? 1 : 0;
@@ -72,7 +66,7 @@ export function addBytes(a: number, b: number, carryFlag = false) {
 }
 
 export function isNegative(a: number) {
-  return testBit(a, 7);
+  return (a & BYTE_SIGN_MASK) !== 0;
 }
 
 export function subtractBytes(a: number, b: number, carryFlag = false) {
@@ -92,50 +86,50 @@ export enum Condition {
   NC,
 }
 
-export function checkCondition(state: CpuState, condition: Condition) {
+export function checkCondition(cpu: CpuState, condition: Condition) {
   switch (condition) {
     case Condition.Z:
-      return state.getFlag(Flag.Z);
+      return cpu.getFlag(Flag.Z);
     case Condition.C:
-      return state.getFlag(Flag.CY);
+      return cpu.getFlag(Flag.CY);
     case Condition.NZ:
-      return !state.getFlag(Flag.Z);
+      return !cpu.getFlag(Flag.Z);
     case Condition.NC:
-      return !state.getFlag(Flag.CY);
+      return !cpu.getFlag(Flag.CY);
   }
 }
 
-export function pushWord(state: CpuState, data: number) {
-  let sp = state.getRegisterPair(RegisterPair.SP);
-  sp = wrappingDecrementWord(sp);
+export function pushWord(cpu: CpuState, data: number) {
+  let address = cpu.readRegisterPair(RegisterPair.SP);
+  address = wrappingDecrementWord(address);
 
-  state.beginNextCycle();
+  cpu.beginNextCycle();
 
-  state.writeBus(sp, getMSB(data));
-  sp = wrappingDecrementWord(sp);
+  cpu.writeMemory(address, getMSB(data));
+  address = wrappingDecrementWord(address);
 
-  state.beginNextCycle();
+  cpu.beginNextCycle();
 
-  state.writeBus(sp, getLSB(data));
-  state.setRegisterPair(RegisterPair.SP, sp);
+  cpu.writeMemory(address, getLSB(data));
+  cpu.writeRegisterPair(RegisterPair.SP, address);
 }
 
-export function popWord(state: CpuState) {
-  let sp = state.getRegisterPair(RegisterPair.SP);
+export function popWord(cpu: CpuState) {
+  let address = cpu.readRegisterPair(RegisterPair.SP);
 
-  const lsb = state.readBus(sp);
-  sp = wrappingIncrementWord(sp);
+  const lsb = cpu.readMemory(address);
+  address = wrappingIncrementWord(address);
 
-  state.setRegisterPair(RegisterPair.SP, sp);
+  cpu.writeRegisterPair(RegisterPair.SP, address);
 
-  state.beginNextCycle();
+  cpu.beginNextCycle();
 
-  const msb = state.readBus(sp);
-  sp = wrappingIncrementWord(sp);
+  const msb = cpu.readMemory(address);
+  address = wrappingIncrementWord(address);
 
-  state.setRegisterPair(RegisterPair.SP, sp);
+  cpu.writeRegisterPair(RegisterPair.SP, address);
 
-  state.beginNextCycle();
+  cpu.beginNextCycle();
 
   return makeWord(msb, lsb);
 }

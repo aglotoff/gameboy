@@ -9,39 +9,39 @@ import {
   addBytes,
   checkCondition,
   Condition,
-  instruction,
-  instructionWithImmediateByte,
-  instructionWithImmediateWord,
+  makeInstruction,
+  makeInstructionWithImmediateByte,
+  makeInstructionWithImmediateWord,
   isNegative,
   popWord,
   pushWord,
 } from "./lib";
 
-export const jump = instructionWithImmediateWord((cpu, address) => {
-  cpu.setRegisterPair(RegisterPair.PC, address);
+export const jump = makeInstructionWithImmediateWord((cpu, address) => {
+  cpu.writeRegisterPair(RegisterPair.PC, address);
   cpu.beginNextCycle();
 });
 
-export const jumpToHL = instruction((cpu) => {
-  cpu.setRegisterPair(RegisterPair.PC, cpu.getRegisterPair(RegisterPair.HL));
+export const jumpToHL = makeInstruction((cpu) => {
+  cpu.writeRegisterPair(RegisterPair.PC, cpu.readRegisterPair(RegisterPair.HL));
 });
 
-export const jumpConditional = instructionWithImmediateWord(
+export const jumpConditional = makeInstructionWithImmediateWord(
   (cpu, address, condition: Condition) => {
     // FIXME: condition check is performed during M3
     if (!checkCondition(cpu, condition)) {
       return;
     }
 
-    cpu.setRegisterPair(RegisterPair.PC, address);
+    cpu.writeRegisterPair(RegisterPair.PC, address);
 
     cpu.beginNextCycle();
   }
 );
 
-export const relativeJump = instructionWithImmediateByte(doRelativeJump);
+export const relativeJump = makeInstructionWithImmediateByte(doRelativeJump);
 
-export const relativeJumpConditional = instructionWithImmediateByte(
+export const relativeJumpConditional = makeInstructionWithImmediateByte(
   (cpu, offset, condition: Condition) => {
     // FIXME: condition check is performed during M2
     if (checkCondition(cpu, condition)) {
@@ -54,11 +54,11 @@ function doRelativeJump(cpu: CpuState, offset: number) {
   const isOffsetNegative = isNegative(offset);
 
   const { result: lsb, carryFrom7 } = addBytes(
-    cpu.getRegister(Register.PC_L),
+    cpu.readRegister(Register.PC_L),
     offset
   );
 
-  let msb = cpu.getRegister(Register.PC_H);
+  let msb = cpu.readRegister(Register.PC_H);
 
   if (carryFrom7 && !isOffsetNegative) {
     msb = wrappingIncrementByte(msb);
@@ -68,12 +68,12 @@ function doRelativeJump(cpu: CpuState, offset: number) {
 
   cpu.beginNextCycle();
 
-  cpu.setRegisterPair(RegisterPair.PC, makeWord(msb, lsb));
+  cpu.writeRegisterPair(RegisterPair.PC, makeWord(msb, lsb));
 }
 
-export const callFunction = instructionWithImmediateWord(doCallFunction);
+export const callFunction = makeInstructionWithImmediateWord(doCallFunction);
 
-export const callFunctionConditional = instructionWithImmediateWord(
+export const callFunctionConditional = makeInstructionWithImmediateWord(
   (cpu, address, condition: Condition) => {
     // FIXME: condition check is performed during M3
     if (checkCondition(cpu, condition)) {
@@ -82,23 +82,25 @@ export const callFunctionConditional = instructionWithImmediateWord(
   }
 );
 
-export const restartFunction = instruction((cpu, lowAddressByte: number) => {
-  doCallFunction(cpu, makeWord(0x00, lowAddressByte));
-});
+export const restartFunction = makeInstruction(
+  (cpu, lowAddressByte: number) => {
+    doCallFunction(cpu, makeWord(0x00, lowAddressByte));
+  }
+);
 
 function doCallFunction(cpu: CpuState, address: number) {
-  pushWord(cpu, cpu.getRegisterPair(RegisterPair.PC));
+  pushWord(cpu, cpu.readRegisterPair(RegisterPair.PC));
 
-  cpu.setRegisterPair(RegisterPair.PC, address);
+  cpu.writeRegisterPair(RegisterPair.PC, address);
 
   cpu.beginNextCycle();
 }
 
-export const returnFromFunction = instruction((cpu) => {
+export const returnFromFunction = makeInstruction((cpu) => {
   doReturn(cpu);
 });
 
-export const returnFromFunctionConditional = instruction(
+export const returnFromFunctionConditional = makeInstruction(
   (cpu, condition: Condition) => {
     const result = checkCondition(cpu, condition);
 
@@ -110,12 +112,12 @@ export const returnFromFunctionConditional = instruction(
   }
 );
 
-export const returnFromInterruptHandler = instruction((cpu) => {
+export const returnFromInterruptHandler = makeInstruction((cpu) => {
   doReturn(cpu);
   cpu.setInterruptMasterEnable(true);
 });
 
 function doReturn(cpu: CpuState) {
-  cpu.setRegisterPair(RegisterPair.PC, popWord(cpu));
+  cpu.writeRegisterPair(RegisterPair.PC, popWord(cpu));
   cpu.beginNextCycle();
 }

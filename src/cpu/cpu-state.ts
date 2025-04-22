@@ -1,13 +1,13 @@
 import { Flag, Register, RegisterFile, RegisterPair } from "./register";
-import { wrappingIncrementWord } from "../utils";
+import { makeWord, wrappingIncrementWord } from "../utils";
 
-export interface IBus {
+export interface IMemory {
   read(address: number): number;
   write(address: number, data: number): void;
 }
 
 export interface CpuStateOptions {
-  bus: IBus;
+  memory: IMemory;
   onCycle: () => void;
 }
 
@@ -19,7 +19,7 @@ export class CpuState {
   private elapsedCycles = 0;
   private opcode = 0;
   private imeNext = false;
-  private bus: IBus;
+  private memory: IMemory;
   private onCycle: () => void;
 
   public reset() {
@@ -32,8 +32,8 @@ export class CpuState {
     this.imeNext = false;
   }
 
-  public constructor({ bus, onCycle }: CpuStateOptions) {
-    this.bus = bus;
+  public constructor({ memory, onCycle }: CpuStateOptions) {
+    this.memory = memory;
     this.onCycle = onCycle;
   }
 
@@ -50,20 +50,20 @@ export class CpuState {
     return this.elapsedCycles;
   }
 
-  public getRegister(register: Register) {
-    return this.regs.getRegister(register);
+  public readRegister(register: Register) {
+    return this.regs.readRegister(register);
   }
 
-  public setRegister(register: Register, value: number) {
-    this.regs.setRegister(register, value);
+  public writeRegister(register: Register, value: number) {
+    this.regs.writeRegister(register, value);
   }
 
-  public getRegisterPair(pair: RegisterPair) {
-    return this.regs.getRegisterPair(pair);
+  public readRegisterPair(pair: RegisterPair) {
+    return this.regs.readRegisterPair(pair);
   }
 
-  public setRegisterPair(pair: RegisterPair, value: number) {
-    this.regs.setRegisterPair(pair, value);
+  public writeRegisterPair(pair: RegisterPair, value: number) {
+    this.regs.writeRegisterPair(pair, value);
   }
 
   public getFlag(flag: Flag) {
@@ -74,12 +74,12 @@ export class CpuState {
     this.regs.setFlag(flag, value);
   }
 
-  public readBus(address: number) {
-    return this.bus.read(address);
+  public readMemory(address: number) {
+    return this.memory.read(address);
   }
 
-  public writeBus(address: number, data: number) {
-    this.bus.write(address, data);
+  public writeMemory(address: number, data: number) {
+    this.memory.write(address, data);
   }
 
   public setHalted(halted: boolean) {
@@ -120,22 +120,30 @@ export class CpuState {
   }
 
   public fetchImmediateByte() {
-    let pc = this.getRegisterPair(RegisterPair.PC);
-    const data = this.readBus(pc);
+    let address = this.readRegisterPair(RegisterPair.PC);
+    const data = this.readMemory(address);
+
     this.beginNextCycle();
 
-    this.setRegisterPair(RegisterPair.PC, wrappingIncrementWord(pc));
+    this.writeRegisterPair(RegisterPair.PC, wrappingIncrementWord(address));
+
     return data;
   }
 
+  public fetchImmediateWord() {
+    const lsb = this.fetchImmediateByte();
+    const msb = this.fetchImmediateByte();
+    return makeWord(msb, lsb);
+  }
+
   public fetchNextOpcode() {
-    let pc = this.getRegisterPair(RegisterPair.PC);
-    this.opcode = this.readBus(pc);
+    let address = this.readRegisterPair(RegisterPair.PC);
+    this.opcode = this.readMemory(address);
   }
 
   public advancePC() {
-    let pc = this.getRegisterPair(RegisterPair.PC);
-    this.setRegisterPair(RegisterPair.PC, wrappingIncrementWord(pc));
+    const address = this.readRegisterPair(RegisterPair.PC);
+    this.writeRegisterPair(RegisterPair.PC, wrappingIncrementWord(address));
 
     if (this.imeNext) {
       this.setInterruptMasterEnable(true);

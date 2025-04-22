@@ -1,8 +1,8 @@
 import { test } from "vitest";
 
-import { CpuState, IBus } from "../cpu-state";
+import { CpuState, IMemory } from "../cpu-state";
 
-class TestMemory implements IBus {
+class TestMemory implements IMemory {
   private ram = new Uint8Array(0x10000);
 
   public read(address: number) {
@@ -16,6 +16,6 @@ class TestMemory implements IBus {
 
 export const testInstruction = test.extend({
   state: async ({}, use: (state: CpuState) => Promise<void>) => {
-    await use(new CpuState({ bus: new TestMemory(), onCycle: () => {} }));
+    await use(new CpuState({ memory: new TestMemory(), onCycle: () => {} }));
   },
 });

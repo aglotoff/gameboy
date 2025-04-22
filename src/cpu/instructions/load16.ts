@@ -2,55 +2,55 @@ import { Flag, Register, RegisterPair } from "../register";
 
 import {
   addBytes,
-  instruction,
-  instructionWithImmediateByte,
-  instructionWithImmediateWord,
+  makeInstruction,
+  makeInstructionWithImmediateByte,
+  makeInstructionWithImmediateWord,
   isNegative,
   popWord,
   pushWord,
 } from "./lib";
 
-export const loadRegisterPair = instructionWithImmediateWord(
+export const loadRegisterPair = makeInstructionWithImmediateWord(
   (cpu, data, dst: RegisterPair) => {
-    cpu.setRegisterPair(dst, data);
+    cpu.writeRegisterPair(dst, data);
   }
 );
 
-export const loadDirectFromStackPointer = instructionWithImmediateWord(
+export const loadDirectFromStackPointer = makeInstructionWithImmediateWord(
   (cpu, address) => {
-    cpu.writeBus(address, cpu.getRegister(Register.SP_L));
+    cpu.writeMemory(address, cpu.readRegister(Register.SP_L));
 
     cpu.beginNextCycle();
 
-    cpu.writeBus(address + 1, cpu.getRegister(Register.SP_H));
+    cpu.writeMemory(address + 1, cpu.readRegister(Register.SP_H));
 
     cpu.beginNextCycle();
   }
 );
 
-export const loadStackPointerFromHL = instruction((cpu) => {
-  cpu.setRegisterPair(RegisterPair.SP, cpu.getRegisterPair(RegisterPair.HL));
+export const loadStackPointerFromHL = makeInstruction((cpu) => {
+  cpu.writeRegisterPair(RegisterPair.SP, cpu.readRegisterPair(RegisterPair.HL));
   cpu.beginNextCycle();
 });
 
-export const pushToStack = instruction((cpu, pair: RegisterPair) => {
-  pushWord(cpu, cpu.getRegisterPair(pair));
+export const pushToStack = makeInstruction((cpu, pair: RegisterPair) => {
+  pushWord(cpu, cpu.readRegisterPair(pair));
   cpu.beginNextCycle();
 });
 
-export const popFromStack = instruction((cpu, pair: RegisterPair) => {
-  cpu.setRegisterPair(pair, popWord(cpu));
+export const popFromStack = makeInstruction((cpu, pair: RegisterPair) => {
+  cpu.writeRegisterPair(pair, popWord(cpu));
 });
 
-export const loadHLFromAdjustedStackPointer = instructionWithImmediateByte(
+export const loadHLFromAdjustedStackPointer = makeInstructionWithImmediateByte(
   (cpu, e) => {
     const {
       result: lsb,
       carryFrom3,
       carryFrom7,
-    } = addBytes(cpu.getRegister(Register.SP_L), e);
+    } = addBytes(cpu.readRegister(Register.SP_L), e);
 
-    cpu.setRegister(Register.L, lsb);
+    cpu.writeRegister(Register.L, lsb);
 
     cpu.setFlag(Flag.Z, false);
     cpu.setFlag(Flag.N, false);
@@ -60,11 +60,11 @@ export const loadHLFromAdjustedStackPointer = instructionWithImmediateByte(
     cpu.beginNextCycle();
 
     const { result: msb } = addBytes(
-      cpu.getRegister(Register.SP_H),
+      cpu.readRegister(Register.SP_H),
       isNegative(e) ? 0xff : 0x00,
       carryFrom7
     );
 
-    cpu.setRegister(Register.H, msb);
+    cpu.writeRegister(Register.H, msb);
   }
 );

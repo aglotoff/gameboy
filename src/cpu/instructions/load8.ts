@@ -1,156 +1,163 @@
 import { Register, RegisterPair } from "../register";
 import { wrappingDecrementWord, wrappingIncrementWord } from "../../utils";
 import {
-  instruction,
-  instructionWithImmediateByte,
-  instructionWithImmediateWord,
+  makeInstruction,
+  makeInstructionWithImmediateByte,
+  makeInstructionWithImmediateWord,
 } from "./lib";
 
-export const loadRegisterFromRegister = instruction(
+export const loadRegisterFromRegister = makeInstruction(
   (cpu, dst: Register, src: Register) => {
-    cpu.setRegister(dst, cpu.getRegister(src));
+    cpu.writeRegister(dst, cpu.readRegister(src));
   }
 );
 
-export const loadRegisterFromImmediate = instructionWithImmediateByte(
+export const loadRegisterFromImmediate = makeInstructionWithImmediateByte(
   (cpu, data, dst: Register) => {
-    cpu.setRegister(dst, data);
+    cpu.writeRegister(dst, data);
   }
 );
 
-export const loadRegisterFromIndirectHL = instruction((cpu, dst: Register) => {
-  const data = cpu.readBus(cpu.getRegisterPair(RegisterPair.HL));
-  cpu.beginNextCycle();
-  cpu.setRegister(dst, data);
-});
+export const loadRegisterFromIndirectHL = makeInstruction(
+  (cpu, dst: Register) => {
+    const data = cpu.readMemory(cpu.readRegisterPair(RegisterPair.HL));
+    cpu.beginNextCycle();
+    cpu.writeRegister(dst, data);
+  }
+);
 
-export const loadIndirectHLFromRegister = instruction((cpu, src: Register) => {
-  cpu.writeBus(cpu.getRegisterPair(RegisterPair.HL), cpu.getRegister(src));
-  cpu.beginNextCycle();
-});
+export const loadIndirectHLFromRegister = makeInstruction(
+  (cpu, src: Register) => {
+    cpu.writeMemory(
+      cpu.readRegisterPair(RegisterPair.HL),
+      cpu.readRegister(src)
+    );
+    cpu.beginNextCycle();
+  }
+);
 
-export const loadIndirectHLFromImmediateData = instructionWithImmediateByte(
+export const loadIndirectHLFromImmediateData = makeInstructionWithImmediateByte(
   (cpu, data) => {
-    cpu.writeBus(cpu.getRegisterPair(RegisterPair.HL), data);
+    cpu.writeMemory(cpu.readRegisterPair(RegisterPair.HL), data);
     cpu.beginNextCycle();
   }
 );
 
-export const loadAccumulatorFromIndirectBC = instruction((cpu) => {
-  const data = cpu.readBus(cpu.getRegisterPair(RegisterPair.BC));
+export const loadAccumulatorFromIndirectBC = makeInstruction((cpu) => {
+  const data = cpu.readMemory(cpu.readRegisterPair(RegisterPair.BC));
   cpu.beginNextCycle();
-  cpu.setRegister(Register.A, data);
+  cpu.writeRegister(Register.A, data);
 });
 
-export const loadAccumulatorFromIndirectDE = instruction((cpu) => {
-  const data = cpu.readBus(cpu.getRegisterPair(RegisterPair.DE));
+export const loadAccumulatorFromIndirectDE = makeInstruction((cpu) => {
+  const data = cpu.readMemory(cpu.readRegisterPair(RegisterPair.DE));
   cpu.beginNextCycle();
-  cpu.setRegister(Register.A, data);
+  cpu.writeRegister(Register.A, data);
 });
 
-export const loadIndirectBCFromAccumulator = instruction((cpu) => {
-  cpu.writeBus(
-    cpu.getRegisterPair(RegisterPair.BC),
-    cpu.getRegister(Register.A)
+export const loadIndirectBCFromAccumulator = makeInstruction((cpu) => {
+  cpu.writeMemory(
+    cpu.readRegisterPair(RegisterPair.BC),
+    cpu.readRegister(Register.A)
   );
   cpu.beginNextCycle();
 });
 
-export const loadIndirectDEFromAccumulator = instruction((cpu) => {
-  cpu.writeBus(
-    cpu.getRegisterPair(RegisterPair.DE),
-    cpu.getRegister(Register.A)
+export const loadIndirectDEFromAccumulator = makeInstruction((cpu) => {
+  cpu.writeMemory(
+    cpu.readRegisterPair(RegisterPair.DE),
+    cpu.readRegister(Register.A)
   );
   cpu.beginNextCycle();
 });
 
-export const loadAccumulatorFromDirectWord = instructionWithImmediateWord(
+export const loadAccumulatorFromDirectWord = makeInstructionWithImmediateWord(
   (cpu, address) => {
-    const data = cpu.readBus(address);
+    const data = cpu.readMemory(address);
     cpu.beginNextCycle();
-    cpu.setRegister(Register.A, data);
+    cpu.writeRegister(Register.A, data);
   }
 );
 
-export const loadDirectWordFromAccumulator = instructionWithImmediateWord(
+export const loadDirectWordFromAccumulator = makeInstructionWithImmediateWord(
   (cpu, address) => {
-    cpu.writeBus(address, cpu.getRegister(Register.A));
+    cpu.writeMemory(address, cpu.readRegister(Register.A));
     cpu.beginNextCycle();
   }
 );
 
-export const loadAccumulatorFromIndirectC = instruction((cpu) => {
-  const address = 0xff00 + cpu.getRegister(Register.C);
-  const data = cpu.readBus(address);
+export const loadAccumulatorFromIndirectC = makeInstruction((cpu) => {
+  const address = 0xff00 + cpu.readRegister(Register.C);
+  const data = cpu.readMemory(address);
 
   cpu.beginNextCycle();
 
-  cpu.setRegister(Register.A, data);
+  cpu.writeRegister(Register.A, data);
 });
 
-export const loadIndirectCFromAccumulator = instruction((cpu) => {
-  const address = 0xff00 + cpu.getRegister(Register.C);
-  cpu.writeBus(address, cpu.getRegister(Register.A));
+export const loadIndirectCFromAccumulator = makeInstruction((cpu) => {
+  const address = 0xff00 + cpu.readRegister(Register.C);
+  cpu.writeMemory(address, cpu.readRegister(Register.A));
 
   cpu.beginNextCycle();
 });
 
-export const loadAccumulatorFromDirectByte = instructionWithImmediateByte(
+export const loadAccumulatorFromDirectByte = makeInstructionWithImmediateByte(
   (cpu, offset) => {
     const address = 0xff00 + offset;
-    const data = cpu.readBus(address);
+    const data = cpu.readMemory(address);
 
     cpu.beginNextCycle();
 
-    cpu.setRegister(Register.A, data);
+    cpu.writeRegister(Register.A, data);
   }
 );
 
-export const loadDirectByteFromAccumulator = instructionWithImmediateByte(
+export const loadDirectByteFromAccumulator = makeInstructionWithImmediateByte(
   (cpu, offset) => {
     const address = 0xff00 + offset;
-    cpu.writeBus(address, cpu.getRegister(Register.A));
+    cpu.writeMemory(address, cpu.readRegister(Register.A));
 
     cpu.beginNextCycle();
   }
 );
 
-export const loadAccumulatorFromIndirectHLDecrement = instruction((cpu) => {
-  const address = cpu.getRegisterPair(RegisterPair.HL);
-  const data = cpu.readBus(address);
+export const loadAccumulatorFromIndirectHLDecrement = makeInstruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const data = cpu.readMemory(address);
 
-  cpu.setRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
-
-  cpu.beginNextCycle();
-
-  cpu.setRegister(Register.A, data);
-});
-
-export const loadAccumulatorFromIndirectHLIncrement = instruction((cpu) => {
-  const address = cpu.getRegisterPair(RegisterPair.HL);
-  const data = cpu.readBus(address);
-
-  cpu.setRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
+  cpu.writeRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
 
   cpu.beginNextCycle();
 
-  cpu.setRegister(Register.A, data);
+  cpu.writeRegister(Register.A, data);
 });
 
-export const loadIndirectHLDecrementFromAccumulator = instruction((cpu) => {
-  const address = cpu.getRegisterPair(RegisterPair.HL);
-  cpu.writeBus(address, cpu.getRegister(Register.A));
+export const loadAccumulatorFromIndirectHLIncrement = makeInstruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const data = cpu.readMemory(address);
 
-  cpu.setRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
+  cpu.writeRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
+
+  cpu.beginNextCycle();
+
+  cpu.writeRegister(Register.A, data);
+});
+
+export const loadIndirectHLDecrementFromAccumulator = makeInstruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  cpu.writeMemory(address, cpu.readRegister(Register.A));
+
+  cpu.writeRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
 
   cpu.beginNextCycle();
 });
 
-export const loadIndirectHLIncrementFromAccumulator = instruction((cpu) => {
-  const address = cpu.getRegisterPair(RegisterPair.HL);
-  cpu.writeBus(address, cpu.getRegister(Register.A));
+export const loadIndirectHLIncrementFromAccumulator = makeInstruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  cpu.writeMemory(address, cpu.readRegister(Register.A));
 
-  cpu.setRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
+  cpu.writeRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
 
   cpu.beginNextCycle();
 });

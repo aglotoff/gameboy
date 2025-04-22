@@ -1,4 +1,4 @@
-import { CpuState, IBus } from "./cpu-state";
+import { CpuState, IMemory } from "./cpu-state";
 import { getInstruction, getPrefixCBInstruction } from "./instructions";
 import { InterruptController } from "../hw/interrupt-controller";
 import { RegisterPair } from "./register";
@@ -6,11 +6,11 @@ import { getLSB, getMSB, wrappingDecrementWord } from "../utils";
 
 export class Cpu extends CpuState {
   public constructor(
-    bus: IBus,
+    memory: IMemory,
     private interruptController: InterruptController,
     onCycle: () => void
   ) {
-    super({ bus, onCycle });
+    super({ memory, onCycle });
   }
 
   public step() {
@@ -76,28 +76,28 @@ export class Cpu extends CpuState {
 
     this.beginNextCycle();
 
-    let sp = this.getRegisterPair(RegisterPair.SP);
+    let sp = this.readRegisterPair(RegisterPair.SP);
     sp = wrappingDecrementWord(sp);
 
     this.beginNextCycle();
 
-    this.writeBus(sp, getMSB(this.getRegisterPair(RegisterPair.PC)));
+    this.writeMemory(sp, getMSB(this.readRegisterPair(RegisterPair.PC)));
     sp = wrappingDecrementWord(sp);
 
     this.beginNextCycle();
 
     const irq = this.interruptController.getPendingInterrupt();
 
-    this.writeBus(sp, getLSB(this.getRegisterPair(RegisterPair.PC)));
-    this.setRegisterPair(RegisterPair.SP, sp);
+    this.writeMemory(sp, getLSB(this.readRegisterPair(RegisterPair.PC)));
+    this.writeRegisterPair(RegisterPair.SP, sp);
 
     this.beginNextCycle();
 
     if (irq < 0) {
-      this.setRegisterPair(RegisterPair.PC, 0);
+      this.writeRegisterPair(RegisterPair.PC, 0);
     } else {
       this.interruptController.acknowledgeInterrupt(irq);
-      this.setRegisterPair(RegisterPair.PC, getInterruptVectorAddress(irq));
+      this.writeRegisterPair(RegisterPair.PC, getInterruptVectorAddress(irq));
     }
 
     this.beginNextCycle();

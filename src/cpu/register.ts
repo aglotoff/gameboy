@@ -27,11 +27,11 @@ export enum RegisterPair {
   PC = 10,
 }
 
-export function highRegister(pair: RegisterPair): Register {
+export function getHighRegister(pair: RegisterPair): Register {
   return pair + 0;
 }
 
-export function lowRegister(pair: RegisterPair): Register {
+export function getLowRegister(pair: RegisterPair): Register {
   return pair + 1;
 }
 
@@ -48,11 +48,11 @@ const FLAG_MASK = 0b1111_0000;
 export class RegisterFile {
   private registers = new Uint8Array(14);
 
-  public getRegister(register: Register) {
+  public readRegister(register: Register) {
     return this.registers[register];
   }
 
-  public setRegister(register: Register, value: number) {
+  public writeRegister(register: Register, value: number) {
     if (register === Register.F) {
       // High 4 bits of flags are always zero
       // TODO: re-check that
@@ -62,16 +62,16 @@ export class RegisterFile {
     }
   }
 
-  public getRegisterPair(pair: RegisterPair) {
+  public readRegisterPair(pair: RegisterPair) {
     return makeWord(
-      this.getRegister(highRegister(pair)),
-      this.getRegister(lowRegister(pair))
+      this.readRegister(getHighRegister(pair)),
+      this.readRegister(getLowRegister(pair))
     );
   }
 
-  public setRegisterPair(pair: RegisterPair, value: number) {
-    this.setRegister(highRegister(pair), getMSB(value));
-    this.setRegister(lowRegister(pair), getLSB(value));
+  public writeRegisterPair(pair: RegisterPair, value: number) {
+    this.writeRegister(getHighRegister(pair), getMSB(value));
+    this.writeRegister(getLowRegister(pair), getLSB(value));
   }
 
   public getFlag(flag: Flag) {

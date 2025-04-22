@@ -1,19 +1,19 @@
-import { instruction, instructionWithImmediateByte } from "./lib";
+import { makeInstruction, makeInstructionWithImmediateByte } from "./lib";
 
-export const halt = instruction((cpu) => {
+export const halt = makeInstruction((cpu) => {
   cpu.setHalted(true);
 });
 
-export const stop = instructionWithImmediateByte((cpu) => {
+export const stop = makeInstructionWithImmediateByte((cpu) => {
   cpu.stop();
 });
 
-export const disableInterrupts = instruction((cpu) => {
+export const disableInterrupts = makeInstruction((cpu) => {
   cpu.setInterruptMasterEnable(false);
 });
 
-export const enableInterrupts = instruction((cpu) => {
+export const enableInterrupts = makeInstruction((cpu) => {
   cpu.scheduleInterruptMasterEnable();
 });
 
-export const noOperation = instruction(() => {});
+export const noOperation = makeInstruction(() => {});

@@ -1,7 +1,7 @@
 import { TimerRegisters } from "./hw/timer";
 import { InterruptController } from "./hw/interrupt-controller";
 import { PPU, OAM, PPURegisters } from "./hw/graphics";
-import { IBus } from "./cpu";
+import { IMemory } from "./cpu";
 import { MBC } from "./cartridge";
 import { Joypad } from "./hw/joypad";
 import { SystemCounter } from "./hw/system-counter";
@@ -78,7 +78,7 @@ const bootROM = [
   0x20, 0xfb, 0x86, 0x20, 0xfe, 0x3e, 0x01, 0xe0, 0x50,
 ];
 
-export class Memory implements IBus {
+export class Memory implements IMemory {
   private wram = new Uint8Array(0x2000);
   private hram = new Uint8Array(0x80);
   private bootROMDisabled = false;

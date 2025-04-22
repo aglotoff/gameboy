@@ -1,31 +1,33 @@
 import { Flag, Register, RegisterPair } from "../register";
 import { resetBit, setBit } from "../../utils";
-import { instruction } from "./lib";
+import { makeInstruction } from "./lib";
 import { CpuState } from "../cpu-state";
 
-export const rotateLeftCircularAccumulator = instruction((cpu) => {
-  const result = rotateLeftCircular(cpu, cpu.getRegister(Register.A));
+export const rotateLeftCircularAccumulator = makeInstruction((cpu) => {
+  const result = rotateLeftCircular(cpu, cpu.readRegister(Register.A));
 
-  cpu.setRegister(Register.A, result);
+  cpu.writeRegister(Register.A, result);
   cpu.setFlag(Flag.Z, false);
 });
 
-export const rotateLeftCircularRegister = instruction((cpu, reg: Register) => {
-  const result = rotateLeftCircular(cpu, cpu.getRegister(reg));
+export const rotateLeftCircularRegister = makeInstruction(
+  (cpu, reg: Register) => {
+    const result = rotateLeftCircular(cpu, cpu.readRegister(reg));
 
-  cpu.setRegister(reg, result);
-  cpu.setFlag(Flag.Z, result === 0);
-});
+    cpu.writeRegister(reg, result);
+    cpu.setFlag(Flag.Z, result === 0);
+  }
+);
 
-export const rotateLeftCircularIndirectHL = instruction((cpu) => {
-  const address = cpu.getRegisterPair(RegisterPair.HL);
-  const data = cpu.readBus(address);
+export const rotateLeftCircularIndirectHL = makeInstruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const data = cpu.readMemory(address);
 
   cpu.beginNextCycle();
 
   const result = rotateLeftCircular(cpu, data);
 
-  cpu.writeBus(address, result);
+  cpu.writeMemory(address, result);
   cpu.setFlag(Flag.Z, result === 0);
 
   cpu.beginNextCycle();
@@ -42,29 +44,31 @@ function rotateLeftCircular(cpu: CpuState, value: number) {
   return result;
 }
 
-export const rotateRightCircularAccumulator = instruction((cpu) => {
-  const result = rotateRightCircular(cpu, cpu.getRegister(Register.A));
+export const rotateRightCircularAccumulator = makeInstruction((cpu) => {
+  const result = rotateRightCircular(cpu, cpu.readRegister(Register.A));
 
-  cpu.setRegister(Register.A, result);
+  cpu.writeRegister(Register.A, result);
   cpu.setFlag(Flag.Z, false);
 });
 
-export const rotateRightCircularRegister = instruction((cpu, reg: Register) => {
-  const result = rotateRightCircular(cpu, cpu.getRegister(reg));
+export const rotateRightCircularRegister = makeInstruction(
+  (cpu, reg: Register) => {
+    const result = rotateRightCircular(cpu, cpu.readRegister(reg));
 
-  cpu.setRegister(reg, result);
-  cpu.setFlag(Flag.Z, result === 0);
-});
+    cpu.writeRegister(reg, result);
+    cpu.setFlag(Flag.Z, result === 0);
+  }
+);
 
-export const rotateRightCircularIndirectHL = instruction((cpu) => {
-  const address = cpu.getRegisterPair(RegisterPair.HL);
-  const data = cpu.readBus(address);
+export const rotateRightCircularIndirectHL = makeInstruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const data = cpu.readMemory(address);
 
   cpu.beginNextCycle();
 
   const result = rotateRightCircular(cpu, data);
 
-  cpu.writeBus(address, result);
+  cpu.writeMemory(address, result);
   cpu.setFlag(Flag.Z, result === 0);
 
   cpu.beginNextCycle();
@@ -81,29 +85,29 @@ function rotateRightCircular(cpu: CpuState, value: number) {
   return result;
 }
 
-export const rotateLeftAccumulator = instruction((cpu) => {
-  const result = rotateLeft(cpu, cpu.getRegister(Register.A));
+export const rotateLeftAccumulator = makeInstruction((cpu) => {
+  const result = rotateLeft(cpu, cpu.readRegister(Register.A));
 
-  cpu.setRegister(Register.A, result);
+  cpu.writeRegister(Register.A, result);
   cpu.setFlag(Flag.Z, false);
 });
 
-export const rotateLeftRegister = instruction((cpu, reg: Register) => {
-  const result = rotateLeft(cpu, cpu.getRegister(reg));
+export const rotateLeftRegister = makeInstruction((cpu, reg: Register) => {
+  const result = rotateLeft(cpu, cpu.readRegister(reg));
 
-  cpu.setRegister(reg, result);
+  cpu.writeRegister(reg, result);
   cpu.setFlag(Flag.Z, result === 0);
 });
 
-export const rotateLeftIndirectHL = instruction((cpu) => {
-  const address = cpu.getRegisterPair(RegisterPair.HL);
-  const data = cpu.readBus(address);
+export const rotateLeftIndirectHL = makeInstruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const data = cpu.readMemory(address);
 
   cpu.beginNextCycle();
 
   const result = rotateLeft(cpu, data);
 
-  cpu.writeBus(address, result);
+  cpu.writeMemory(address, result);
   cpu.setFlag(Flag.Z, result === 0);
 
   cpu.beginNextCycle();
@@ -120,29 +124,29 @@ function rotateLeft(cpu: CpuState, value: number) {
   return result;
 }
 
-export const rotateRightAccumulator = instruction((cpu) => {
-  const result = rotateRight(cpu, cpu.getRegister(Register.A));
+export const rotateRightAccumulator = makeInstruction((cpu) => {
+  const result = rotateRight(cpu, cpu.readRegister(Register.A));
 
-  cpu.setRegister(Register.A, result);
+  cpu.writeRegister(Register.A, result);
   cpu.setFlag(Flag.Z, false);
 });
 
-export const rotateRightRegister = instruction((cpu, reg: Register) => {
-  const result = rotateRight(cpu, cpu.getRegister(reg));
+export const rotateRightRegister = makeInstruction((cpu, reg: Register) => {
+  const result = rotateRight(cpu, cpu.readRegister(reg));
 
-  cpu.setRegister(reg, result);
+  cpu.writeRegister(reg, result);
   cpu.setFlag(Flag.Z, result === 0);
 });
 
-export const rotateRightIndirectHL = instruction((cpu) => {
-  const address = cpu.getRegisterPair(RegisterPair.HL);
-  const data = cpu.readBus(address);
+export const rotateRightIndirectHL = makeInstruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const data = cpu.readMemory(address);
 
   cpu.beginNextCycle();
 
   const result = rotateRight(cpu, data);
 
-  cpu.writeBus(address, result);
+  cpu.writeMemory(address, result);
   cpu.setFlag(Flag.Z, result === 0);
 
   cpu.beginNextCycle();
@@ -159,22 +163,24 @@ function rotateRight(cpu: CpuState, value: number) {
   return result;
 }
 
-export const shiftLeftArithmeticRegister = instruction((cpu, reg: Register) => {
-  const result = shiftLeftArithmetic(cpu, cpu.getRegister(reg));
+export const shiftLeftArithmeticRegister = makeInstruction(
+  (cpu, reg: Register) => {
+    const result = shiftLeftArithmetic(cpu, cpu.readRegister(reg));
 
-  cpu.setRegister(reg, result);
-  cpu.setFlag(Flag.Z, result === 0);
-});
+    cpu.writeRegister(reg, result);
+    cpu.setFlag(Flag.Z, result === 0);
+  }
+);
 
-export const shiftLeftArithmeticIndirectHL = instruction((cpu) => {
-  const address = cpu.getRegisterPair(RegisterPair.HL);
-  const data = cpu.readBus(address);
+export const shiftLeftArithmeticIndirectHL = makeInstruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const data = cpu.readMemory(address);
 
   cpu.beginNextCycle();
 
   const result = shiftLeftArithmetic(cpu, data);
 
-  cpu.writeBus(address, result);
+  cpu.writeMemory(address, result);
   cpu.setFlag(Flag.Z, result === 0);
 
   cpu.beginNextCycle();
@@ -191,24 +197,24 @@ function shiftLeftArithmetic(cpu: CpuState, value: number) {
   return result;
 }
 
-export const shiftRightArithmeticRegister = instruction(
+export const shiftRightArithmeticRegister = makeInstruction(
   (cpu, reg: Register) => {
-    const result = shiftRightArithmetic(cpu, cpu.getRegister(reg));
+    const result = shiftRightArithmetic(cpu, cpu.readRegister(reg));
 
-    cpu.setRegister(reg, result);
+    cpu.writeRegister(reg, result);
     cpu.setFlag(Flag.Z, result === 0);
   }
 );
 
-export const shiftRightArithmeticIndirectHL = instruction((cpu) => {
-  const address = cpu.getRegisterPair(RegisterPair.HL);
-  const data = cpu.readBus(address);
+export const shiftRightArithmeticIndirectHL = makeInstruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const data = cpu.readMemory(address);
 
   cpu.beginNextCycle();
 
   const result = shiftRightArithmetic(cpu, data);
 
-  cpu.writeBus(address, result);
+  cpu.writeMemory(address, result);
   cpu.setFlag(Flag.Z, result === 0);
 
   cpu.beginNextCycle();
@@ -225,22 +231,24 @@ function shiftRightArithmetic(cpu: CpuState, value: number) {
   return result;
 }
 
-export const shiftRightLogicalRegister = instruction((cpu, reg: Register) => {
-  const result = shiftRightLogical(cpu, cpu.getRegister(reg));
+export const shiftRightLogicalRegister = makeInstruction(
+  (cpu, reg: Register) => {
+    const result = shiftRightLogical(cpu, cpu.readRegister(reg));
 
-  cpu.setRegister(reg, result);
-  cpu.setFlag(Flag.Z, result === 0);
-});
+    cpu.writeRegister(reg, result);
+    cpu.setFlag(Flag.Z, result === 0);
+  }
+);
 
-export const shiftRightLogicalIndirectHL = instruction((cpu) => {
-  const address = cpu.getRegisterPair(RegisterPair.HL);
-  const data = cpu.readBus(address);
+export const shiftRightLogicalIndirectHL = makeInstruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const data = cpu.readMemory(address);
 
   cpu.beginNextCycle();
 
   const result = shiftRightLogical(cpu, data);
 
-  cpu.writeBus(address, result);
+  cpu.writeMemory(address, result);
   cpu.setFlag(Flag.Z, result === 0);
 
   cpu.beginNextCycle();
@@ -257,19 +265,19 @@ function shiftRightLogical(cpu: CpuState, value: number) {
   return result;
 }
 
-export const swapNibblesRegister = instruction((cpu, reg: Register) => {
-  const result = swapNibbles(cpu, cpu.getRegister(reg));
-  cpu.setRegister(reg, result);
+export const swapNibblesRegister = makeInstruction((cpu, reg: Register) => {
+  const result = swapNibbles(cpu, cpu.readRegister(reg));
+  cpu.writeRegister(reg, result);
 });
 
-export const swapNibblesIndirectHL = instruction((cpu) => {
-  const address = cpu.getRegisterPair(RegisterPair.HL);
-  const data = cpu.readBus(address);
+export const swapNibblesIndirectHL = makeInstruction((cpu) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const data = cpu.readMemory(address);
 
   cpu.beginNextCycle();
 
   const result = swapNibbles(cpu, data);
-  cpu.writeBus(address, result);
+  cpu.writeMemory(address, result);
 
   cpu.beginNextCycle();
 });
@@ -285,15 +293,15 @@ function swapNibbles(cpu: CpuState, value: number) {
   return result;
 }
 
-export const testBitRegister = instruction(
+export const testBitRegister = makeInstruction(
   (cpu, bit: number, reg: Register) => {
-    testBit(cpu, cpu.getRegister(reg), bit);
+    testBit(cpu, cpu.readRegister(reg), bit);
   }
 );
 
-export const testBitIndirectHL = instruction((cpu, bit: number) => {
-  const address = cpu.getRegisterPair(RegisterPair.HL);
-  const data = cpu.readBus(address);
+export const testBitIndirectHL = makeInstruction((cpu, bit: number) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const data = cpu.readMemory(address);
 
   cpu.beginNextCycle();
 
@@ -306,34 +314,36 @@ function testBit(cpu: CpuState, value: number, bit: number) {
   cpu.setFlag(Flag.H, true);
 }
 
-export const resetBitRegister = instruction(
+export const resetBitRegister = makeInstruction(
   (cpu, bit: number, reg: Register) => {
-    cpu.setRegister(reg, resetBit(cpu.getRegister(reg), bit));
+    cpu.writeRegister(reg, resetBit(cpu.readRegister(reg), bit));
   }
 );
 
-export const resetBitIndirectHL = instruction((cpu, bit: number) => {
-  const address = cpu.getRegisterPair(RegisterPair.HL);
-  const data = cpu.readBus(address);
+export const resetBitIndirectHL = makeInstruction((cpu, bit: number) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const data = cpu.readMemory(address);
 
   cpu.beginNextCycle();
 
-  cpu.writeBus(address, resetBit(data, bit));
+  cpu.writeMemory(address, resetBit(data, bit));
 
   cpu.beginNextCycle();
 });
 
-export const setBitRegister = instruction((cpu, bit: number, reg: Register) => {
-  cpu.setRegister(reg, setBit(cpu.getRegister(reg), bit));
-});
+export const setBitRegister = makeInstruction(
+  (cpu, bit: number, reg: Register) => {
+    cpu.writeRegister(reg, setBit(cpu.readRegister(reg), bit));
+  }
+);
 
-export const setBitIndirectHL = instruction((cpu, bit: number) => {
-  const address = cpu.getRegisterPair(RegisterPair.HL);
-  const data = cpu.readBus(address);
+export const setBitIndirectHL = makeInstruction((cpu, bit: number) => {
+  const address = cpu.readRegisterPair(RegisterPair.HL);
+  const data = cpu.readMemory(address);
 
   cpu.beginNextCycle();
 
-  cpu.writeBus(address, setBit(data, bit));
+  cpu.writeMemory(address, setBit(data, bit));
 
   cpu.beginNextCycle();
 });

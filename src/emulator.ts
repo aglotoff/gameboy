@@ -150,10 +150,10 @@ export class Emulator {
     console.log(`Type: ${typeName}`);
     console.log(`ROM Size: ${cartridge.getROMSize()}`);
 
-    this.cpu.setRegister(Register.A, 0x01);
-    this.cpu.setRegister(Register.B, 0xff);
-    this.cpu.setRegister(Register.C, 0x13);
-    this.cpu.setRegister(Register.D, 0x00);
+    this.cpu.writeRegister(Register.A, 0x01);
+    this.cpu.writeRegister(Register.B, 0xff);
+    this.cpu.writeRegister(Register.C, 0x13);
+    this.cpu.writeRegister(Register.D, 0x00);
 
     this.timeout = setInterval(() => {
       const start = performance.now();
