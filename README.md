@@ -1,3 +1,122 @@
 # Game Boy
 
 Yet another Game Boy emulator written for web. Work in progress.
+
+## Tests
+
+- ✅ acid/dmg-acid2
+- ✅ blarg/cpu_instrs/01-special
+- ✅ blarg/cpu_instrs/02-interrupts
+- ✅ blarg/cpu_instrs/03-op sp,hl
+- ✅ blarg/cpu_instrs/04-op r,imm
+- ✅ blarg/cpu_instrs/05-op rp
+- ✅ blarg/cpu_instrs/06-ld r,r
+- ✅ blarg/cpu_instrs/07-jr,jp,call,ret,rst
+- ✅ blarg/cpu_instrs/08-misc instrs
+- ✅ blarg/cpu_instrs/09-op r,r
+- ✅ blarg/cpu_instrs/10-bit ops
+- ✅ blarg/cpu_instrs/11-op a,(hl)
+- ❌ blarg/halt_bug
+- ✅ blarg/dmg_sound/01-registers
+- ✅ blarg/dmg_sound/02-len ctr
+- ✅ blarg/dmg_sound/03-trigger
+- ✅ blarg/dmg_sound/04-sweep
+- ✅ blarg/dmg_sound/05-sweep details
+- ✅ blarg/dmg_sound/06-overflow on trigger
+- ✅ blarg/dmg_sound/07-len sweep period sync
+- ✅ blarg/dmg_sound/08-len ctr during power
+- ❌ blarg/dmg_sound/09-wave read while on
+- ❌ blarg/dmg_sound/10-wave trigger while on
+- ✅ blarg/dmg_sound/11-regs after power
+- ❌ blarg/dmg_sound/12-wave write while on
+- ✅ blarg/instr_timing
+- ❌ blarg/interrupt_time
+- ✅ blarg/mem_timing/01-read_timing
+- ✅ blarg/mem_timing/02-write_timing
+- ✅ blarg/mem_timing/03-modify_timing
+- ✅ blarg/mem_timing-2/01-read_timing
+- ✅ blarg/mem_timing-2/02-write_timing
+- ✅ blarg/mem_timing-2/03-modify_timing
+- ✅ blarg/oam_bug/1-lcd_sync
+- ❌ blarg/oam_bug/2-causes
+- ✅ blarg/oam_bug/3-non_causes
+- ❌ blarg/oam_bug/4-scanline_timing
+- ❌ blarg/oam_bug/5-timing_bug
+- ✅ blarg/oam_bug/6-timing_no_bug
+- ❌ blarg/oam_bug/7-timing_effect
+- ❌ blarg/oam_bug/8-instr_effect
+- ✅ mooneye/acceptance/add_sp_e_timing
+- ✅ mooneye/acceptance/bits/mem_oam
+- ✅ mooneye/acceptance/bits/reg_f
+- ❌ mooneye/acceptance/bits/unused_hwio
+- ❌ mooneye/acceptance/boot_div2-S
+- ❌ mooneye/acceptance/boot_div-dmg0
+- ❌ mooneye/acceptance/boot_div-dmgABCmgb
+- ❌ mooneye/acceptance/boot_div-S
+- ❌ mooneye/acceptance/boot_hwio-dmg0
+- ❌ mooneye/acceptance/boot_hwio-dmgABCmgb
+- ❌ mooneye/acceptance/boot_hwio-S
+- ❌ mooneye/acceptance/boot_regs-dmg0
+- ✅ mooneye/acceptance/boot_regs-dmgABC
+- ❌ mooneye/acceptance/boot_regs-mgb
+- ❌ mooneye/acceptance/boot_regs-sgb
+- ❌ mooneye/acceptance/boot_regs-sgb2
+- ✅ mooneye/acceptance/call_cc_timing
+- ✅ mooneye/acceptance/call_cc_timing2
+- ✅ mooneye/acceptance/call_timing
+- ✅ mooneye/acceptance/call_timing2
+- ✅ mooneye/acceptance/di_timing-GS
+- ✅ mooneye/acceptance/div_timing
+- ✅ mooneye/acceptance/ei_sequence
+- ✅ mooneye/acceptance/ei_timing
+- ✅ mooneye/acceptance/halt_ime0_ei
+- ✅ mooneye/acceptance/halt_ime0_nointr_timing
+- ✅ mooneye/acceptance/halt_ime1_timing
+- ✅ mooneye/acceptance/halt_ime1_timing2-GS
+- ✅ mooneye/acceptance/if_ie_registers
+- ✅ mooneye/acceptance/instr/daa
+- ✅ mooneye/acceptance/interrupts/ie_push
+- ✅ mooneye/acceptance/intr_timing
+- ✅ mooneye/acceptance/jp_cc_timing
+- ✅ mooneye/acceptance/jp_timing
+- ✅ mooneye/acceptance/ld_hl_sp_e_timing
+- ✅ mooneye/acceptance/oam_dma/basic
+- ✅ mooneye/acceptance/oam_dma/reg_read
+- ✅ mooneye/acceptance/oam_dma/sources-GS
+- ✅ mooneye/acceptance/oam_dma_restart
+- ✅ mooneye/acceptance/oam_dma_start
+- ✅ mooneye/acceptance/oam_dma_timing
+- ✅ mooneye/acceptance/pop_timing
+- ✅ mooneye/acceptance/ppu/hblank_ly_scx_timing-GS
+- ✅ mooneye/acceptance/ppu/intr_1_2_timing-GS
+- ✅ mooneye/acceptance/ppu/intr_2_0_timing
+- ✅ mooneye/acceptance/ppu/intr_2_mode0_timing
+- ✅ mooneye/acceptance/ppu/intr_2_mode0_timing_sprites
+- ✅ mooneye/acceptance/ppu/intr_2_mode3_timing
+- ✅ mooneye/acceptance/ppu/intr_2_oam_ok_timing
+- ✅ mooneye/acceptance/ppu/lcdon_timing-GS
+- ✅ mooneye/acceptance/ppu/lcdon_write_timing-GS
+- ✅ mooneye/acceptance/ppu/stat_irq_blocking
+- ✅ mooneye/acceptance/ppu/stat_lyc_onoff
+- ✅ mooneye/acceptance/ppu/vblank_stat_intr-GS
+- ✅ mooneye/acceptance/push_timing
+- ✅ mooneye/acceptance/rapid_di_ei
+- ✅ mooneye/acceptance/ret_cc_timing
+- ✅ mooneye/acceptance/ret_timing
+- ✅ mooneye/acceptance/reti_intr_timing
+- ✅ mooneye/acceptance/reti_timing
+- ✅ mooneye/acceptance/rst_timing
+- ❌ mooneye/acceptance/serial/boot_sclk_align-dmgABCmgb
+- ✅ mooneye/acceptance/timer/div_write
+- ✅ mooneye/acceptance/timer/rapid_toggle
+- ✅ mooneye/acceptance/timer/tim00
+- ✅ mooneye/acceptance/timer/tim00_div_trigger
+- ✅ mooneye/acceptance/timer/tim01
+- ✅ mooneye/acceptance/timer/tim01_div_trigger
+- ✅ mooneye/acceptance/timer/tim10
+- ✅ mooneye/acceptance/timer/tim10_div_trigger
+- ✅ mooneye/acceptance/timer/tim11
+- ✅ mooneye/acceptance/timer/tim11_div_trigger
+- ✅ mooneye/acceptance/timer/tima_reload
+- ✅ mooneye/acceptance/timer/tima_write_reloading
+- ✅ mooneye/acceptance/timer/tma_write_reloading
