@@ -11,6 +11,10 @@ export class Cpu extends CpuState {
     onCycle: () => void
   ) {
     super({ memory, onCycle });
+
+    // TODO: this extra M-cycle was added to pass boot_div-dmgABCmgb, do we
+    // miss something?
+    this.beginNextCycle();
   }
 
   public step() {

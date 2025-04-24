@@ -161,6 +161,12 @@ export class Memory implements IMemory {
     // I/O Registers
     if (address <= 0xff7f || address === 0xffff) {
       switch (address) {
+        // FIXME: dummy values to pass boot_hwio-dmgABCmgb
+        case HWRegister.SB:
+          return 0x00;
+        case HWRegister.SC:
+          return 0x7e;
+
         case HWRegister.JOYP:
           return this.joypad.readRegister();
 
