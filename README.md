@@ -30,7 +30,7 @@ Yet another Game Boy emulator written for web. Work in progress.
 - ✅ blarg/dmg_sound/11-regs after power
 - ❌ blarg/dmg_sound/12-wave write while on
 - ✅ blarg/instr_timing
-- ❌ blarg/interrupt_time
+- 🟡 blarg/interrupt_time (requires CGB)
 - ✅ blarg/mem_timing/01-read_timing
 - ✅ blarg/mem_timing/02-write_timing
 - ✅ blarg/mem_timing/03-modify_timing
@@ -49,18 +49,18 @@ Yet another Game Boy emulator written for web. Work in progress.
 - ✅ mooneye/acceptance/bits/mem_oam
 - ✅ mooneye/acceptance/bits/reg_f
 - ❌ mooneye/acceptance/bits/unused_hwio
-- ❌ mooneye/acceptance/boot_div2-S
-- ❌ mooneye/acceptance/boot_div-dmg0
+- 🟡 mooneye/acceptance/boot_div2-S (requires SGB)
+- 🟡 mooneye/acceptance/boot_div-dmg0 (requires DMG 0)
 - ❌ mooneye/acceptance/boot_div-dmgABCmgb
-- ❌ mooneye/acceptance/boot_div-S
-- ❌ mooneye/acceptance/boot_hwio-dmg0
+- 🟡 mooneye/acceptance/boot_div-S (requires SGB)
+- 🟡 mooneye/acceptance/boot_hwio-dmg0 (requires DMG 0)
 - ❌ mooneye/acceptance/boot_hwio-dmgABCmgb
-- ❌ mooneye/acceptance/boot_hwio-S
-- ❌ mooneye/acceptance/boot_regs-dmg0
+- 🟡 mooneye/acceptance/boot_hwio-S (requires SGB)
+- 🟡 mooneye/acceptance/boot_regs-dmg0 (requires DMG 0)
 - ✅ mooneye/acceptance/boot_regs-dmgABC
-- ❌ mooneye/acceptance/boot_regs-mgb
-- ❌ mooneye/acceptance/boot_regs-sgb
-- ❌ mooneye/acceptance/boot_regs-sgb2
+- 🟡 mooneye/acceptance/boot_regs-mgb (requires MGB)
+- 🟡 mooneye/acceptance/boot_regs-sgb (requires SGB)
+- 🟡 mooneye/acceptance/boot_regs-sgb2 (requires SGB2)
 - ✅ mooneye/acceptance/call_cc_timing
 - ✅ mooneye/acceptance/call_cc_timing2
 - ✅ mooneye/acceptance/call_timing
