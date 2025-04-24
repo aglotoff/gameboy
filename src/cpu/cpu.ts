@@ -19,6 +19,12 @@ export class Cpu extends CpuState {
         this.beginNextCycle();
       } else {
         this.executeNextInstruction();
+
+        if (this.isHaltBug()) {
+          // HALT mode is not entered, but the CPU fails to increase PC
+          this.setHalted(false);
+          return;
+        }
       }
 
       this.processInterruptRequests();
@@ -59,6 +65,14 @@ export class Cpu extends CpuState {
     }
 
     return instruction;
+  }
+
+  private isHaltBug() {
+    return (
+      this.isHalted() &&
+      !this.isInterruptMasterEnabled() &&
+      this.interruptController.hasPendingInterrupt()
+    );
   }
 
   private processInterruptRequests() {

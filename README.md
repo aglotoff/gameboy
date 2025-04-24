@@ -16,7 +16,7 @@ Yet another Game Boy emulator written for web. Work in progress.
 - ✅ blarg/cpu_instrs/09-op r,r
 - ✅ blarg/cpu_instrs/10-bit ops
 - ✅ blarg/cpu_instrs/11-op a,(hl)
-- ❌ blarg/halt_bug
+- ✅ blarg/halt_bug
 - ✅ blarg/dmg_sound/01-registers
 - ✅ blarg/dmg_sound/02-len ctr
 - ✅ blarg/dmg_sound/03-trigger
