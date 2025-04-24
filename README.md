@@ -48,7 +48,7 @@ Yet another Game Boy emulator written for web. Work in progress.
 - ✅ mooneye/acceptance/add_sp_e_timing
 - ✅ mooneye/acceptance/bits/mem_oam
 - ✅ mooneye/acceptance/bits/reg_f
-- ❌ mooneye/acceptance/bits/unused_hwio
+- ✅ mooneye/acceptance/bits/unused_hwio
 - 🟡 mooneye/acceptance/boot_div2-S (requires SGB)
 - 🟡 mooneye/acceptance/boot_div-dmg0 (requires DMG 0)
 - ❌ mooneye/acceptance/boot_div-dmgABCmgb

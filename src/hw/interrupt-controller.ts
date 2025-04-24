@@ -5,11 +5,11 @@ const INTERRUPT_SOURCE_MASK = 0b00011111;
 const INTERRUPT_SOURCE_UNUSED_MASK = 0b11100000;
 
 export class InterruptController {
-  private enableRegister = INTERRUPT_SOURCE_UNUSED_MASK;
+  private enableRegister = 0;
   private flagRegister = INTERRUPT_SOURCE_UNUSED_MASK;
 
   public reset() {
-    this.enableRegister = INTERRUPT_SOURCE_UNUSED_MASK;
+    this.enableRegister = 0;
     this.flagRegister = INTERRUPT_SOURCE_UNUSED_MASK;
   }
 
@@ -18,7 +18,7 @@ export class InterruptController {
   }
 
   public setEnableRegister(enable: number) {
-    this.enableRegister = enable | INTERRUPT_SOURCE_UNUSED_MASK;
+    this.enableRegister = enable;
   }
 
   public getFlagRegister() {
