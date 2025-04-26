@@ -12,6 +12,9 @@ class TestMemory implements IMemory {
   public write(address: number, data: number) {
     this.ram[address] = data;
   }
+
+  public triggerWrite() {}
+  public triggerIncrementRead() {}
 }
 
 export const testInstruction = test.extend({

@@ -1,4 +1,4 @@
-import { makeWord, testBit } from "../../utils";
+import { getLSB, getMSB, makeWord, testBit } from "../../utils";
 
 export type DMAReadFn = (address: number) => number;
 
@@ -38,6 +38,7 @@ export class OAM {
   private currentDMAIndex = 0;
   private nextDMASource = 0;
 
+  private row = 0;
   private readLocked = false;
   private writeLocked = false;
 
@@ -57,6 +58,10 @@ export class OAM {
     this.nextDMASource = 0;
     this.readLocked = false;
     this.writeLocked = false;
+  }
+
+  public setActiveRow(activeRow: number) {
+    this.row = activeRow;
   }
 
   public lockRead() {
@@ -80,7 +85,14 @@ export class OAM {
   }
 
   public read(offset: number) {
-    return this.dmaInProgress || this.readLocked ? 0xff : this.data[offset];
+    this.triggerRead();
+
+    // Not Usable
+    if (offset > 0x9f || this.dmaInProgress || this.readLocked) {
+      return 0xff;
+    }
+
+    return this.data[offset];
   }
 
   public getEntry(index: number): OAMEntry {
@@ -101,8 +113,98 @@ export class OAM {
   }
 
   public write(offset: number, data: number) {
-    if (!this.dmaInProgress && !this.writeLocked) {
-      this.data[offset] = data;
+    this.triggerWrite();
+
+    if (offset > 0x9f || this.dmaInProgress || this.writeLocked) {
+      return;
+    }
+
+    this.data[offset] = data;
+  }
+
+  public triggerWrite() {
+    if (this.row !== 0) {
+      const a = makeWord(this.data[this.row * 8], this.data[this.row * 8 + 1]);
+      const b = makeWord(
+        this.data[(this.row - 1) * 8 + 0],
+        this.data[(this.row - 1) * 8 + 1]
+      );
+      const c = makeWord(
+        this.data[(this.row - 1) * 8 + 4],
+        this.data[(this.row - 1) * 8 + 5]
+      );
+
+      const value = ((a ^ c) & (b ^ c)) ^ c;
+
+      this.data[this.row * 8 + 0] = getMSB(value);
+      this.data[this.row * 8 + 1] = getLSB(value);
+      this.data[this.row * 8 + 2] = this.data[(this.row - 1) * 8 + 2];
+      this.data[this.row * 8 + 3] = this.data[(this.row - 1) * 8 + 3];
+      this.data[this.row * 8 + 4] = this.data[(this.row - 1) * 8 + 4];
+      this.data[this.row * 8 + 5] = this.data[(this.row - 1) * 8 + 5];
+      this.data[this.row * 8 + 6] = this.data[(this.row - 1) * 8 + 6];
+      this.data[this.row * 8 + 7] = this.data[(this.row - 1) * 8 + 7];
+    }
+  }
+
+  public triggerIncrementRead() {
+    if (this.row >= 4 && this.row < 19) {
+      const a = makeWord(
+        this.data[(this.row - 2) * 8 + 0],
+        this.data[(this.row - 2) * 8 + 1]
+      );
+      const b = makeWord(
+        this.data[(this.row - 1) * 8 + 0],
+        this.data[(this.row - 1) * 8 + 1]
+      );
+      const c = makeWord(
+        this.data[this.row * 8 + 0],
+        this.data[this.row * 8 + 1]
+      );
+      const d = makeWord(
+        this.data[(this.row - 1) * 8 + 4],
+        this.data[(this.row - 1) * 8 + 5]
+      );
+
+      const value = (b & (a | c | d)) | (a & c & d);
+
+      this.data[(this.row - 1) * 8 + 0] = getMSB(value);
+      this.data[(this.row - 1) * 8 + 1] = getLSB(value);
+
+      for (let i = 0; i < 8; i++) {
+        this.data[this.row * 8 + i] = this.data[(this.row - 1) * 8 + i];
+        this.data[(this.row - 2) * 8 + i] = this.data[(this.row - 1) * 8 + i];
+      }
+    }
+  }
+
+  public triggerRead() {
+    if (this.row !== 0) {
+      console.log("reiggered read", this.row);
+
+      const a = makeWord(this.data[this.row * 8], this.data[this.row * 8 + 1]);
+      const b = makeWord(
+        this.data[(this.row - 1) * 8],
+        this.data[(this.row - 1) * 8 + 1]
+      );
+      const c = makeWord(
+        this.data[(this.row - 1) * 8 + 4],
+        this.data[(this.row - 1) * 8 + 5]
+      );
+
+      const value = b | (a & c);
+
+      // this.data[(this.row - 1) * 8 + 0] = getMSB(value);
+      // this.data[(this.row - 1) * 8 + 1] = getLSB(value);
+
+      this.data[this.row * 8 + 0] = getMSB(value);
+      this.data[this.row * 8 + 1] = getLSB(value);
+      this.data[this.row * 8 + 2] = this.data[(this.row - 1) * 8 + 2];
+      this.data[this.row * 8 + 3] = this.data[(this.row - 1) * 8 + 3];
+      this.data[this.row * 8 + 4] = this.data[(this.row - 1) * 8 + 4];
+      this.data[this.row * 8 + 5] = this.data[(this.row - 1) * 8 + 5];
+      this.data[this.row * 8 + 6] = this.data[(this.row - 1) * 8 + 6];
+      this.data[this.row * 8 + 7] = this.data[(this.row - 1) * 8 + 7];
     }
   }
 

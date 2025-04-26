@@ -101,11 +101,15 @@ export function checkCondition(cpu: CpuState, condition: Condition) {
 
 export function pushWord(cpu: CpuState, data: number) {
   let address = cpu.readRegisterPair(RegisterPair.SP);
+
+  cpu.triggerMemoryWrite(address);
   address = wrappingDecrementWord(address);
 
   cpu.beginNextCycle();
 
   cpu.writeMemory(address, getMSB(data));
+
+  cpu.triggerMemoryWrite(address);
   address = wrappingDecrementWord(address);
 
   cpu.beginNextCycle();
@@ -117,7 +121,9 @@ export function pushWord(cpu: CpuState, data: number) {
 export function popWord(cpu: CpuState) {
   let address = cpu.readRegisterPair(RegisterPair.SP);
 
+  cpu.triggerMemoryIncrementRead(address);
   const lsb = cpu.readMemory(address);
+
   address = wrappingIncrementWord(address);
 
   cpu.writeRegisterPair(RegisterPair.SP, address);
@@ -125,6 +131,7 @@ export function popWord(cpu: CpuState) {
   cpu.beginNextCycle();
 
   const msb = cpu.readMemory(address);
+
   address = wrappingIncrementWord(address);
 
   cpu.writeRegisterPair(RegisterPair.SP, address);

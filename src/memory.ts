@@ -142,20 +142,12 @@ export class Memory implements IMemory {
 
   public read(address: number): number {
     if (address <= 0xfdff) {
-      // if (this.oam.isDMAInProgress()) {
-      //   return 0xff;
-      // }
       return this.readDMA(address);
     }
 
     // Object attribute memory (OAM)
-    if (address <= 0xfe9f) {
-      return this.oam.read(address - 0xfe00);
-    }
-
-    // Not Usable
     if (address <= 0xfeff) {
-      return 0xff;
+      return this.oam.read(address - 0xfe00);
     }
 
     // I/O Registers
@@ -329,19 +321,28 @@ export class Memory implements IMemory {
     this.wram[(address - 0xc000) & 0x1fff] = data;
   }
 
+  public triggerWrite(address: number) {
+    if (address >= 0xfe00 && address <= 0xfeff) {
+      // Object attribute memory (OAM)
+      return this.oam.triggerWrite();
+    }
+  }
+
+  public triggerIncrementRead(address: number) {
+    if (address >= 0xfe00 && address <= 0xfeff) {
+      // Object attribute memory (OAM)
+      return this.oam.triggerIncrementRead();
+    }
+  }
+
   public write(address: number, data: number) {
     if (address <= 0xfdff) {
       return this.writeDMA(address, data);
     }
 
-    if (address <= 0xfe9f) {
+    if (address <= 0xfeff) {
       // Object attribute memory (OAM)
       return this.oam.write(address - 0xfe00, data);
-    }
-
-    if (address <= 0xfeff) {
-      // Not Usable
-      return;
     }
 
     if (address <= 0xff7f || address === 0xffff) {

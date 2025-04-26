@@ -4,6 +4,8 @@ import { makeWord, wrappingIncrementWord } from "../utils";
 export interface IMemory {
   read(address: number): number;
   write(address: number, data: number): void;
+  triggerWrite(address: number): void;
+  triggerIncrementRead(address: number): void;
 }
 
 export interface CpuStateOptions {
@@ -80,6 +82,14 @@ export class CpuState {
 
   public writeMemory(address: number, data: number) {
     this.memory.write(address, data);
+  }
+
+  public triggerMemoryWrite(address: number) {
+    this.memory.triggerWrite(address);
+  }
+
+  public triggerMemoryIncrementRead(address: number) {
+    this.memory.triggerIncrementRead(address);
   }
 
   public setHalted(halted: boolean) {

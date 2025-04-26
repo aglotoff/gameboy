@@ -398,10 +398,13 @@ export class PPU {
       }
 
       this.checkOAMEntry(entryIdx);
+
+      this.oam.setActiveRow(Math.floor((entryIdx + 1) / 2));
     } else if (this.dot === OAM_SCAN_TICKS - 1) {
       this.objBuffer.sort((o1, o2) => o1.xPosition - o2.xPosition);
 
       this.setMode(PPUMode.Drawing);
+      this.oam.setActiveRow(0);
       this.vramReadLocked = true;
     }
   }

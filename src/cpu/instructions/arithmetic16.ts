@@ -19,20 +19,26 @@ import {
 
 export const incrementRegisterPair = makeInstruction(
   (cpu, pair: RegisterPair) => {
+    cpu.triggerMemoryWrite(cpu.readRegisterPair(pair));
+
     cpu.writeRegisterPair(
       pair,
       wrappingIncrementWord(cpu.readRegisterPair(pair))
     );
+
     cpu.beginNextCycle();
   }
 );
 
 export const decrementRegisterPair = makeInstruction(
   (cpu, pair: RegisterPair) => {
+    cpu.triggerMemoryWrite(cpu.readRegisterPair(pair));
+
     cpu.writeRegisterPair(
       pair,
       wrappingDecrementWord(cpu.readRegisterPair(pair))
     );
+
     cpu.beginNextCycle();
   }
 );

@@ -38,13 +38,13 @@ Yet another Game Boy emulator written for web. Work in progress.
 - ✅ blarg/mem_timing-2/02-write_timing
 - ✅ blarg/mem_timing-2/03-modify_timing
 - ✅ blarg/oam_bug/1-lcd_sync
-- ❌ blarg/oam_bug/2-causes
+- ✅ blarg/oam_bug/2-causes
 - ✅ blarg/oam_bug/3-non_causes
-- ❌ blarg/oam_bug/4-scanline_timing
-- ❌ blarg/oam_bug/5-timing_bug
+- ✅ blarg/oam_bug/4-scanline_timing
+- ✅ blarg/oam_bug/5-timing_bug
 - ✅ blarg/oam_bug/6-timing_no_bug
 - ❌ blarg/oam_bug/7-timing_effect
-- ❌ blarg/oam_bug/8-instr_effect
+- ✅ blarg/oam_bug/8-instr_effect
 - ✅ mooneye/acceptance/add_sp_e_timing
 - ✅ mooneye/acceptance/bits/mem_oam
 - ✅ mooneye/acceptance/bits/reg_f

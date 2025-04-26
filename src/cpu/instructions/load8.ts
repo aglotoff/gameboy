@@ -126,6 +126,7 @@ export const loadAccumulatorFromIndirectHLDecrement = makeInstruction((cpu) => {
   const address = cpu.readRegisterPair(RegisterPair.HL);
   const data = cpu.readMemory(address);
 
+  cpu.triggerMemoryIncrementRead(address);
   cpu.writeRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
 
   cpu.beginNextCycle();
@@ -137,6 +138,7 @@ export const loadAccumulatorFromIndirectHLIncrement = makeInstruction((cpu) => {
   const address = cpu.readRegisterPair(RegisterPair.HL);
   const data = cpu.readMemory(address);
 
+  cpu.triggerMemoryIncrementRead(address);
   cpu.writeRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
 
   cpu.beginNextCycle();
@@ -148,6 +150,7 @@ export const loadIndirectHLDecrementFromAccumulator = makeInstruction((cpu) => {
   const address = cpu.readRegisterPair(RegisterPair.HL);
   cpu.writeMemory(address, cpu.readRegister(Register.A));
 
+  cpu.triggerMemoryWrite(address);
   cpu.writeRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
 
   cpu.beginNextCycle();
@@ -157,6 +160,7 @@ export const loadIndirectHLIncrementFromAccumulator = makeInstruction((cpu) => {
   const address = cpu.readRegisterPair(RegisterPair.HL);
   cpu.writeMemory(address, cpu.readRegister(Register.A));
 
+  cpu.triggerMemoryWrite(address);
   cpu.writeRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
 
   cpu.beginNextCycle();
