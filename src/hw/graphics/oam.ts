@@ -180,8 +180,6 @@ export class OAM {
 
   public triggerRead() {
     if (this.row !== 0) {
-      console.log("reiggered read", this.row);
-
       const a = makeWord(this.data[this.row * 8], this.data[this.row * 8 + 1]);
       const b = makeWord(
         this.data[(this.row - 1) * 8],

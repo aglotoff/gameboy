@@ -1,9 +1,6 @@
 import { testBit } from "../../utils";
 import { PPU } from "./ppu";
 
-const TILE_HIGH = 0x9c00 - 0x8000;
-const TILE_LOW = 0x9800 - 0x8000;
-
 export class PPURegisters {
   private controlRegister = 0;
 
@@ -19,11 +16,11 @@ export class PPURegisters {
 
     this.ppu.setBGAndWindowEnabled(testBit(value, 0));
     this.ppu.setObjEnabled(testBit(value, 1));
-    this.ppu.setObjHeight(testBit(value, 2) ? 16 : 8);
-    this.ppu.setBGTileMapArea(testBit(value, 3) ? TILE_HIGH : TILE_LOW);
-    this.ppu.setBgAndWindowTileBase(testBit(value, 4) ? 0x0000 : 0x1000);
+    this.ppu.setObjHeight(value & (1 << 2) ? 16 : 8);
+    this.ppu.setBGTileMapArea(value & (1 << 3) ? 1 : 0);
+    this.ppu.setBgAndWindowTileBase(value & (1 << 4) ? 0x0000 : 0x1000);
     this.ppu.setWindowEnabled(testBit(value, 5));
-    this.ppu.setWindowTileMapArea(testBit(value, 6) ? TILE_HIGH : TILE_LOW);
+    this.ppu.setWindowTileMapArea(value & (1 << 6) ? 1 : 0);
     this.ppu.setIsEnabled(testBit(value, 7));
   }
 

@@ -1,14 +1,12 @@
 import { resetBit, setBit, testBit } from "../../utils";
 import { OAM, OAM_TOTAL_OBJECTS, OAMEntry } from "./oam";
+import { VRAM } from "./vram";
 
 const LCD_WIDTH = 160;
 const LCD_HEIGHT = 144;
 
 const DOTS_PER_SCANLINE = 456;
 const SCANLINES_PER_FRAME = 154;
-
-const VRAM_BASE = 0x8000;
-const VRAM_SIZE = 0x2000;
 
 const TICKS_PER_OAM_ENTRY = 2;
 const OAM_SCAN_TICKS = TICKS_PER_OAM_ENTRY * OAM_TOTAL_OBJECTS;
@@ -47,11 +45,6 @@ export interface ILCD {
 }
 
 export class PPU {
-  // VRAM
-  private vram = new Uint8Array(VRAM_SIZE);
-  private vramReadLocked = false;
-  private vramWriteLocked = false;
-
   // Registers
   private statusRegister = 0;
   private scanlineToCompare = 0;
@@ -105,12 +98,13 @@ export class PPU {
   public constructor(
     private lcd: ILCD,
     private oam: OAM,
+    private vram: VRAM,
     private onVBlank: () => void,
     private onStat: () => void
   ) {}
 
   public reset() {
-    this.bgTileMapArea = 0x9800 - VRAM_BASE;
+    this.bgTileMapArea = 0;
     this.objHeight = 8;
     this.isObjEnabled = false;
     this.isBGAndWindowEnabled = false;
@@ -130,13 +124,11 @@ export class PPU {
     this.windowLineCounter = 0;
     this.windowTriggered = false;
     this.dot = 0;
-    this.vram = new Uint8Array(VRAM_SIZE);
+    this.vram.reset();
     this.statusRegister = 0;
     this.objBuffer.splice(0);
     this.oam.unlockRead();
     this.oam.unlockWrite();
-    this.vramReadLocked = false;
-    this.vramWriteLocked = false;
     this.objBuffer = [];
     this.bgQueue = [];
     this.objQueue = [];
@@ -144,7 +136,7 @@ export class PPU {
     this.inWindow = false;
     this.xPosition = 0;
     this.bgXSkip = 0;
-    this.windowTileMapArea = 0x9800 - VRAM_BASE;
+    this.windowTileMapArea = 0;
     this.bgAndWindowTileBase = 0x1000;
     this.isWindowEnabled = false;
 
@@ -172,16 +164,6 @@ export class PPU {
     };
   }
 
-  public readVRAM(offset: number) {
-    return !this.vramReadLocked ? this.vram[offset] : 0xff;
-  }
-
-  public writeVRAM(offset: number, value: number) {
-    if (!this.vramWriteLocked) {
-      this.vram[offset] = value;
-    }
-  }
-
   public setIsEnabled(enabled: boolean) {
     const wasEnabled = this.isEnabled;
     this.isEnabled = enabled;
@@ -192,14 +174,15 @@ export class PPU {
       this.mode = PPUMode.HBlank;
       this.statusRegister &= ~STAT_MODE_MASK;
       this.objBuffer.splice(0);
+
       this.oam.unlockRead();
       this.oam.unlockWrite();
-      this.vramReadLocked = false;
-      this.vramWriteLocked = false;
+      this.vram.unlockRead();
+      this.vram.unlockWrite();
     }
   }
 
-  private windowTileMapArea = 0x9800 - VRAM_BASE;
+  private windowTileMapArea = 0;
 
   public setWindowTileMapArea(base: number) {
     this.windowTileMapArea = base;
@@ -211,7 +194,7 @@ export class PPU {
     this.isWindowEnabled = enabled;
   }
 
-  private bgTileMapArea = 0x9800 - VRAM_BASE;
+  private bgTileMapArea = 0;
 
   public setBGTileMapArea(area: number) {
     this.bgTileMapArea = area;
@@ -341,8 +324,8 @@ export class PPU {
       this.objBuffer.splice(0);
       this.oam.unlockRead();
       this.oam.unlockWrite();
-      this.vramReadLocked = false;
-      this.vramWriteLocked = false;
+      this.vram.unlockRead();
+      this.vram.unlockWrite();
       return;
     }
 
@@ -405,7 +388,7 @@ export class PPU {
 
       this.setMode(PPUMode.Drawing);
       this.oam.setActiveRow(0);
-      this.vramReadLocked = true;
+      this.vram.lockRead();
     }
   }
 
@@ -450,10 +433,11 @@ export class PPU {
       this.objFetcher.current = null;
       this.objFetcher.ready = [];
       this.objFetcher.step = 0;
+
       this.oam.lockRead();
       this.oam.lockWrite();
-      this.vramReadLocked = true;
-      this.vramWriteLocked = true;
+      this.vram.lockRead();
+      this.vram.lockWrite();
 
       this.windowTriggered = false;
 
@@ -625,43 +609,31 @@ export class PPU {
   }
 
   private fetchWindowTileNo(x: number, y: number) {
-    const tileIndex = this.getTileIndex(x, y);
-    return this.vram[this.windowTileMapArea + tileIndex];
+    return this.vram.readTileMap(this.windowTileMapArea, x, y);
   }
 
   private fetchBackgroundTileNo(x: number, y: number) {
-    const tileIndex = this.getTileIndex(x, y);
-    return this.vram[this.bgTileMapArea + tileIndex];
-  }
-
-  private getTileIndex(x: number, y: number) {
-    const tileX = Math.floor((x % 256) / 8) % 32;
-    const tileY = Math.floor((y % 256) / 8);
-    return (tileY * 32 + tileX) % 1024;
+    return this.vram.readTileMap(this.bgTileMapArea, x, y);
   }
 
   private fetchWindowTileDataLow(tileNo: number, y: number) {
     const base = this.getBgAndWindowTileBase(tileNo);
-    const lineOffset = y % 8;
-    return this.vram[base + lineOffset * 2];
+    return this.vram.readTileDataLow(base, y);
   }
 
   private fetchBackgroundTileDataLow(tileNo: number, y: number) {
     const base = this.getBgAndWindowTileBase(tileNo);
-    const lineOffset = y % 8;
-    return this.vram[base + lineOffset * 2];
+    return this.vram.readTileDataLow(base, y);
   }
 
   private fetchWindowTileDataHigh(tileNo: number, y: number) {
     const base = this.getBgAndWindowTileBase(tileNo);
-    const lineOffset = y % 8;
-    return this.vram[base + lineOffset * 2 + 1];
+    return this.vram.readTileDataHigh(base, y);
   }
 
   private fetchBackgroundTileDataHigh(tileNo: number, y: number) {
     const base = this.getBgAndWindowTileBase(tileNo);
-    const lineOffset = y % 8;
-    return this.vram[base + lineOffset * 2 + 1];
+    return this.vram.readTileDataHigh(base, y);
   }
 
   private bgAndWindowTileBase = 0x1000;
@@ -672,10 +644,10 @@ export class PPU {
 
   private getBgAndWindowTileBase(tileNo: number) {
     if (tileNo > 127) {
-      return 0x0800 + (tileNo % 128) * BYTES_PER_TILE;
+      return Math.floor(0x0800 / BYTES_PER_TILE) + (tileNo % 128);
     }
 
-    return this.bgAndWindowTileBase + tileNo * BYTES_PER_TILE;
+    return Math.floor(this.bgAndWindowTileBase / BYTES_PER_TILE) + tileNo;
   }
 
   private objFetcherTick() {
@@ -689,20 +661,20 @@ export class PPU {
 
     switch (this.objFetcher.step) {
       case 0:
-        this.objFetcher.tileNo = this.fetchObjectTileNo(
-          this.objFetcher.current!
-        );
+        this.objFetcher.tileNo = this.getObjectTileNo(this.objFetcher.current!);
         break;
       case 2:
         this.objFetcher.dataLow = this.fetchObjectTileDataLow(
           this.objFetcher.current!,
-          this.objFetcher.tileNo
+          this.objFetcher.tileNo,
+          this.scanline
         );
         break;
       case 4:
         this.objFetcher.dataHigh = this.fetchObjectTileDataHigh(
           this.objFetcher.current!,
-          this.objFetcher.tileNo
+          this.objFetcher.tileNo,
+          this.scanline
         );
 
         break;
@@ -753,7 +725,7 @@ export class PPU {
     this.objFetcher.step += 1;
   }
 
-  private fetchObjectTileNo(obj: OAMEntry) {
+  private getObjectTileNo(obj: OAMEntry) {
     const size = this.objHeight;
 
     const objY = obj.yPosition;
@@ -769,29 +741,25 @@ export class PPU {
       : obj.tileIndex;
   }
 
-  private fetchObjectTileDataLow(obj: OAMEntry, tileNo: number) {
-    const offset = this.getObjectTileDataOffset(obj, tileNo);
-    return this.vram[offset];
+  private fetchObjectTileDataLow(obj: OAMEntry, tileNo: number, y: number) {
+    const top = this.getObjectTileDataOffset(obj, y);
+    return this.vram.readTileDataLow(tileNo, top);
   }
 
-  private fetchObjectTileDataHigh(obj: OAMEntry, tileNo: number) {
-    const offset = this.getObjectTileDataOffset(obj, tileNo);
-    return this.vram[offset + 1];
+  private fetchObjectTileDataHigh(obj: OAMEntry, tileNo: number, y: number) {
+    const top = this.getObjectTileDataOffset(obj, y);
+    return this.vram.readTileDataHigh(tileNo, top);
   }
 
-  private getObjectTileDataOffset(obj: OAMEntry, tileNo: number) {
+  private getObjectTileDataOffset(obj: OAMEntry, y: number) {
     const size = this.objHeight;
 
     const objY = obj.yPosition;
 
     const flipY = obj.flipY;
-    const tileY = Math.floor(this.scanline - objY);
+    const tileY = y - objY;
 
-    const top = flipY ? size - 1 - tileY : tileY;
-
-    const off = tileNo * 16;
-
-    return off + (top % 8) * 2;
+    return flipY ? size - 1 - tileY : tileY;
   }
 
   private fetchObjectColor(
@@ -834,8 +802,8 @@ export class PPU {
       return;
     }
 
-    this.vramReadLocked = false;
-    this.vramWriteLocked = false;
+    this.vram.unlockRead();
+    this.vram.unlockWrite();
     this.oam.unlockRead();
     this.oam.unlockWrite();
 

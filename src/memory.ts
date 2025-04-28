@@ -7,6 +7,7 @@ import { Joypad } from "./hw/joypad";
 import { SystemCounter } from "./hw/system-counter";
 import { getMSB } from "./utils";
 import { APURegisters } from "./hw/audio/apu-registers";
+import { VRAM } from "./hw/graphics/vram";
 
 let buf = "";
 
@@ -86,10 +87,11 @@ export class Memory implements IMemory {
   private ppuRegs: PPURegisters;
 
   public constructor(
-    private ppu: PPU,
+    ppu: PPU,
     private interruptController: InterruptController,
     private timer: TimerRegisters,
     private oam: OAM,
+    private vram: VRAM,
     private joypad: Joypad,
     private apu: APURegisters,
     private systemCounter: SystemCounter
@@ -128,7 +130,7 @@ export class Memory implements IMemory {
 
     // 8 KiB Video RAM (VRAM)
     if (address <= 0x9fff) {
-      return this.ppu.readVRAM(address - 0x8000);
+      return this.vram.read(address - 0x8000);
     }
 
     // 8 KiB External RAM
@@ -309,7 +311,7 @@ export class Memory implements IMemory {
 
     if (address <= 0x9fff) {
       // 8 KiB Video RAM (VRAM)
-      return this.ppu.writeVRAM(address - 0x8000, data);
+      return this.vram.write(address - 0x8000, data);
     }
 
     if (address <= 0xbfff) {

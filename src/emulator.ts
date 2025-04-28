@@ -13,6 +13,7 @@ import { WaveChannel } from "./hw/audio/wave-channel";
 import { NoiseChannel } from "./hw/audio/noise-channel";
 import { APURegisters } from "./hw/audio/apu-registers";
 import { APUChannels } from "./hw/audio/apu";
+import { VRAM } from "./hw/graphics/vram";
 
 export enum InterruptSource {
   VBlank = 0,
@@ -57,6 +58,7 @@ export class Emulator {
   private cpu: Cpu;
   private interruptController: InterruptController;
   private oam: OAM;
+  private vram: VRAM;
   private timer: Timer;
   private ppu: PPU;
   private apu: APU;
@@ -71,9 +73,12 @@ export class Emulator {
       readCallback: (address): number => this.memory.readDMA(address),
     });
 
+    this.vram = new VRAM();
+
     this.ppu = new PPU(
       lcd,
       this.oam,
+      this.vram,
       () => {
         this.interruptController.requestInterrupt(InterruptSource.VBlank);
       },
@@ -110,6 +115,7 @@ export class Emulator {
       this.interruptController,
       new TimerRegisters(this.timer),
       this.oam,
+      this.vram,
       this.joypad,
       apuRegs,
       this.systemCounter
