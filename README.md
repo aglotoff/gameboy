@@ -43,7 +43,7 @@ Yet another Game Boy emulator written for web. Work in progress.
 - ✅ blarg/oam_bug/4-scanline_timing
 - ✅ blarg/oam_bug/5-timing_bug
 - ✅ blarg/oam_bug/6-timing_no_bug
-- ❌ blarg/oam_bug/7-timing_effect
+- ✅ blarg/oam_bug/7-timing_effect (this ROM seems to be broken, but the aggregate oam_bug ROM succeeds)
 - ✅ blarg/oam_bug/8-instr_effect
 - ✅ mooneye/acceptance/add_sp_e_timing
 - ✅ mooneye/acceptance/bits/mem_oam
