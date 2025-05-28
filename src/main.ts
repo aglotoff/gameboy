@@ -90,12 +90,11 @@ async function readImage(file: File) {
 
   canvas.focus();
 
-  if (current == null) {
-    current = new Emulator(lcd);
-  } else {
-    current.reset();
+  if (current != null) {
+    current.destroy();
   }
 
+  current = new Emulator(lcd);
   current.run(cartridge);
 }
 

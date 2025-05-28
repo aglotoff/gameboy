@@ -20,12 +20,6 @@ export class VRAM {
   private isReadLocked = false;
   private isWriteLocked = false;
 
-  public reset() {
-    this.memory = new Uint8Array(VRAM_SIZE);
-    this.isReadLocked = false;
-    this.isWriteLocked = false;
-  }
-
   public readTileDataLow(tileNo: number, y: number) {
     return this.memory[this.getTileDataOffset(tileNo, y)];
   }

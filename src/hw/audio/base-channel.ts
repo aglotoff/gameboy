@@ -28,6 +28,10 @@ export abstract class BaseChannel<ChannelType extends IAudioChannel> {
     this.chan.setVolume(0);
   }
 
+  public destroy() {
+    this.chan.destroy();
+  }
+
   public getVolume() {
     return this.currentVolume;
   }

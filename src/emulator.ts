@@ -214,17 +214,8 @@ export class Emulator {
     }, 16);
   }
 
-  public reset() {
-    this.systemCounter.reset();
-    this.cpu.reset();
-    this.apu.reset();
-    this.interruptController.reset();
-    this.ppu.reset();
-    this.oam.reset();
-    this.timer.reset();
-    this.memory.reset();
-    this.joypad.reset();
-
+  public destroy() {
+    this.apu.destroy();
     clearInterval(this.timeout);
   }
 

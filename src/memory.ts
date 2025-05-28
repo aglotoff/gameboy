@@ -99,16 +99,6 @@ export class Memory implements IMemory {
     this.ppuRegs = new PPURegisters(ppu);
   }
 
-  public reset() {
-    this.wram = new Uint8Array(0x2000);
-    this.hram = new Uint8Array(0x80);
-    this.bootROMDisabled = false;
-    this.mbc = null;
-
-    this.ppuRegs.lcdc = 0;
-    this.timer.tac = 0;
-  }
-
   public setMBC(mbc: MBC) {
     this.mbc = mbc;
   }

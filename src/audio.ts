@@ -72,6 +72,7 @@ export class WebAudio {
 }
 
 export interface IAudioChannel {
+  destroy(): void;
   setVolume(volume: number): void;
 }
 
@@ -89,6 +90,13 @@ export class WebWaveChannel implements IAudioChannel {
     this.oscillator.connect(this.gainNode);
 
     this.oscillator.start();
+  }
+
+  public destroy() {
+    this.oscillator.stop();
+
+    this.gainNode.disconnect();
+    this.oscillator.disconnect();
   }
 
   public connect(destination: GainNode) {
@@ -215,6 +223,13 @@ export class WebAudioChannel implements IAudioChannel {
     this.oscillator.start();
   }
 
+  public destroy() {
+    this.oscillator.stop();
+
+    this.gainNode.disconnect();
+    this.oscillator.disconnect();
+  }
+
   public connect(destination: GainNode) {
     this.gainNode.connect(destination);
   }
@@ -297,6 +312,13 @@ export class WebNoiseChannel implements IAudioChannel {
 
   private buffer7: AudioBuffer | null = null;
   private buffer15: AudioBuffer | null = null;
+
+  public destroy() {
+    this.source.stop();
+
+    this.gainNode.disconnect();
+    this.source.disconnect();
+  }
 
   private createBuffer(width: number) {
     let lfsr = 127;

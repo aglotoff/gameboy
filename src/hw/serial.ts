@@ -14,7 +14,7 @@ export class Serial {
   private outByte: number = 0;
   private inByte: number = 0;
   private isTransferring: boolean = false;
-  private inputClockMask = 1 << 9;
+  private inputClockMask = 1 << 8;
   private prevInputClockSignal = false;
 
   public constructor(
@@ -80,14 +80,5 @@ export class Serial {
     this.isTransferring = true;
     this.transferBits = 0;
     this.outByte = this.sb;
-  }
-
-  public reset(): void {
-    this.sb = 0x00;
-    this.sc = 0x7e;
-    this.isTransferring = false;
-    this.transferBits = 0;
-    this.outByte = 0;
-    this.inByte = 0;
   }
 }

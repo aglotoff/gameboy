@@ -22,16 +22,6 @@ export class Timer {
     private onInterruptRequest = () => {}
   ) {}
 
-  public reset() {
-    this.counterEnabled = false;
-    this.counter = 0;
-    this.modulo = 0;
-    this.inputClockMask = DEFAULT_INPUT_CLOCK_MASK;
-    this.prevInputClockSignal = false;
-    this.reloadDelay = 0;
-    this.isReloading = false;
-  }
-
   public getCounter() {
     return this.counter;
   }

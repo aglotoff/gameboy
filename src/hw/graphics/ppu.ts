@@ -103,67 +103,6 @@ export class PPU {
     private onStat: () => void
   ) {}
 
-  public reset() {
-    this.bgTileMapArea = 0;
-    this.objHeight = 8;
-    this.isObjEnabled = false;
-    this.isBGAndWindowEnabled = false;
-    this.isEnabled = false;
-    this.statusRegister = 0;
-    this.scanline = 0;
-    this.scanlineToCompare = 0;
-    this.viewportY = 0;
-    this.viewportX = 0;
-    this.windowY = 0;
-    this.windowX = 0;
-    this.bgPalette = 0;
-    this.objPalette0 = 0;
-    this.objPalette1 = 0;
-    this.statInterruptLine = false;
-    this.mode = 0;
-    this.windowLineCounter = 0;
-    this.windowTriggered = false;
-    this.dot = 0;
-    this.vram.reset();
-    this.statusRegister = 0;
-    this.objBuffer.splice(0);
-    this.oam.unlockRead();
-    this.oam.unlockWrite();
-    this.objBuffer = [];
-    this.bgQueue = [];
-    this.objQueue = [];
-    this.bgXPosition = 0;
-    this.inWindow = false;
-    this.xPosition = 0;
-    this.bgXSkip = 0;
-    this.windowTileMapArea = 0;
-    this.bgAndWindowTileBase = 0x1000;
-    this.isWindowEnabled = false;
-
-    this.statModeDelay = 0;
-    this.irqModeDelay = 0;
-    this.irqMode = 0;
-
-    this.bgFetcher = {
-      step: 0,
-      tileNo: 0,
-      dataLow: 0,
-      dataHigh: 0,
-      busy: false,
-      ready: [] as Pixel[],
-    };
-
-    this.objFetcher = {
-      step: 0,
-      tileNo: 0,
-      dataLow: 0,
-      dataHigh: 0,
-      busy: false,
-      ready: [] as Pixel[],
-      current: null as OAMEntry | null,
-    };
-  }
-
   public setIsEnabled(enabled: boolean) {
     const wasEnabled = this.isEnabled;
     this.isEnabled = enabled;

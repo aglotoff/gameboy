@@ -24,16 +24,6 @@ export class CpuState {
   private memory: IMemory;
   private onCycle: () => void;
 
-  public reset() {
-    this.regs = new RegisterFile();
-    this.ime = false;
-    this.halted = false;
-    this.stopped = false;
-    this.elapsedCycles = 0;
-    this.opcode = 0;
-    this.imeNext = false;
-  }
-
   public constructor({ memory, onCycle }: CpuStateOptions) {
     this.memory = memory;
     this.onCycle = onCycle;

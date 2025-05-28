@@ -31,15 +31,11 @@ export class APU {
     private channels: APUChannels
   ) {}
 
-  public reset() {
-    this.channels[0].reset();
-    this.channels[1].reset();
-    this.channels[2].reset();
-    this.channels[3].reset();
-
-    this.divApu = 0;
-    this.lastDividerBit = false;
-    this.nr51 = 0;
+  public destroy() {
+    this.channels[0].destroy();
+    this.channels[1].destroy();
+    this.channels[2].destroy();
+    this.channels[3].destroy();
   }
 
   public getSoundPanning() {

@@ -30,12 +30,6 @@ export class Joypad {
 
   public constructor(private onPress = () => {}) {}
 
-  public reset() {
-    this.actionButtons = 0;
-    this.directionButtons = 0;
-    this.selectedButtons = 0;
-  }
-
   writeRegister(data: number) {
     this.selectedButtons = data & WRITEONLY_MASK;
   }

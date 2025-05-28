@@ -8,11 +8,6 @@ export class InterruptController {
   private enableRegister = 0;
   private flagRegister = INTERRUPT_SOURCE_UNUSED_MASK;
 
-  public reset() {
-    this.enableRegister = 0;
-    this.flagRegister = INTERRUPT_SOURCE_UNUSED_MASK;
-  }
-
   public getEnableRegister() {
     return this.enableRegister;
   }
