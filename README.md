@@ -50,15 +50,15 @@ Yet another Game Boy emulator written for web. Work in progress.
 - ✅ mooneye/acceptance/bits/reg_f
 - ✅ mooneye/acceptance/bits/unused_hwio
 - 🟡 mooneye/acceptance/boot_div2-S (requires SGB)
-- 🟡 mooneye/acceptance/boot_div-dmg0 (requires DMG 0)
+- ✅ mooneye/acceptance/boot_div-dmg0 (requires DMG 0)
 - ✅ mooneye/acceptance/boot_div-dmgABCmgb
 - 🟡 mooneye/acceptance/boot_div-S (requires SGB)
-- 🟡 mooneye/acceptance/boot_hwio-dmg0 (requires DMG 0)
+- ✅ mooneye/acceptance/boot_hwio-dmg0 (requires DMG 0)
 - ✅ mooneye/acceptance/boot_hwio-dmgABCmgb
 - 🟡 mooneye/acceptance/boot_hwio-S (requires SGB)
-- 🟡 mooneye/acceptance/boot_regs-dmg0 (requires DMG 0)
+- ✅ mooneye/acceptance/boot_regs-dmg0 (requires DMG 0)
 - ✅ mooneye/acceptance/boot_regs-dmgABC
-- 🟡 mooneye/acceptance/boot_regs-mgb (requires MGB)
+- ✅ mooneye/acceptance/boot_regs-mgb (requires MGB)
 - 🟡 mooneye/acceptance/boot_regs-sgb (requires SGB)
 - 🟡 mooneye/acceptance/boot_regs-sgb2 (requires SGB2)
 - ✅ mooneye/acceptance/call_cc_timing

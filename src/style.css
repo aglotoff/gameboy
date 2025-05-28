@@ -108,3 +108,7 @@ button:focus-visible {
 #file-selector:disabled ~ button {
   display: none;
 }
+
+#type-select {
+  margin-bottom: 1rem;
+}

@@ -15,6 +15,8 @@ import { APURegisters } from "./hw/audio/apu-registers";
 import { APUChannels } from "./hw/audio/apu";
 import { VRAM } from "./hw/graphics/vram";
 import { Serial } from "./hw/serial";
+import { EmulatorType } from "./types";
+import bootRoms from "./boot-roms";
 
 export enum InterruptSource {
   VBlank = 0,
@@ -70,7 +72,7 @@ export class Emulator {
   private systemCounter: SystemCounter;
   private serial: Serial;
 
-  public constructor(lcd: ILCD) {
+  public constructor(type: EmulatorType, lcd: ILCD) {
     this.interruptController = new InterruptController();
 
     this.oam = new OAM({
@@ -138,7 +140,8 @@ export class Emulator {
       this.joypad,
       apuRegs,
       this.systemCounter,
-      this.serial
+      this.serial,
+      bootRoms[type]
     );
 
     this.cpu = new Cpu(this.memory, this.interruptController, () =>

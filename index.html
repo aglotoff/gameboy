@@ -1,27 +1,38 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + TS</title>
-  </head>
-  <body>
-    <div id="app">
 
-      <input type="file" id="file-selector" style="display: none" required>
-      <button id="file-btn" onclick="document.getElementById('file-selector').click()">Upload a ROM file</button>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vite + TS</title>
+</head>
 
-      <div class="help">
-        <p><b>Enter</b> - Start</p>
-        <p><b>Space</b> - Select</p>
-        <p><b>Z, X</b> - Actions</p>
-        <p><b>Arrows</b> - Movement</p>
-      </div>
+<body>
+  <div id="app">
+    <label> Type:
+
+      <select id="type-select">
+        <option value="DMG0">DMG0</option>
+        <option value="DMG" selected>DMG</option>
+        <option value="MGB">MGB</option>
+        <option value="SGB" disabled>SGB</option>
+        <option value="SGB2" disabled>SGB2</option>
+      </select>
+    </label>
+
+    <input type="file" id="file-selector" style="display: none" required>
+    <button id="file-btn" onclick="document.getElementById('file-selector').click()">Upload a ROM file</button>
+
+    <div class="help">
+      <p><b>Enter</b> - Start</p>
+      <p><b>Space</b> - Select</p>
+      <p><b>Z, X</b> - Actions</p>
+      <p><b>Arrows</b> - Movement</p>
     </div>
+  </div>
 
-    
-    
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+
 </html>

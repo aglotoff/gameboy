@@ -5,6 +5,7 @@ import { ActionButton, DirectionButton } from "./hw/joypad";
 import { LCD } from "./lcd";
 
 import "./style.css";
+import { EmulatorType } from "./types";
 
 const canvas = document.createElement("canvas");
 canvas.width = 160 * 2;
@@ -17,6 +18,7 @@ const context = canvas.getContext("2d")!;
 const lcd = new LCD(context);
 
 let current: Emulator | null = null;
+let type: EmulatorType = "DMG";
 
 window.addEventListener(
   "keydown",
@@ -94,19 +96,24 @@ async function readImage(file: File) {
     current.destroy();
   }
 
-  current = new Emulator(lcd);
+  current = new Emulator(type, lcd);
   current.run(cartridge);
+  typeSelect.disabled = true;
 }
+
+const typeSelect = document.getElementById("type-select") as HTMLSelectElement;
+type = typeSelect.value as EmulatorType;
+typeSelect.addEventListener("change", () => {
+  type = typeSelect.value as EmulatorType;
+});
+
+const fileSelector = document.getElementById("file-selector")!;
+fileSelector.addEventListener("change", (event) => {
+  const fileList = (event.target as HTMLInputElement).files!;
+  readImage(fileList[0]);
+});
 
 const app = document.getElementById("app");
 if (app != null) {
-  app.insertBefore(canvas, app.firstChild);
-}
-
-const fileSelector = document.getElementById("file-selector");
-if (fileSelector != null) {
-  fileSelector.addEventListener("change", (event) => {
-    const fileList = (event.target as HTMLInputElement).files!;
-    readImage(fileList[0]);
-  });
+  app.insertBefore(canvas, fileSelector);
 }
