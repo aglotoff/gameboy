@@ -106,7 +106,7 @@ Yet another Game Boy emulator written for web. Work in progress.
 - ✅ mooneye/acceptance/reti_intr_timing
 - ✅ mooneye/acceptance/reti_timing
 - ✅ mooneye/acceptance/rst_timing
-- ❌ mooneye/acceptance/serial/boot_sclk_align-dmgABCmgb
+- ✅ mooneye/acceptance/serial/boot_sclk_align-dmgABCmgb
 - ✅ mooneye/acceptance/timer/div_write
 - ✅ mooneye/acceptance/timer/rapid_toggle
 - ✅ mooneye/acceptance/timer/tim00

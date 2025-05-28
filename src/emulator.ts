@@ -14,6 +14,7 @@ import { NoiseChannel } from "./hw/audio/noise-channel";
 import { APURegisters } from "./hw/audio/apu-registers";
 import { APUChannels } from "./hw/audio/apu";
 import { VRAM } from "./hw/graphics/vram";
+import { Serial } from "./hw/serial";
 
 export enum InterruptSource {
   VBlank = 0,
@@ -54,6 +55,8 @@ const cartridgeTypes: Partial<Record<number, string>> = {
   [0xff]: "HuC1+RAM+BATTERY",
 };
 
+let buf = "";
+
 export class Emulator {
   private cpu: Cpu;
   private interruptController: InterruptController;
@@ -65,6 +68,7 @@ export class Emulator {
   private memory: Memory;
   private joypad: Joypad;
   private systemCounter: SystemCounter;
+  private serial: Serial;
 
   public constructor(lcd: ILCD) {
     this.interruptController = new InterruptController();
@@ -110,6 +114,21 @@ export class Emulator {
       this.interruptController.requestInterrupt(InterruptSource.Joypad)
     );
 
+    this.serial = new Serial(this.systemCounter, (data) => {
+      if (data == 10) {
+        if (buf.length > 0) {
+          console.log(buf);
+        }
+        buf = "";
+      } else {
+        buf += String.fromCharCode(data);
+      }
+
+      this.interruptController.requestInterrupt(InterruptSource.Serial);
+
+      return 0;
+    });
+
     this.memory = new Memory(
       this.ppu,
       this.interruptController,
@@ -118,7 +137,8 @@ export class Emulator {
       this.vram,
       this.joypad,
       apuRegs,
-      this.systemCounter
+      this.systemCounter,
+      this.serial
     );
 
     this.cpu = new Cpu(this.memory, this.interruptController, () =>
@@ -133,6 +153,7 @@ export class Emulator {
       this.oam.tick();
       this.ppu.tick();
       this.apu.tick();
+      this.serial.tick();
     }
   }
 

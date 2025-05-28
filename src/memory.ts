@@ -8,8 +8,7 @@ import { SystemCounter } from "./hw/system-counter";
 import { getMSB } from "./utils";
 import { APURegisters } from "./hw/audio/apu-registers";
 import { VRAM } from "./hw/graphics/vram";
-
-let buf = "";
+import { Serial } from "./hw/serial";
 
 export enum HWRegister {
   JOYP = 0xff00,
@@ -94,7 +93,8 @@ export class Memory implements IMemory {
     private vram: VRAM,
     private joypad: Joypad,
     private apu: APURegisters,
-    private systemCounter: SystemCounter
+    private systemCounter: SystemCounter,
+    private serial: Serial
   ) {
     this.ppuRegs = new PPURegisters(ppu);
   }
@@ -157,9 +157,9 @@ export class Memory implements IMemory {
       switch (address) {
         // FIXME: dummy values to pass boot_hwio-dmgABCmgb
         case HWRegister.SB:
-          return 0x00;
+          return this.serial.getTransferData();
         case HWRegister.SC:
-          return 0x7e;
+          return this.serial.getTransferControl();
 
         case HWRegister.JOYP:
           return this.joypad.readRegister();
@@ -352,16 +352,14 @@ export class Memory implements IMemory {
       switch (address) {
         case HWRegister.JOYP:
           return this.joypad.writeRegister(data);
+
         case HWRegister.SB:
-          if (data == 10) {
-            if (buf.length > 0) {
-              console.log(buf);
-            }
-            buf = "";
-          } else {
-            buf += String.fromCharCode(data);
-          }
+          this.serial.setTransferData(data);
           break;
+        case HWRegister.SC:
+          this.serial.setTransferControl(data);
+          break;
+
         case HWRegister.DMA:
           return this.oam.startDMA(data);
 
