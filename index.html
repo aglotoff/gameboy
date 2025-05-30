@@ -11,21 +11,27 @@
 <body>
   <div id="app">
     <div class="gameboy">
-      <div class="gameboy__header">
-        <div class="gameboy__header-inner">
-          <label> Type:
-
+      <div class="controls">
+        <p><label> Model:
             <select id="type-select">
               <option value="DMG0">DMG0</option>
               <option value="DMG" selected>DMG</option>
               <option value="MGB">MGB</option>
-              <option value="SGB" disabled>SGB</option>
-              <option value="SGB2" disabled>SGB2</option>
+              <!-- <option value="SGB" disabled>SGB</option>
+              <option value="SGB2" disabled>SGB2</option> -->
             </select>
-          </label>
-
+          </label></p>
+        <p>
           <input type="file" id="file-selector" style="display: none" required>
           <button id="file-btn" onclick="document.getElementById('file-selector').click()">Upload a ROM file</button>
+        </p>
+
+
+      </div>
+
+      <div class="gameboy__header">
+        <div class="gameboy__header-inner">
+
         </div>
       </div>
 
@@ -97,7 +103,7 @@
       </div>
 
       <div class="help">
-        <h2 class="help__title">Controls</h2>
+        <h2 class="help__title">Hotkeys</h2>
         <p><b>Enter</b> - Start</p>
         <p><b>Space</b> - Select</p>
         <p><b>Z, X</b> - Actions</p>

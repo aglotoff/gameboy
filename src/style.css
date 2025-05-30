@@ -12,15 +12,6 @@ button {
   cursor: pointer;
 }
 
-.help {
-  position: absolute;
-  left: 100%;
-  top: 2rem;
-  padding: 1.5rem;
-  color: #ffffff;
-  margin-left: 2.5rem;
-  opacity: 0.8;
-}
 
 #app {
   position: relative;
@@ -323,6 +314,13 @@ body {
 }
 
 .help {
+  position: absolute;
+  left: 100%;
+  top: 2rem;
+  padding: 1.5rem;
+  color: #ffffff;
+  margin-left: 2.5rem;
+  opacity: 0.8;
   width: 300px;
   padding: 2rem 2rem 1.5rem 2rem;
   background: linear-gradient(135deg, #f8fafc 80%, #e2e8f0 100%);
@@ -354,4 +352,74 @@ body {
 .help p {
   margin: 0.5em 0;
   font-size: 1.08em;
+}
+
+.controls {
+  position: absolute;
+  right: 100%;
+  margin-top: 2rem;
+  margin-right: 2rem;
+  width: 340px;
+  color: #eee;
+  /* background: linear-gradient(135deg, #f8fafc 80%, #e2e8f0 100%); */
+  border-radius: 18px;
+  box-shadow: 0 6px 32px 0 rgba(0,0,0,0.18), 0 1.5px 4px 0 rgba(0,0,0,0.10);
+  /* border: 1.5px solid #e0e7ef; */
+  padding: 2rem 2rem 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  font-size: 1.15rem;
+}
+
+.controls label {
+  font-size: 1.15em;
+  font-weight: 600;
+  color: #e0e7ef;
+}
+
+.controls select {
+  font-size: 1.1em;
+  padding: 0.5em 1.2em;
+  border-radius: 8px;
+  border: 1.5px solid #cbd5e1;
+  background: #fff;
+  color: #222;
+  margin-left: 0.5em;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  box-shadow: 0 1px 4px 0 rgba(0,0,0,0.04);
+  transition: border 0.2s;
+}
+
+.controls select:focus {
+  border: 1.5px solid #204A87;
+  outline: none;
+}
+
+.controls button {
+  font-size: 1.1em;
+  padding: 0.7em 1.5em;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  border: 1px solid #e0e7ef;
+  font-weight: 700;
+  box-shadow: 0 2px 8px 0 rgba(32,74,135,0.08);
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.controls button:hover, .controls button:focus {
+  background: #444444;
+  /* background: linear-gradient(90deg, #5C3566 60%, #204A87 100%); */
+  box-shadow: 0 4px 16px 0 rgba(32,74,135,0.13);
+  outline: none;
+}
+
+.controls p {
+  margin: 0 0 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 1em;
 }
