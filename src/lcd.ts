@@ -16,6 +16,7 @@ export class LCD implements ILCD {
     this.setImagePixel(x * 2 + 1, y * 2, color);
     this.setImagePixel(x * 2, y * 2 + 1, color);
     this.setImagePixel(x * 2 + 1, y * 2 + 1, color);
+    //this.setImagePixel(x, y, color);
   }
 
   private setImagePixel(x: number, y: number, color: number) {

@@ -7,12 +7,13 @@ import { LCD } from "./lcd";
 import "./style.css";
 import { EmulatorType } from "./types";
 
-const canvas = document.createElement("canvas");
-canvas.width = 160 * 2;
-canvas.tabIndex = -1;
-canvas.height = 144 * 2;
-canvas.style.margin = "0 0 32px";
-canvas.style.border = "1px solid gray";
+// const canvas = document.createElement("canvas");
+// canvas.width = 160 * 2;
+// canvas.tabIndex = -1;
+// canvas.height = 144 * 2;
+// canvas.style.margin = "0 0 32px";
+// canvas.style.border = "1px solid gray";
+const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const context = canvas.getContext("2d")!;
 
 const lcd = new LCD(context);
@@ -86,6 +87,86 @@ window.addEventListener(
   false
 );
 
+const arrowUp = document.querySelector(
+  ".gameboy__arrow_up"
+) as HTMLButtonElement;
+arrowUp.addEventListener("mousedown", () =>
+  current?.pressDirectionButton(DirectionButton.Up)
+);
+arrowUp.addEventListener("mouseup", () =>
+  current?.releaseDirectionButton(DirectionButton.Up)
+);
+
+const arrowLeft = document.querySelector(
+  ".gameboy__arrow_left"
+) as HTMLButtonElement;
+arrowLeft.addEventListener("mousedown", () =>
+  current?.pressDirectionButton(DirectionButton.Left)
+);
+arrowLeft.addEventListener("mouseup", () =>
+  current?.releaseDirectionButton(DirectionButton.Left)
+);
+
+const arrowRight = document.querySelector(
+  ".gameboy__arrow_right"
+) as HTMLButtonElement;
+arrowRight.addEventListener("mousedown", () =>
+  current?.pressDirectionButton(DirectionButton.Right)
+);
+arrowRight.addEventListener("mouseup", () =>
+  current?.releaseDirectionButton(DirectionButton.Right)
+);
+
+const arrowDown = document.querySelector(
+  ".gameboy__arrow_right"
+) as HTMLButtonElement;
+arrowDown.addEventListener("mousedown", () =>
+  current?.pressDirectionButton(DirectionButton.Down)
+);
+arrowDown.addEventListener("mouseup", () =>
+  current?.releaseDirectionButton(DirectionButton.Down)
+);
+
+const actionStart = document.querySelector(
+  ".gameboy__action_start"
+) as HTMLButtonElement;
+actionStart.addEventListener("mousedown", () =>
+  current?.pressActionButton(ActionButton.Start)
+);
+actionStart.addEventListener("mouseup", () =>
+  current?.releaseActionButton(ActionButton.Start)
+);
+
+const actionSelect = document.querySelector(
+  ".gameboy__action_select"
+) as HTMLButtonElement;
+actionSelect.addEventListener("mousedown", () =>
+  current?.pressActionButton(ActionButton.Select)
+);
+actionSelect.addEventListener("mouseup", () =>
+  current?.releaseActionButton(ActionButton.Select)
+);
+
+const actionA = document.querySelector(
+  ".gameboy__action_a"
+) as HTMLButtonElement;
+actionA.addEventListener("mousedown", () =>
+  current?.pressActionButton(ActionButton.A)
+);
+actionA.addEventListener("mouseup", () =>
+  current?.releaseActionButton(ActionButton.A)
+);
+
+const actionB = document.querySelector(
+  ".gameboy__action_b"
+) as HTMLButtonElement;
+actionB.addEventListener("mousedown", () =>
+  current?.pressActionButton(ActionButton.B)
+);
+actionB.addEventListener("mouseup", () =>
+  current?.releaseActionButton(ActionButton.B)
+);
+
 async function readImage(file: File) {
   const buffer = await file.arrayBuffer();
   const cartridge = new Cartridge(buffer);
@@ -98,6 +179,12 @@ async function readImage(file: File) {
 
   current = new Emulator(type, lcd);
   current.run(cartridge);
+
+  const batteryIndicator = document.querySelector(
+    ".gameboy__battery-indicator"
+  )!;
+  batteryIndicator.classList.add("gameboy__battery-indicator_active");
+
   typeSelect.disabled = true;
 }
 
@@ -112,8 +199,3 @@ fileSelector.addEventListener("change", (event) => {
   const fileList = (event.target as HTMLInputElement).files!;
   readImage(fileList[0]);
 });
-
-const app = document.getElementById("app");
-if (app != null) {
-  app.insertBefore(canvas, fileSelector);
-}

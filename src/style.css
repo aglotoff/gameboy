@@ -1,114 +1,357 @@
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
   background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-#app {
   box-sizing: border-box;
-  max-width: 1280px;
-  margin: 0 auto;;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 4rem;
+  font-family: 'Segoe UI', Arial, sans-serif;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.vanilla:hover {
-  filter: drop-shadow(0 0 2em #3178c6aa);
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+*, *::before, *::after {
+  box-sizing: inherit;
 }
 
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
 }
 
 .help {
-  margin-top: 2rem;
-  width: 320px;
+  position: absolute;
+  left: 100%;
+  top: 2rem;
+  padding: 1.5rem;
+  color: #ffffff;
+  margin-left: 2.5rem;
+  opacity: 0.8;
+}
+
+#app {
+  position: relative;
+  min-height: 100vh;
+  padding: 1rem;
+  z-index: 100;
+}
+
+body {
+  background-repeat: no-repeat;
+  background-position: top 8px center;
+  background-size: 620px auto;
+  padding: 0px 0 0;
+  margin: 0;
+}
+
+.gameboy {
+  position: relative;
+  margin: 0 auto;
+  width: 36.5em;
+  display: flex;
+  flex-direction: column;
+
+  border-radius: 1.5em 1.5em 6em 0.5em;
+  height: 61em;
+  
+  background: #BABDB6;
+}
+
+.gameboy__header {
+  padding: 0 2.5em;
+  border-bottom: 0.25em solid #555753;
+}
+
+.gameboy__header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-left: 0.25em solid #555753;
+  border-right: 0.25em solid #555753;
+  height: 3em;
+  gap: 1em;
+}
+
+.gameboy__screen-wrap {
+  position: relative;
+  margin: 1.75em 0 0 2em;
+  border: 1px solid #888A85;
+  width: 32em;
+  display: flex;
+  flex-direction: column;
+  padding: 0.75em 1.75em 3em;
+  border-radius: 1.25em 1.25em 4.5em 1.25em;
+  flex: 0 0 auto;
+  background: gray;
+}
+
+.gameboy__screen-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.875em;
+  letter-spacing: 0.1em;
+
+  color: #ffffff;
+  text-transform: uppercase;
+
+}
+
+.gameboy__screen-label::before,
+.gameboy__screen-label::after {
+  content: "";
+  height: 1em;
+  border-bottom: 0.25em solid #204A87;
+  border-top: 0.25em solid #5C3566;
+}
+
+.gameboy__screen-label::before {
+  flex: 1 1 0;
+  margin-right: 1em;
+}
+
+.gameboy__screen-label::after {
+  flex: 0 0 auto;
+  width: 3.5em;
+  margin-left: 1em;
+}
+
+.gameboy__screen {
+  margin: 0 auto;
+  border: 1px solid #000000;
+  margin-top: 0.75em;
+  border-radius: 0.25em;
+  width: 20em;
+  height: 18em;
+  background: #88c070;
+  outline: none !important;
+}
+
+.gameboy__battery-indicator {
+  position: absolute;
+  top: 10em;
+  left: 1.5em;
+  text-transform: uppercase;
+  font-size: 0.875em;
+  letter-spacing: 0.1em;
+  color: #ffffff;
+}
+
+.gameboy__battery-indicator::before {
+  content: "";
+  display: block;
+  width: 1em;
+  height: 1em;
+  border-radius: 50%;
+  margin-left: 0.75em;
+  margin-bottom: 0.25em;
+  background: #870000;
+  transition: all 0.15s linear;
+  box-shadow: inset #441313 0 -1px 9px;
+}
+
+.gameboy__battery-indicator_active::before {
+  background: #ff0000;
+  box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #441313 0 -1px 9px, rgba(255, 0, 0, 0.5) 0 2px 12px;
+}
+
+.gameboy__logo {
+  display: flex;
+  margin-top: 0.75em;
+  margin-left: 2.25em;
+  color: #204A87;
+  font-weight: 700;
+}
+
+.gameboy__logo-nintendo {
+  font-size: 1.75em;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  margin-top: auto;
+}
+
+.gameboy__logo-svg {
+  margin-left: 0.25em;
+  width: 12em;
+  position: relative;
+}
+
+.gameboy__logo-tm {
+  margin-top: auto;
+  line-height: 1;
+  position: relative;
+  left: -0.25em;
+  font-size: 1.125em;
+  /* bottom: -0.125em; */
+/*   
+  font-size: 1.125em; */
+}
+
+.gameboy__controls {
+  display: flex;
+  margin-left: 2.5em;
+  margin-top: 5em;
+  margin-right: 3em;
+}
+
+.gameboy__arrows {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr 1fr;
+}
+
+.gameboy__arrows::before {
+  content: "";
+  grid-row: 2;
+  grid-column: 2;
+  z-index: 2;
+}
+
+.gameboy__arrows::before,
+.gameboy__arrow {
+  position: relative;
+  width: 3.25em;
+  height: 3.25em;
+  background: #25292B;
+  border: 0;
+  outline: 0;
+  padding: 0;
+  font-size: inherit;
+  box-shadow: 0.375em 0.25em 0 0 #555753;
+}
+
+.gameboy__arrow_up {
+  z-index: 1;
+  grid-row: 1;
+  grid-column: 2;
+  border-radius: 0.25em 0.25em 0 0;
+}
+
+.gameboy__arrow_left {
+  z-index: 1;
+  grid-row: 2;
+  grid-column: 1;
+  border-radius: 0.25em 0 0 0.25em;
+}
+
+.gameboy__arrow_right {
+  z-index: 3;
+  grid-row: 2;
+  grid-column: 3;
+  border-radius: 0 0.25em 0.25em 0;
+}
+
+.gameboy__arrow_down {
+  z-index: 3;
+  grid-row: 3;
+  grid-column: 2;
+  border-radius: 0 0 0.25em 0.25em;
+}
+
+.gameboy__actions {
+  align-items: start;
+  display: flex;
+  flex: 1 1;
+  transform: rotate(-30deg);
+  transform-origin: top right;
+  margin-left: -6em;
+}
+
+.gameboy__pill-btn {
+  width: 4.75em;
+  font: inherit;
+  padding: 0;
+  border: 0;
+  background: #51534F;
+  height: 1em;
+  border-radius: 0.5em;
+  margin-left: 0.5em;
+  margin-right: 0.5em;
+}
+
+.gameboy__pill-btn-label {
+  position: relative;
+  top: 1.25em;
+  text-transform: uppercase;
+  color: #204A87;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+}
+
+.gameboy__action_select {
+  margin-top: 3em;
+}
+
+.gameboy__action_start {
+  margin-top: 6em;
+}
+
+.gameboy__round-btn {
+  width: 4.5em;
+  font: inherit;
+  padding: 0;
+  border: 0;
+  background: #593363;
+  height: 4.5em;
+  border-radius: 2.125em;
+}
+
+.gameboy__action_b {
+  margin-left: auto;
+}
+
+.gameboy__action_a {
+  margin-left: 2em;
+}
+
+.gameboy__round-btn-label {
+  position: relative;
+  top: 2.25em;
+  text-transform: uppercase;
+  font-size: 1.75em;
+  color: #204A87;
+  font-weight: 700;
+}
+
+.gameboy__speaker {
+  display: flex;
+  margin-left: auto;
+  margin-right: 1em;
+  margin-top: 2em;
+  gap: 1em;
+  transform: rotate(-30deg);
+  transform-origin: bottom right;
+}
+
+.gameboy__speaker-hole {
+  height: 6em;
+  width: 1em;
+  background: #51534F;
+  border-radius: 0.5em;
+}
+
+.help {
+  width: 300px;
+  padding: 2rem 2rem 1.5rem 2rem;
+  background: linear-gradient(135deg, #f8fafc 80%, #e2e8f0 100%);
+  color: #222;
+  border-radius: 18px;
+  box-shadow: 0 6px 32px 0 rgba(0,0,0,0.18), 0 1.5px 4px 0 rgba(0,0,0,0.10);
+  border: 1.5px solid #e0e7ef;
+  font-size: 1.15rem;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+  text-align: left;
+  transition: box-shadow 0.2s;
+}
+
+.help:hover, .help:focus-within {
+  box-shadow: 0 8px 40px 0 rgba(0,0,0,0.22), 0 2px 8px 0 rgba(0,0,0,0.13);
+}
+
+.help__title {
+  margin-top: 0;
+  margin-bottom: 1.2rem;
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #2d3748;
+  text-shadow: 0 1px 0 #fff, 0 2px 8px rgba(0,0,0,0.04);
 }
 
 .help p {
-  margin: 0.25rem 0;
-}
-
-#file-selector:disabled ~ button {
-  display: none;
-}
-
-#type-select {
-  margin-bottom: 1rem;
+  margin: 0.5em 0;
+  font-size: 1.08em;
 }
