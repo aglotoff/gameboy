@@ -5,7 +5,7 @@ import { testCpuState } from "../test-lib";
 
 import {
   addRegisterPair,
-  addToStackPointer,
+  addOffsetToStackPointer,
   decrementRegisterPair,
   incrementRegisterPair,
 } from "./arithmetic16";
@@ -53,11 +53,11 @@ describe("16-bit arithmetic instructions", () => {
     expect(state.getElapsedCycles()).toBe(4);
   });
 
-  testCpuState("ADD SP,e", ({ state }) => {
+  testCpuState("ADD SP,e8", ({ state }) => {
     state.writeRegisterPair(RegisterPair.SP, 0xfff8);
     state.writeMemory(0, 0x2);
 
-    addToStackPointer(state);
+    addOffsetToStackPointer(state);
 
     expect(state.readRegisterPair(RegisterPair.SP)).toBe(0xfffa);
     expect(state.getFlag(Flag.H)).toBe(false);

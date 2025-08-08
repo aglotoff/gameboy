@@ -14,7 +14,7 @@ class TestMemory implements IMemory {
   }
 
   public triggerWrite() {}
-  public triggerIncrementRead() {}
+  public triggerReadWrite() {}
 }
 
 export const testCpuState = test.extend({

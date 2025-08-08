@@ -298,10 +298,10 @@ export class Memory implements IMemory {
     }
   }
 
-  public triggerIncrementRead(address: number) {
+  public triggerReadWrite(address: number) {
     if (address >= 0xfe00 && address <= 0xfeff) {
       // Object attribute memory (OAM)
-      return this.oam.triggerIncrementRead();
+      return this.oam.triggerReadWrite();
     }
   }
 

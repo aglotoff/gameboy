@@ -4,18 +4,18 @@ import { Flag, Register } from "../register";
 import { testCpuState } from "../test-lib";
 
 import {
-  addImmediate,
-  addImmediateWithCarry,
-  addIndirectHL,
-  addIndirectHLWithCarry,
-  addRegister,
-  addRegisterWithCarry,
-  andImmediate,
-  andIndirectHL,
-  andRegister,
-  compareImmediate,
-  compareIndirectHL,
-  compareRegister,
+  addImmediateToAccumulator,
+  addImmediateToAccumulatorWithCarry,
+  addIndirectHLToAccumulator,
+  addIndirectHLToAccumulatorWithCarry,
+  addRegisterToAccumulator,
+  addRegisterToAccumulatorWithCarry,
+  andAccumulatorWithImmediate,
+  andAccumulatorWithIndirectHL,
+  andAccumulatorWithRegister,
+  compareAccumulatorToImmediate,
+  compareAccumulatorToIndirectHL,
+  compareAccumulatorToRegister,
   complementAccumulator,
   complementCarryFlag,
   decimalAdjustAccumulator,
@@ -23,28 +23,28 @@ import {
   decrementRegister,
   incrementIndirectHL,
   incrementRegister,
-  orImmediate,
-  orIndirectHL,
-  orRegister,
+  orAccumulatorWithImmediate,
+  orAccumulatorWithIndirectHL,
+  orAccumulatorWithRegister,
   setCarryFlag,
-  subtractImmediate,
-  subtractImmediateWithCarry,
-  subtractIndirectHL,
-  subtractIndirectHLWithCarry,
-  subtractRegister,
-  subtractRegisterWithCarry,
-  xorImmediate,
-  xorIndirectHL,
-  xorRegister,
+  subtractImmediateFromAccumualtor,
+  subtractImmediateFromAccumualtorWithCarry,
+  subtractIndirectHLFromAccumualtor,
+  subtractIndirectHLFromAccumualtorWithCarry,
+  subtractRegisterFromAccumualtor,
+  subtractRegisterFromAccumualtorWithCarry,
+  xorAccumulatorWithImmediate,
+  xorAccumulatorWithIndirectHL,
+  xorAccumulatorWithRegister,
 } from "./arithmetic8";
 import { RegisterPair } from "../cpu-state";
 
 describe("8-bit arithmetic and logical instructions", () => {
-  testCpuState("ADD A,r", ({ state }) => {
+  testCpuState("ADD A,r8", ({ state }) => {
     state.writeRegister(Register.A, 0x3a);
     state.writeRegister(Register.B, 0xc6);
 
-    addRegister(state, Register.B);
+    addRegisterToAccumulator(state, Register.B);
 
     expect(state.readRegister(Register.A)).toBe(0);
     expect(state.getFlag(Flag.Z)).toBe(true);
@@ -59,7 +59,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x3ab6);
     state.writeMemory(0x3ab6, 0x12);
 
-    addIndirectHL(state);
+    addIndirectHLToAccumulator(state);
 
     expect(state.readRegister(Register.A)).toBe(0x4e);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -69,11 +69,11 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testCpuState("ADD A,n", ({ state }) => {
+  testCpuState("ADD A,n8", ({ state }) => {
     state.writeRegister(Register.A, 0x3c);
     state.writeMemory(0, 0xff);
 
-    addImmediate(state);
+    addImmediateToAccumulator(state);
 
     expect(state.readRegister(Register.A)).toBe(0x3b);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -83,12 +83,12 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testCpuState("ADC A,r", ({ state }) => {
+  testCpuState("ADC A,r8", ({ state }) => {
     state.writeRegister(Register.A, 0xe1);
     state.writeRegister(Register.E, 0x0f);
     state.setFlag(Flag.CY, true);
 
-    addRegisterWithCarry(state, Register.E);
+    addRegisterToAccumulatorWithCarry(state, Register.E);
 
     expect(state.readRegister(Register.A)).toBe(0xf1);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -104,7 +104,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeMemory(0x8ac5, 0x1e);
     state.setFlag(Flag.CY, true);
 
-    addIndirectHLWithCarry(state);
+    addIndirectHLToAccumulatorWithCarry(state);
 
     expect(state.readRegister(Register.A)).toBe(0x00);
     expect(state.getFlag(Flag.Z)).toBe(true);
@@ -114,12 +114,12 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testCpuState("ADC A,n", ({ state }) => {
+  testCpuState("ADC A,n8", ({ state }) => {
     state.writeRegister(Register.A, 0xe1);
     state.writeMemory(0, 0x3b);
     state.setFlag(Flag.CY, true);
 
-    addImmediateWithCarry(state);
+    addImmediateToAccumulatorWithCarry(state);
 
     expect(state.readRegister(Register.A)).toBe(0x1d);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -129,11 +129,11 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testCpuState("SUB r", ({ state }) => {
+  testCpuState("SUB A,r8", ({ state }) => {
     state.writeRegister(Register.A, 0x3e);
     state.writeRegister(Register.E, 0x3e);
 
-    subtractRegister(state, Register.E);
+    subtractRegisterFromAccumualtor(state, Register.E);
 
     expect(state.readRegister(Register.A)).toBe(0);
     expect(state.getFlag(Flag.Z)).toBe(true);
@@ -143,12 +143,12 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testCpuState("SUB (HL)", ({ state }) => {
+  testCpuState("SUB A,(HL)", ({ state }) => {
     state.writeRegister(Register.A, 0x3e);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeMemory(0x8ac5, 0x40);
 
-    subtractIndirectHL(state);
+    subtractIndirectHLFromAccumualtor(state);
 
     expect(state.readRegister(Register.A)).toBe(0xfe);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -158,11 +158,11 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testCpuState("SUB n", ({ state }) => {
+  testCpuState("SUB A,n8", ({ state }) => {
     state.writeRegister(Register.A, 0x3e);
     state.writeMemory(0, 0x0f);
 
-    subtractImmediate(state);
+    subtractImmediateFromAccumualtor(state);
 
     expect(state.readRegister(Register.A)).toBe(0x2f);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -172,12 +172,12 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testCpuState("SBC A,r", ({ state }) => {
+  testCpuState("SBC A,r8", ({ state }) => {
     state.writeRegister(Register.A, 0x3b);
     state.writeRegister(Register.H, 0x2a);
     state.setFlag(Flag.CY, true);
 
-    subtractRegisterWithCarry(state, Register.H);
+    subtractRegisterFromAccumualtorWithCarry(state, Register.H);
 
     expect(state.readRegister(Register.A)).toBe(0x10);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -193,7 +193,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeMemory(0x8ac5, 0x4f);
     state.setFlag(Flag.CY, true);
 
-    subtractIndirectHLWithCarry(state);
+    subtractIndirectHLFromAccumualtorWithCarry(state);
 
     expect(state.readRegister(Register.A)).toBe(0xeb);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -203,12 +203,12 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testCpuState("SBC A,n", ({ state }) => {
+  testCpuState("SBC A,n8", ({ state }) => {
     state.writeRegister(Register.A, 0x3b);
     state.writeMemory(0, 0x3a);
     state.setFlag(Flag.CY, true);
 
-    subtractImmediateWithCarry(state);
+    subtractImmediateFromAccumualtorWithCarry(state);
 
     expect(state.readRegister(Register.A)).toBe(0x00);
     expect(state.getFlag(Flag.Z)).toBe(true);
@@ -218,11 +218,11 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testCpuState("CP r", ({ state }) => {
+  testCpuState("CP A,r8", ({ state }) => {
     state.writeRegister(Register.A, 0x3c);
     state.writeRegister(Register.B, 0x2f);
 
-    compareRegister(state, Register.B);
+    compareAccumulatorToRegister(state, Register.B);
 
     expect(state.getFlag(Flag.Z)).toBe(false);
     expect(state.getFlag(Flag.H)).toBe(true);
@@ -231,12 +231,12 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testCpuState("CP (HL)", ({ state }) => {
+  testCpuState("CP A,(HL)", ({ state }) => {
     state.writeRegister(Register.A, 0x3c);
     state.writeRegisterPair(RegisterPair.HL, 0x3ab6);
     state.writeMemory(0x3ab6, 0x40);
 
-    compareIndirectHL(state);
+    compareAccumulatorToIndirectHL(state);
 
     expect(state.getFlag(Flag.Z)).toBe(false);
     expect(state.getFlag(Flag.H)).toBe(false);
@@ -245,11 +245,11 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testCpuState("CP n", ({ state }) => {
+  testCpuState("CP A,n8", ({ state }) => {
     state.writeRegister(Register.A, 0x3c);
     state.writeMemory(0, 0x3c);
 
-    compareImmediate(state);
+    compareAccumulatorToImmediate(state);
 
     expect(state.getFlag(Flag.Z)).toBe(true);
     expect(state.getFlag(Flag.H)).toBe(false);
@@ -312,11 +312,11 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testCpuState("AND r", ({ state }) => {
+  testCpuState("AND A,r8", ({ state }) => {
     state.writeRegister(Register.A, 0x5a);
     state.writeRegister(Register.L, 0x3f);
 
-    andRegister(state, Register.L);
+    andAccumulatorWithRegister(state, Register.L);
 
     expect(state.readRegister(Register.A)).toBe(0x1a);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -326,12 +326,12 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testCpuState("AND (HL)", ({ state }) => {
+  testCpuState("AND A,(HL)", ({ state }) => {
     state.writeRegister(Register.A, 0x5a);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeMemory(0x8ac5, 0x00);
 
-    andIndirectHL(state);
+    andAccumulatorWithIndirectHL(state);
 
     expect(state.readRegister(Register.A)).toBe(0x00);
     expect(state.getFlag(Flag.Z)).toBe(true);
@@ -341,11 +341,11 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testCpuState("AND n", ({ state }) => {
+  testCpuState("AND A,n8", ({ state }) => {
     state.writeRegister(Register.A, 0x5a);
     state.writeMemory(0, 0x38);
 
-    andImmediate(state);
+    andAccumulatorWithImmediate(state);
 
     expect(state.readRegister(Register.A)).toBe(0x18);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -355,10 +355,10 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testCpuState("OR r", ({ state }) => {
+  testCpuState("OR A,r8", ({ state }) => {
     state.writeRegister(Register.A, 0x5a);
 
-    orRegister(state, Register.A);
+    orAccumulatorWithRegister(state, Register.A);
 
     expect(state.readRegister(Register.A)).toBe(0x5a);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -368,12 +368,12 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testCpuState("OR (HL)", ({ state }) => {
+  testCpuState("OR A,(HL)", ({ state }) => {
     state.writeRegister(Register.A, 0x5a);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac2);
     state.writeMemory(0x8ac2, 0x0f);
 
-    orIndirectHL(state);
+    orAccumulatorWithIndirectHL(state);
 
     expect(state.readRegister(Register.A)).toBe(0x5f);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -383,11 +383,11 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testCpuState("OR n", ({ state }) => {
+  testCpuState("OR A,n8", ({ state }) => {
     state.writeRegister(Register.A, 0x5a);
     state.writeMemory(0, 0x3);
 
-    orImmediate(state);
+    orAccumulatorWithImmediate(state);
 
     expect(state.readRegister(Register.A)).toBe(0x5b);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -397,10 +397,10 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testCpuState("XOR r", ({ state }) => {
+  testCpuState("XOR A,r8", ({ state }) => {
     state.writeRegister(Register.A, 0xff);
 
-    xorRegister(state, Register.A);
+    xorAccumulatorWithRegister(state, Register.A);
 
     expect(state.readRegister(Register.A)).toBe(0x00);
     expect(state.getFlag(Flag.Z)).toBe(true);
@@ -410,12 +410,12 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testCpuState("XOR (HL)", ({ state }) => {
+  testCpuState("XOR A,(HL)", ({ state }) => {
     state.writeRegister(Register.A, 0xff);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeMemory(0x8ac5, 0x8a);
 
-    xorIndirectHL(state);
+    xorAccumulatorWithIndirectHL(state);
 
     expect(state.readRegister(Register.A)).toBe(0x75);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -425,11 +425,11 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testCpuState("XOR n", ({ state }) => {
+  testCpuState("XOR A,n8", ({ state }) => {
     state.writeRegister(Register.A, 0xff);
     state.writeMemory(0, 0xf);
 
-    xorImmediate(state);
+    xorAccumulatorWithImmediate(state);
 
     expect(state.readRegister(Register.A)).toBe(0xf0);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -471,7 +471,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegister(Register.A, 0x45);
     state.writeRegister(Register.B, 0x38);
 
-    addRegister(state, Register.B);
+    addRegisterToAccumulator(state, Register.B);
 
     expect(state.readRegister(Register.A)).toBe(0x7d);
     expect(state.getFlag(Flag.N)).toBe(false);
@@ -483,7 +483,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getFlag(Flag.CY)).toBe(false);
     expect(state.getElapsedCycles()).toBe(2);
 
-    subtractRegister(state, Register.B);
+    subtractRegisterFromAccumualtor(state, Register.B);
 
     expect(state.readRegister(Register.A)).toBe(0x4b);
     expect(state.getFlag(Flag.N)).toBe(true);

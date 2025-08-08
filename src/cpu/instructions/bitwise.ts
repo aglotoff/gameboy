@@ -3,95 +3,33 @@ import { resetBit, setBit } from "../../utils";
 import { makeInstruction } from "./lib";
 import { InstructionContext, RegisterPair } from "../cpu-state";
 
-export const rotateLeftCircularAccumulator = makeInstruction((ctx) => {
-  const result = rotateLeftCircular(ctx, ctx.readRegister(Register.A));
+const BYTE_MASK = 0b11111111;
+const NIBBLE_MASK = 0b1111;
+const HIGH_BIT_MASK = 0b10000000;
+const LOW_BIT_MASK = 0b00000001;
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RLCA
+export const rotateAccumulatorLeft = makeInstruction((ctx) => {
+  const data = ctx.readRegister(Register.A);
+
+  const result = rotateLeft(ctx, data);
 
   ctx.writeRegister(Register.A, result);
   ctx.setFlag(Flag.Z, false);
 });
 
-export const rotateLeftCircularRegister = makeInstruction(
-  (ctx, reg: Register) => {
-    const result = rotateLeftCircular(ctx, ctx.readRegister(reg));
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RLC_r8
+export const rotateRegisterLeft = makeInstruction((ctx, reg: Register) => {
+  const data = ctx.readRegister(reg);
 
-    ctx.writeRegister(reg, result);
-    ctx.setFlag(Flag.Z, result === 0);
-  }
-);
-
-export const rotateLeftCircularIndirectHL = makeInstruction((ctx) => {
-  const address = ctx.readRegisterPair(RegisterPair.HL);
-  const data = ctx.readMemoryCycle(address);
-
-  const result = rotateLeftCircular(ctx, data);
-
-  ctx.setFlag(Flag.Z, result === 0);
-  ctx.writeMemoryCycle(address, result);
-});
-
-function rotateLeftCircular(ctx: InstructionContext, value: number) {
-  const result = ((value << 1) | (value >> 7)) & 0xff;
-  const carry = (value & 0x80) != 0;
-
-  ctx.setFlag(Flag.N, false);
-  ctx.setFlag(Flag.H, false);
-  ctx.setFlag(Flag.CY, carry);
-
-  return result;
-}
-
-export const rotateRightCircularAccumulator = makeInstruction((ctx) => {
-  const result = rotateRightCircular(ctx, ctx.readRegister(Register.A));
-
-  ctx.writeRegister(Register.A, result);
-  ctx.setFlag(Flag.Z, false);
-});
-
-export const rotateRightCircularRegister = makeInstruction(
-  (ctx, reg: Register) => {
-    const result = rotateRightCircular(ctx, ctx.readRegister(reg));
-
-    ctx.writeRegister(reg, result);
-    ctx.setFlag(Flag.Z, result === 0);
-  }
-);
-
-export const rotateRightCircularIndirectHL = makeInstruction((ctx) => {
-  const address = ctx.readRegisterPair(RegisterPair.HL);
-  const data = ctx.readMemoryCycle(address);
-
-  const result = rotateRightCircular(ctx, data);
-
-  ctx.setFlag(Flag.Z, result === 0);
-  ctx.writeMemoryCycle(address, result);
-});
-
-function rotateRightCircular(ctx: InstructionContext, value: number) {
-  const result = ((value >> 1) | (value << 7)) & 0xff;
-  const carry = (value & 0x01) != 0;
-
-  ctx.setFlag(Flag.N, false);
-  ctx.setFlag(Flag.H, false);
-  ctx.setFlag(Flag.CY, carry);
-
-  return result;
-}
-
-export const rotateLeftAccumulator = makeInstruction((ctx) => {
-  const result = rotateLeft(ctx, ctx.readRegister(Register.A));
-
-  ctx.writeRegister(Register.A, result);
-  ctx.setFlag(Flag.Z, false);
-});
-
-export const rotateLeftRegister = makeInstruction((ctx, reg: Register) => {
-  const result = rotateLeft(ctx, ctx.readRegister(reg));
+  const result = rotateLeft(ctx, data);
 
   ctx.writeRegister(reg, result);
   ctx.setFlag(Flag.Z, result === 0);
 });
 
-export const rotateLeftIndirectHL = makeInstruction((ctx) => {
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RLC__HL_
+export const rotateIndirectHLLeft = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
@@ -102,8 +40,8 @@ export const rotateLeftIndirectHL = makeInstruction((ctx) => {
 });
 
 function rotateLeft(ctx: InstructionContext, value: number) {
-  const result = ((value << 1) & 0xff) | (ctx.getFlag(Flag.CY) ? 0x01 : 0x00);
-  const carry = (value & 0x80) != 0;
+  const result = ((value << 1) | (value >> 7)) & BYTE_MASK;
+  const carry = (value & HIGH_BIT_MASK) != 0;
 
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, false);
@@ -112,21 +50,28 @@ function rotateLeft(ctx: InstructionContext, value: number) {
   return result;
 }
 
-export const rotateRightAccumulator = makeInstruction((ctx) => {
-  const result = rotateRight(ctx, ctx.readRegister(Register.A));
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RRCA
+export const rotateAccumulatorRight = makeInstruction((ctx) => {
+  const data = ctx.readRegister(Register.A);
+
+  const result = rotateRight(ctx, data);
 
   ctx.writeRegister(Register.A, result);
   ctx.setFlag(Flag.Z, false);
 });
 
-export const rotateRightRegister = makeInstruction((ctx, reg: Register) => {
-  const result = rotateRight(ctx, ctx.readRegister(reg));
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RRC_r8
+export const rotateRegisterRight = makeInstruction((ctx, reg: Register) => {
+  const data = ctx.readRegister(reg);
+
+  const result = rotateRight(ctx, data);
 
   ctx.writeRegister(reg, result);
   ctx.setFlag(Flag.Z, result === 0);
 });
 
-export const rotateRightIndirectHL = makeInstruction((ctx) => {
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RRC__HL_
+export const rotateIndirectHLRight = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
@@ -137,8 +82,8 @@ export const rotateRightIndirectHL = makeInstruction((ctx) => {
 });
 
 function rotateRight(ctx: InstructionContext, value: number) {
-  const result = ((value >> 1) & 0xff) | (ctx.getFlag(Flag.CY) ? 0x80 : 0x00);
-  const carry = (value & 0x01) != 0;
+  const result = ((value >> 1) | (value << 7)) & BYTE_MASK;
+  const carry = (value & 1) != 0;
 
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, false);
@@ -147,28 +92,42 @@ function rotateRight(ctx: InstructionContext, value: number) {
   return result;
 }
 
-export const shiftLeftArithmeticRegister = makeInstruction(
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RLA
+export const rotateAccumulatorLeftThroughCarry = makeInstruction((ctx) => {
+  const data = ctx.readRegister(Register.A);
+
+  const result = rotateLeftThroughCarry(ctx, data);
+
+  ctx.writeRegister(Register.A, result);
+  ctx.setFlag(Flag.Z, false);
+});
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RL_r8
+export const rotateRegisterLeftThroughCarry = makeInstruction(
   (ctx, reg: Register) => {
-    const result = shiftLeftArithmetic(ctx, ctx.readRegister(reg));
+    const data = ctx.readRegister(reg);
+    const result = rotateLeftThroughCarry(ctx, data);
 
     ctx.writeRegister(reg, result);
     ctx.setFlag(Flag.Z, result === 0);
   }
 );
 
-export const shiftLeftArithmeticIndirectHL = makeInstruction((ctx) => {
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RL__HL_
+export const rotateIndirectHLLeftThroughCarry = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
-  const result = shiftLeftArithmetic(ctx, data);
+  const result = rotateLeftThroughCarry(ctx, data);
 
   ctx.setFlag(Flag.Z, result === 0);
   ctx.writeMemoryCycle(address, result);
 });
 
-function shiftLeftArithmetic(ctx: InstructionContext, value: number) {
-  const result = (value << 1) & 0xff;
-  const carry = (value & 0x80) !== 0;
+function rotateLeftThroughCarry(ctx: InstructionContext, value: number) {
+  const result =
+    ((value << 1) & BYTE_MASK) | (ctx.getFlag(Flag.CY) ? LOW_BIT_MASK : 0);
+  const carry = (value & HIGH_BIT_MASK) != 0;
 
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, false);
@@ -177,28 +136,43 @@ function shiftLeftArithmetic(ctx: InstructionContext, value: number) {
   return result;
 }
 
-export const shiftRightArithmeticRegister = makeInstruction(
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RRA
+export const rotateAccumulatorRightThroughCarry = makeInstruction((ctx) => {
+  const data = ctx.readRegister(Register.A);
+
+  const result = rotateRightThroughCarry(ctx, data);
+
+  ctx.writeRegister(Register.A, result);
+  ctx.setFlag(Flag.Z, false);
+});
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RR_r8
+export const rotateRegisterRightThroughCarry = makeInstruction(
   (ctx, reg: Register) => {
-    const result = shiftRightArithmetic(ctx, ctx.readRegister(reg));
+    const data = ctx.readRegister(reg);
+
+    const result = rotateRightThroughCarry(ctx, data);
 
     ctx.writeRegister(reg, result);
     ctx.setFlag(Flag.Z, result === 0);
   }
 );
 
-export const shiftRightArithmeticIndirectHL = makeInstruction((ctx) => {
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RR__HL_
+export const rotateIndirectHLRightThroughCarry = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
-  const result = shiftRightArithmetic(ctx, data);
+  const result = rotateRightThroughCarry(ctx, data);
 
   ctx.setFlag(Flag.Z, result === 0);
   ctx.writeMemoryCycle(address, result);
 });
 
-function shiftRightArithmetic(ctx: InstructionContext, value: number) {
-  const result = ((value >> 1) & 0xff) | (value & 0x80);
-  const carry = (value & 0x01) !== 0;
+function rotateRightThroughCarry(ctx: InstructionContext, value: number) {
+  const result =
+    ((value >> 1) & BYTE_MASK) | (ctx.getFlag(Flag.CY) ? HIGH_BIT_MASK : 0);
+  const carry = (value & LOW_BIT_MASK) != 0;
 
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, false);
@@ -207,28 +181,32 @@ function shiftRightArithmetic(ctx: InstructionContext, value: number) {
   return result;
 }
 
-export const shiftRightLogicalRegister = makeInstruction(
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SLA_r8
+export const shiftLeftArithmeticallyRegister = makeInstruction(
   (ctx, reg: Register) => {
-    const result = shiftRightLogical(ctx, ctx.readRegister(reg));
+    const data = ctx.readRegister(reg);
+
+    const result = shiftLeftArithmetically(ctx, data);
 
     ctx.writeRegister(reg, result);
     ctx.setFlag(Flag.Z, result === 0);
   }
 );
 
-export const shiftRightLogicalIndirectHL = makeInstruction((ctx) => {
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SLA__HL_
+export const shiftLeftArithmeticallyIndirectHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
-  const result = shiftRightLogical(ctx, data);
+  const result = shiftLeftArithmetically(ctx, data);
 
   ctx.setFlag(Flag.Z, result === 0);
   ctx.writeMemoryCycle(address, result);
 });
 
-function shiftRightLogical(ctx: InstructionContext, value: number) {
-  const result = (value >> 1) & 0xff;
-  const carry = (value & 0x01) !== 0;
+function shiftLeftArithmetically(ctx: InstructionContext, value: number) {
+  const result = (value << 1) & BYTE_MASK;
+  const carry = (value & HIGH_BIT_MASK) !== 0;
 
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, false);
@@ -237,21 +215,93 @@ function shiftRightLogical(ctx: InstructionContext, value: number) {
   return result;
 }
 
-export const swapNibblesRegister = makeInstruction((ctx, reg: Register) => {
-  const result = swapNibbles(ctx, ctx.readRegister(reg));
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SRA_r8
+export const shiftRightArithmeticallyRegister = makeInstruction(
+  (ctx, reg: Register) => {
+    const data = ctx.readRegister(reg);
+
+    const result = shiftRightArithmetically(ctx, data);
+
+    ctx.writeRegister(reg, result);
+    ctx.setFlag(Flag.Z, result === 0);
+  }
+);
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SRA__HL_
+export const shiftRightArithmeticallyIndirectHL = makeInstruction((ctx) => {
+  const address = ctx.readRegisterPair(RegisterPair.HL);
+  const data = ctx.readMemoryCycle(address);
+
+  const result = shiftRightArithmetically(ctx, data);
+
+  ctx.setFlag(Flag.Z, result === 0);
+  ctx.writeMemoryCycle(address, result);
+});
+
+function shiftRightArithmetically(ctx: InstructionContext, value: number) {
+  const result = ((value >> 1) & BYTE_MASK) | (value & HIGH_BIT_MASK);
+  const carry = (value & 1) !== 0;
+
+  ctx.setFlag(Flag.N, false);
+  ctx.setFlag(Flag.H, false);
+  ctx.setFlag(Flag.CY, carry);
+
+  return result;
+}
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SRL_r8
+export const shiftRightLogicallyRegister = makeInstruction(
+  (ctx, reg: Register) => {
+    const data = ctx.readRegister(reg);
+
+    const result = shiftRightLogically(ctx, data);
+
+    ctx.writeRegister(reg, result);
+    ctx.setFlag(Flag.Z, result === 0);
+  }
+);
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SRL__HL_
+export const shiftRightLogicallyIndirectHL = makeInstruction((ctx) => {
+  const address = ctx.readRegisterPair(RegisterPair.HL);
+  const data = ctx.readMemoryCycle(address);
+
+  const result = shiftRightLogically(ctx, data);
+
+  ctx.setFlag(Flag.Z, result === 0);
+  ctx.writeMemoryCycle(address, result);
+});
+
+function shiftRightLogically(ctx: InstructionContext, value: number) {
+  const result = (value >> 1) & BYTE_MASK;
+  const carry = (value & LOW_BIT_MASK) !== 0;
+
+  ctx.setFlag(Flag.N, false);
+  ctx.setFlag(Flag.H, false);
+  ctx.setFlag(Flag.CY, carry);
+
+  return result;
+}
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SWAP_r8
+export const swapNibblesInRegister = makeInstruction((ctx, reg: Register) => {
+  const data = ctx.readRegister(reg);
+  const result = swapNibbles(ctx, data);
   ctx.writeRegister(reg, result);
 });
 
-export const swapNibblesIndirectHL = makeInstruction((ctx) => {
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SWAP__HL_
+export const swapNibblesInIndirectHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
   const result = swapNibbles(ctx, data);
+
   ctx.writeMemoryCycle(address, result);
 });
 
 function swapNibbles(ctx: InstructionContext, value: number) {
-  const result = ((value & 0xf) << 4) | ((value >> 4) & 0xf);
+  const result = ((value & NIBBLE_MASK) << 4) | ((value >> 4) & NIBBLE_MASK);
 
   ctx.setFlag(Flag.Z, result === 0);
   ctx.setFlag(Flag.N, false);
@@ -261,13 +311,16 @@ function swapNibbles(ctx: InstructionContext, value: number) {
   return result;
 }
 
-export const testBitRegister = makeInstruction(
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#BIT_u3,r8
+export const testBitInRegister = makeInstruction(
   (ctx, bit: number, reg: Register) => {
-    testBit(ctx, ctx.readRegister(reg), bit);
+    const data = ctx.readRegister(reg);
+    testBit(ctx, data, bit);
   }
 );
 
-export const testBitIndirectHL = makeInstruction((ctx, bit: number) => {
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#BIT_u3,_HL_
+export const testBitInIndirectHL = makeInstruction((ctx, bit: number) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
@@ -280,26 +333,32 @@ function testBit(ctx: InstructionContext, value: number, bit: number) {
   ctx.setFlag(Flag.H, true);
 }
 
-export const resetBitRegister = makeInstruction(
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RES_u3,r8
+export const resetBitInRegister = makeInstruction(
   (ctx, bit: number, reg: Register) => {
-    ctx.writeRegister(reg, resetBit(ctx.readRegister(reg), bit));
+    const data = ctx.readRegister(reg);
+    ctx.writeRegister(reg, resetBit(data, bit));
   }
 );
 
-export const resetBitIndirectHL = makeInstruction((ctx, bit: number) => {
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RES_u3,_HL_
+export const resetBitInIndirectHL = makeInstruction((ctx, bit: number) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
   ctx.writeMemoryCycle(address, resetBit(data, bit));
 });
 
-export const setBitRegister = makeInstruction(
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SET_u3,r8
+export const setBitInRegister = makeInstruction(
   (ctx, bit: number, reg: Register) => {
-    ctx.writeRegister(reg, setBit(ctx.readRegister(reg), bit));
+    const data = ctx.readRegister(reg);
+    ctx.writeRegister(reg, setBit(data, bit));
   }
 );
 
-export const setBitIndirectHL = makeInstruction((ctx, bit: number) => {
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SET_u3,_HL_
+export const setBitInIndirectHL = makeInstruction((ctx, bit: number) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 

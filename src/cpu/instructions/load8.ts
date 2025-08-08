@@ -79,73 +79,70 @@ export const loadDirectWordFromAccumulator = makeInstructionWithImmediateWord(
 );
 
 export const loadAccumulatorFromIndirectC = makeInstruction((ctx) => {
-  const address = 0xff00 + ctx.readRegister(Register.C);
+  const address = makeHighAddress(ctx.readRegister(Register.C));
   const data = ctx.readMemoryCycle(address);
 
   ctx.writeRegister(Register.A, data);
 });
 
 export const loadIndirectCFromAccumulator = makeInstruction((ctx) => {
-  const address = 0xff00 + ctx.readRegister(Register.C);
+  const address = makeHighAddress(ctx.readRegister(Register.C));
   ctx.writeMemoryCycle(address, ctx.readRegister(Register.A));
 });
 
 export const loadAccumulatorFromDirectByte = makeInstructionWithImmediateByte(
   (ctx, offset) => {
-    const address = 0xff00 + offset;
-    const data = ctx.readMemoryCycle(address);
-
+    const data = ctx.readMemoryCycle(makeHighAddress(offset));
     ctx.writeRegister(Register.A, data);
   }
 );
 
 export const loadDirectByteFromAccumulator = makeInstructionWithImmediateByte(
   (ctx, offset) => {
-    const address = 0xff00 + offset;
-    ctx.writeMemoryCycle(address, ctx.readRegister(Register.A));
+    ctx.writeMemoryCycle(makeHighAddress(offset), ctx.readRegister(Register.A));
   }
 );
 
+function makeHighAddress(offset: number) {
+  return 0xff00 + offset;
+}
+
 export const loadAccumulatorFromIndirectHLDecrement = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
-  const data = ctx.readMemory(address);
 
-  ctx.triggerMemoryIncrementRead(address);
   ctx.writeRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
+  ctx.triggerMemoryReadWrite(address);
 
-  ctx.beginNextCycle();
+  const data = ctx.readMemoryCycle(address);
 
   ctx.writeRegister(Register.A, data);
 });
 
 export const loadAccumulatorFromIndirectHLIncrement = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
-  const data = ctx.readMemory(address);
 
-  ctx.triggerMemoryIncrementRead(address);
   ctx.writeRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
+  ctx.triggerMemoryReadWrite(address);
 
-  ctx.beginNextCycle();
+  const data = ctx.readMemoryCycle(address);
 
   ctx.writeRegister(Register.A, data);
 });
 
 export const loadIndirectHLDecrementFromAccumulator = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
-  ctx.writeMemory(address, ctx.readRegister(Register.A));
 
-  ctx.triggerMemoryWrite(address);
   ctx.writeRegisterPair(RegisterPair.HL, wrappingDecrementWord(address));
+  ctx.triggerMemoryWrite(address);
 
-  ctx.beginNextCycle();
+  ctx.writeMemoryCycle(address, ctx.readRegister(Register.A));
 });
 
 export const loadIndirectHLIncrementFromAccumulator = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
-  ctx.writeMemory(address, ctx.readRegister(Register.A));
 
-  ctx.triggerMemoryWrite(address);
   ctx.writeRegisterPair(RegisterPair.HL, wrappingIncrementWord(address));
+  ctx.triggerMemoryWrite(address);
 
-  ctx.beginNextCycle();
+  ctx.writeMemoryCycle(address, ctx.readRegister(Register.A));
 });

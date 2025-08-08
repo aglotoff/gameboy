@@ -11,7 +11,7 @@ export interface IMemory {
   read(address: number): number;
   write(address: number, data: number): void;
   triggerWrite(address: number): void;
-  triggerIncrementRead(address: number): void;
+  triggerReadWrite(address: number): void;
 }
 
 export const enum RegisterPair {
@@ -61,7 +61,7 @@ export interface InstructionContext {
   readMemory(address: number): number;
   writeMemory(address: number, data: number): void;
   triggerMemoryWrite(address: number): void;
-  triggerMemoryIncrementRead(address: number): void;
+  triggerMemoryReadWrite(address: number): void;
   readMemoryCycle(address: number): number;
   writeMemoryCycle(address: number, data: number): void;
 
@@ -175,8 +175,8 @@ export class CpuState implements InstructionContext {
     this.memory.triggerWrite(address);
   }
 
-  public triggerMemoryIncrementRead(address: number) {
-    this.memory.triggerIncrementRead(address);
+  public triggerMemoryReadWrite(address: number) {
+    this.memory.triggerReadWrite(address);
   }
 
   public setHalted(halted: boolean) {
@@ -257,40 +257,34 @@ export class CpuState implements InstructionContext {
     let address = this.readRegisterPair(RegisterPair.SP);
 
     this.triggerMemoryWrite(address);
-    address = wrappingDecrementWord(address);
+    this.writeRegisterPair(RegisterPair.SP, wrappingDecrementWord(address));
 
     this.beginNextCycle();
 
-    this.writeMemory(address, getMSB(data));
+    address = this.readRegisterPair(RegisterPair.SP);
 
     this.triggerMemoryWrite(address);
-    address = wrappingDecrementWord(address);
+    this.writeRegisterPair(RegisterPair.SP, wrappingDecrementWord(address));
 
-    this.beginNextCycle();
+    this.writeMemoryCycle(address, getMSB(data));
 
+    address = this.readRegisterPair(RegisterPair.SP);
     this.writeMemory(address, getLSB(data));
-    this.writeRegisterPair(RegisterPair.SP, address);
   }
 
   public popWord() {
     let address = this.readRegisterPair(RegisterPair.SP);
 
-    this.triggerMemoryIncrementRead(address);
-    const lsb = this.readMemory(address);
+    this.writeRegisterPair(RegisterPair.SP, wrappingIncrementWord(address));
+    this.triggerMemoryReadWrite(address);
 
-    address = wrappingIncrementWord(address);
+    const lsb = this.readMemoryCycle(address);
 
-    this.writeRegisterPair(RegisterPair.SP, address);
+    address = this.readRegisterPair(RegisterPair.SP);
 
-    this.beginNextCycle();
+    this.writeRegisterPair(RegisterPair.SP, wrappingIncrementWord(address));
 
-    const msb = this.readMemory(address);
-
-    address = wrappingIncrementWord(address);
-
-    this.writeRegisterPair(RegisterPair.SP, address);
-
-    this.beginNextCycle();
+    const msb = this.readMemoryCycle(address);
 
     return makeWord(msb, lsb);
   }

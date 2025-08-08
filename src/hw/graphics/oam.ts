@@ -135,7 +135,7 @@ export class OAM {
     }
   }
 
-  public triggerIncrementRead() {
+  public triggerReadWrite() {
     if (this.row >= 4 && this.row < 19) {
       const a = makeWord(
         this.data[(this.row - 2) * 8 + 0],

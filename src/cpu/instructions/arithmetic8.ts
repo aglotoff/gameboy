@@ -7,86 +7,162 @@ import {
   subtractBytes,
 } from "./lib";
 
-export const addRegister = makeInstruction((ctx, reg: Register) => {
-  doAdd(ctx, ctx.readRegister(reg));
-});
-
-export const addIndirectHL = makeInstruction((ctx) => {
-  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
-
-  doAdd(ctx, data);
-});
-
-export const addImmediate = makeInstructionWithImmediateByte(doAdd);
-
-export const addRegisterWithCarry = makeInstruction((ctx, reg: Register) => {
-  doAdd(ctx, ctx.readRegister(reg), ctx.getFlag(Flag.CY));
-});
-
-export const addIndirectHLWithCarry = makeInstruction((ctx) => {
-  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
-
-  doAdd(ctx, data, ctx.getFlag(Flag.CY));
-});
-
-export const addImmediateWithCarry = makeInstructionWithImmediateByte(
-  (ctx, data) => {
-    doAdd(ctx, data, ctx.getFlag(Flag.CY));
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#ADD_A,r8
+export const addRegisterToAccumulator = makeInstruction(
+  (ctx, reg: Register) => {
+    addToAccumulator(ctx, ctx.readRegister(reg));
   }
 );
 
-function doAdd(ctx: InstructionContext, value: number, carry = false) {
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#ADD_A,_HL_
+export const addIndirectHLToAccumulator = makeInstruction((ctx) => {
+  const address = ctx.readRegisterPair(RegisterPair.HL);
+  const data = ctx.readMemoryCycle(address);
+
+  addToAccumulator(ctx, data);
+});
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#ADD_A,n8
+export const addImmediateToAccumulator =
+  makeInstructionWithImmediateByte(addToAccumulator);
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#ADC_A,r8
+export const addRegisterToAccumulatorWithCarry = makeInstruction(
+  (ctx, reg: Register) => {
+    const data = ctx.readRegister(reg);
+    const carry = ctx.getFlag(Flag.CY);
+
+    addToAccumulator(ctx, data, carry);
+  }
+);
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#ADC_A,_HL_
+export const addIndirectHLToAccumulatorWithCarry = makeInstruction((ctx) => {
+  const address = ctx.readRegisterPair(RegisterPair.HL);
+  const data = ctx.readMemoryCycle(address);
+  const carry = ctx.getFlag(Flag.CY);
+
+  addToAccumulator(ctx, data, carry);
+});
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#ADC_A,n8
+export const addImmediateToAccumulatorWithCarry =
+  makeInstructionWithImmediateByte((ctx, data) => {
+    const carry = ctx.getFlag(Flag.CY);
+    addToAccumulator(ctx, data, carry);
+  });
+
+function addToAccumulator(
+  ctx: InstructionContext,
+  data: number,
+  carry = false
+) {
+  const accumulatorData = ctx.readRegister(Register.A);
+
   const { result, carryFrom3, carryFrom7 } = addBytes(
-    ctx.readRegister(Register.A),
-    value,
+    accumulatorData,
+    data,
     carry
   );
 
   ctx.writeRegister(Register.A, result);
-
   ctx.setFlag(Flag.Z, result === 0);
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, carryFrom3);
   ctx.setFlag(Flag.CY, carryFrom7);
 }
 
-export const subtractRegister = makeInstruction((ctx, reg: Register) => {
-  doSubtract(ctx, ctx.readRegister(reg));
-});
-
-export const subtractIndirectHL = makeInstruction((ctx) => {
-  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
-
-  doSubtract(ctx, data);
-});
-
-export const subtractImmediate = makeInstructionWithImmediateByte(doSubtract);
-
-export const subtractRegisterWithCarry = makeInstruction(
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SUB_A,r8
+export const subtractRegisterFromAccumualtor = makeInstruction(
   (ctx, reg: Register) => {
-    doSubtract(ctx, ctx.readRegister(reg), ctx.getFlag(Flag.CY));
+    subtractFromAccumulator(ctx, ctx.readRegister(reg));
   }
 );
 
-export const subtractIndirectHLWithCarry = makeInstruction((ctx) => {
-  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
-  doSubtract(ctx, data, ctx.getFlag(Flag.CY));
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SUB_A,_HL_
+export const subtractIndirectHLFromAccumualtor = makeInstruction((ctx) => {
+  const address = ctx.readRegisterPair(RegisterPair.HL);
+  const data = ctx.readMemoryCycle(address);
+
+  subtractFromAccumulator(ctx, data);
 });
 
-export const subtractImmediateWithCarry = makeInstructionWithImmediateByte(
-  (ctx, data) => {
-    doSubtract(ctx, data, ctx.getFlag(Flag.CY));
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SUB_A,n8
+export const subtractImmediateFromAccumualtor =
+  makeInstructionWithImmediateByte(subtractFromAccumulator);
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SBC_A,r8
+export const subtractRegisterFromAccumualtorWithCarry = makeInstruction(
+  (ctx, reg: Register) => {
+    const data = ctx.readRegister(reg);
+    const carry = ctx.getFlag(Flag.CY);
+
+    subtractFromAccumulator(ctx, data, carry);
   }
 );
 
-function doSubtract(ctx: InstructionContext, value: number, carry = false) {
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SBC_A,_HL_
+export const subtractIndirectHLFromAccumualtorWithCarry = makeInstruction(
+  (ctx) => {
+    const address = ctx.readRegisterPair(RegisterPair.HL);
+    const data = ctx.readMemoryCycle(address);
+    const carry = ctx.getFlag(Flag.CY);
+
+    subtractFromAccumulator(ctx, data, carry);
+  }
+);
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SBC_A,n8
+export const subtractImmediateFromAccumualtorWithCarry =
+  makeInstructionWithImmediateByte((ctx, data) => {
+    const carry = ctx.getFlag(Flag.CY);
+    subtractFromAccumulator(ctx, data, carry);
+  });
+
+function subtractFromAccumulator(
+  ctx: InstructionContext,
+  data: number,
+  carry = false
+) {
+  const accumulatorData = ctx.readRegister(Register.A);
+
   const { result, borrowTo3, borrowTo7 } = subtractBytes(
-    ctx.readRegister(Register.A),
-    value,
+    accumulatorData,
+    data,
     carry
   );
 
   ctx.writeRegister(Register.A, result);
+  ctx.setFlag(Flag.Z, result === 0);
+  ctx.setFlag(Flag.N, true);
+  ctx.setFlag(Flag.H, borrowTo3);
+  ctx.setFlag(Flag.CY, borrowTo7);
+}
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#CP_A,r8
+export const compareAccumulatorToRegister = makeInstruction(
+  (ctx, reg: Register) => {
+    const data = ctx.readRegister(reg);
+    compareAccumulatorTo(ctx, data);
+  }
+);
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#CP_A,_HL_
+export const compareAccumulatorToIndirectHL = makeInstruction((ctx) => {
+  const address = ctx.readRegisterPair(RegisterPair.HL);
+  const data = ctx.readMemoryCycle(address);
+
+  compareAccumulatorTo(ctx, data);
+});
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#CP_A,n8
+export const compareAccumulatorToImmediate =
+  makeInstructionWithImmediateByte(compareAccumulatorTo);
+
+function compareAccumulatorTo(ctx: InstructionContext, data: number) {
+  const accumulatorData = ctx.readRegister(Register.A);
+
+  const { result, borrowTo3, borrowTo7 } = subtractBytes(accumulatorData, data);
 
   ctx.setFlag(Flag.Z, result === 0);
   ctx.setFlag(Flag.N, true);
@@ -94,42 +170,22 @@ function doSubtract(ctx: InstructionContext, value: number, carry = false) {
   ctx.setFlag(Flag.CY, borrowTo7);
 }
 
-export const compareRegister = makeInstruction((ctx, reg: Register) => {
-  doCompare(ctx, ctx.readRegister(reg));
-});
-
-export const compareIndirectHL = makeInstruction((ctx) => {
-  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
-  doCompare(ctx, data);
-});
-
-export const compareImmediate = makeInstructionWithImmediateByte(doCompare);
-
-function doCompare(ctx: InstructionContext, value: number) {
-  const { result, borrowTo3, borrowTo7 } = subtractBytes(
-    ctx.readRegister(Register.A),
-    value
-  );
-
-  ctx.setFlag(Flag.Z, result === 0);
-  ctx.setFlag(Flag.N, true);
-  ctx.setFlag(Flag.H, borrowTo3);
-  ctx.setFlag(Flag.CY, borrowTo7);
-}
-
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#INC_r8
 export const incrementRegister = makeInstruction((ctx, reg: Register) => {
-  ctx.writeRegister(reg, doIncrement(ctx, ctx.readRegister(reg)));
+  const data = ctx.readRegister(reg);
+  ctx.writeRegister(reg, increment(ctx, data));
 });
 
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#INC__HL_
 export const incrementIndirectHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
-  ctx.writeMemoryCycle(address, doIncrement(ctx, data));
+  ctx.writeMemoryCycle(address, increment(ctx, data));
 });
 
-function doIncrement(ctx: InstructionContext, value: number) {
-  const { result, carryFrom3 } = addBytes(value, 1);
+function increment(ctx: InstructionContext, data: number) {
+  const { result, carryFrom3 } = addBytes(data, 1);
 
   ctx.setFlag(Flag.Z, result === 0);
   ctx.setFlag(Flag.N, false);
@@ -138,18 +194,22 @@ function doIncrement(ctx: InstructionContext, value: number) {
   return result;
 }
 
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#DEC_r8
 export const decrementRegister = makeInstruction((ctx, reg: Register) => {
-  ctx.writeRegister(reg, doDecrement(ctx, ctx.readRegister(reg)));
+  const data = ctx.readRegister(reg);
+  ctx.writeRegister(reg, decrement(ctx, data));
 });
 
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#DEC__HL_
 export const decrementIndirectHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
-  ctx.writeMemoryCycle(address, doDecrement(ctx, data));
+
+  ctx.writeMemoryCycle(address, decrement(ctx, data));
 });
 
-function doDecrement(ctx: InstructionContext, value: number) {
-  const { result, borrowTo3 } = subtractBytes(value, 1);
+function decrement(ctx: InstructionContext, data: number) {
+  const { result, borrowTo3 } = subtractBytes(data, 1);
 
   ctx.setFlag(Flag.Z, result === 0);
   ctx.setFlag(Flag.N, true);
@@ -158,117 +218,149 @@ function doDecrement(ctx: InstructionContext, value: number) {
   return result;
 }
 
-export const andRegister = makeInstruction((ctx, reg: Register) => {
-  doAnd(ctx, ctx.readRegister(reg));
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#AND_A,r8
+export const andAccumulatorWithRegister = makeInstruction(
+  (ctx, reg: Register) => {
+    const data = ctx.readRegister(reg);
+    andAccumulatorWith(ctx, data);
+  }
+);
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#AND_A,_HL_
+export const andAccumulatorWithIndirectHL = makeInstruction((ctx) => {
+  const address = ctx.readRegisterPair(RegisterPair.HL);
+  const data = ctx.readMemoryCycle(address);
+
+  andAccumulatorWith(ctx, data);
 });
 
-export const andIndirectHL = makeInstruction((ctx) => {
-  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
-  doAnd(ctx, data);
-});
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#AND_A,n8
+export const andAccumulatorWithImmediate =
+  makeInstructionWithImmediateByte(andAccumulatorWith);
 
-export const andImmediate = makeInstructionWithImmediateByte(doAnd);
-
-function doAnd(ctx: InstructionContext, value: number) {
-  const result = ctx.readRegister(Register.A) & value;
+function andAccumulatorWith(ctx: InstructionContext, value: number) {
+  const accumulatorData = ctx.readRegister(Register.A);
+  const result = accumulatorData & value;
 
   ctx.writeRegister(Register.A, result);
-
   ctx.setFlag(Flag.Z, result === 0);
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, true);
   ctx.setFlag(Flag.CY, false);
 }
 
-export const orRegister = makeInstruction((ctx, reg: Register) => {
-  doOr(ctx, ctx.readRegister(reg));
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#OR_A,r8
+export const orAccumulatorWithRegister = makeInstruction(
+  (ctx, reg: Register) => {
+    const data = ctx.readRegister(reg);
+    orAccumulatorWith(ctx, data);
+  }
+);
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#OR_A,_HL_
+export const orAccumulatorWithIndirectHL = makeInstruction((ctx) => {
+  const address = ctx.readRegisterPair(RegisterPair.HL);
+  const data = ctx.readMemoryCycle(address);
+
+  orAccumulatorWith(ctx, data);
 });
 
-export const orIndirectHL = makeInstruction((ctx) => {
-  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
-  doOr(ctx, data);
-});
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#OR_A,n8
+export const orAccumulatorWithImmediate =
+  makeInstructionWithImmediateByte(orAccumulatorWith);
 
-export const orImmediate = makeInstructionWithImmediateByte(doOr);
-
-function doOr(ctx: InstructionContext, value: number) {
-  const result = ctx.readRegister(Register.A) | value;
+function orAccumulatorWith(ctx: InstructionContext, value: number) {
+  const accumulatorData = ctx.readRegister(Register.A);
+  const result = accumulatorData | value;
 
   ctx.writeRegister(Register.A, result);
-
   ctx.setFlag(Flag.Z, result === 0);
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, false);
   ctx.setFlag(Flag.CY, false);
 }
 
-export const xorRegister = makeInstruction((ctx, reg: Register) => {
-  doXor(ctx, ctx.readRegister(reg));
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#XOR_A,r8
+export const xorAccumulatorWithRegister = makeInstruction(
+  (ctx, reg: Register) => {
+    const data = ctx.readRegister(reg);
+    xorAccumulatorWith(ctx, data);
+  }
+);
+
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#XOR_A,_HL_
+export const xorAccumulatorWithIndirectHL = makeInstruction((ctx) => {
+  const address = ctx.readRegisterPair(RegisterPair.HL);
+  const data = ctx.readMemoryCycle(address);
+
+  xorAccumulatorWith(ctx, data);
 });
 
-export const xorIndirectHL = makeInstruction((ctx) => {
-  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
-  doXor(ctx, data);
-});
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#XOR_A,n8
+export const xorAccumulatorWithImmediate =
+  makeInstructionWithImmediateByte(xorAccumulatorWith);
 
-export const xorImmediate = makeInstructionWithImmediateByte(doXor);
-
-function doXor(ctx: InstructionContext, value: number) {
-  const result = ctx.readRegister(Register.A) ^ value;
+function xorAccumulatorWith(ctx: InstructionContext, data: number) {
+  const accumulatorData = ctx.readRegister(Register.A);
+  const result = accumulatorData ^ data;
 
   ctx.writeRegister(Register.A, result);
-
   ctx.setFlag(Flag.Z, result === 0);
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, false);
   ctx.setFlag(Flag.CY, false);
 }
 
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#CCF
 export const complementCarryFlag = makeInstruction((ctx) => {
+  const carry = ctx.getFlag(Flag.CY);
+
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, false);
-  ctx.setFlag(Flag.CY, !ctx.getFlag(Flag.CY));
+  ctx.setFlag(Flag.CY, !carry);
 });
 
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SCF
 export const setCarryFlag = makeInstruction((ctx) => {
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, false);
   ctx.setFlag(Flag.CY, true);
 });
 
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#DAA
 export const decimalAdjustAccumulator = makeInstruction((ctx) => {
-  let a = ctx.readRegister(Register.A);
-  const cy = ctx.getFlag(Flag.CY);
-  const h = ctx.getFlag(Flag.H);
-  const n = ctx.getFlag(Flag.N);
+  const accumulatorData = ctx.readRegister(Register.A);
+  const carry = ctx.getFlag(Flag.CY);
+  const halfCarry = ctx.getFlag(Flag.H);
+  const subtraction = ctx.getFlag(Flag.N);
 
-  let offset = 0;
-  let carry = false;
+  let resultOffset = 0;
+  let resultCarry = false;
 
-  if ((!n && (a & 0xf) > 0x09) || h) {
-    offset |= 0x06;
+  if ((!subtraction && (accumulatorData & 0xf) > 0x09) || halfCarry) {
+    resultOffset |= 0x06;
   }
 
-  if ((!n && a > 0x99) || cy) {
-    offset |= 0x60;
-    carry = true;
+  if ((!subtraction && accumulatorData > 0x99) || carry) {
+    resultOffset |= 0x60;
+    resultCarry = true;
   }
 
-  if (!n) {
-    a = (a + offset) & 0xff;
-  } else {
-    a = (a - offset) & 0xff;
-  }
+  const result = subtraction
+    ? (accumulatorData - resultOffset) & 0xff
+    : (accumulatorData + resultOffset) & 0xff;
 
-  ctx.writeRegister(Register.A, a);
-
-  ctx.setFlag(Flag.Z, a === 0);
+  ctx.writeRegister(Register.A, result);
+  ctx.setFlag(Flag.Z, result === 0);
   ctx.setFlag(Flag.H, false);
-  ctx.setFlag(Flag.CY, carry);
+  ctx.setFlag(Flag.CY, resultCarry);
 });
 
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#CPL
 export const complementAccumulator = makeInstruction((ctx) => {
-  ctx.writeRegister(Register.A, ~ctx.readRegister(Register.A));
+  const accumulatorData = ctx.readRegister(Register.A);
+
+  ctx.writeRegister(Register.A, ~accumulatorData);
   ctx.setFlag(Flag.N, true);
   ctx.setFlag(Flag.H, true);
 });
