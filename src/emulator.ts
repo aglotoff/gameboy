@@ -18,7 +18,7 @@ import { Serial } from "./hw/serial";
 import { EmulatorType } from "./types";
 import bootRoms from "./boot-roms";
 
-export enum InterruptSource {
+export const enum InterruptSource {
   VBlank = 0,
   LCD = 1,
   Timer = 2,

@@ -79,7 +79,7 @@ export function subtractBytes(a: number, b: number, carryFlag = false) {
   };
 }
 
-export enum Condition {
+export const enum Condition {
   Z,
   C,
   NZ,

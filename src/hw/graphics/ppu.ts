@@ -21,14 +21,14 @@ interface Pixel {
   bgPriority?: boolean;
 }
 
-enum PPUMode {
+const enum PPUMode {
   HBlank = 0,
   VBlank = 1,
   OAMScan = 2,
   Drawing = 3,
 }
 
-enum StatSource {
+const enum StatSource {
   Mode0 = 3,
   Mode1 = 4,
   Mode2 = 5,

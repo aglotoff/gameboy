@@ -10,7 +10,7 @@ import { APURegisters } from "./hw/audio/apu-registers";
 import { VRAM } from "./hw/graphics/vram";
 import { Serial } from "./hw/serial";
 
-export enum HWRegister {
+export const enum HWRegister {
   JOYP = 0xff00,
   SB = 0xff01,
   SC = 0xff02,

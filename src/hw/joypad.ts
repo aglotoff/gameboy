@@ -8,14 +8,14 @@ const enum SelectButtons {
   Direction = 1 << 5,
 }
 
-export enum ActionButton {
+export const enum ActionButton {
   A = 1 << 0,
   B = 1 << 1,
   Select = 1 << 2,
   Start = 1 << 3,
 }
 
-export enum DirectionButton {
+export const enum DirectionButton {
   Right = 1 << 0,
   Left = 1 << 1,
   Up = 1 << 2,

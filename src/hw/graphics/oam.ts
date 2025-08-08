@@ -21,7 +21,7 @@ export interface OAMEntry {
   palette: boolean;
 }
 
-export enum OAMFlags {
+export const enum OAMFlags {
   PaletteNumber = 1 << 4,
   XFlip = 1 << 5,
   YFlip = 1 << 6,

@@ -1,7 +1,7 @@
 import { IAudioChannel } from "../../audio";
 import { BaseChannel } from "./base-channel";
 
-export enum EnvelopeDirection {
+export const enum EnvelopeDirection {
   DOWN,
   UP,
 }
