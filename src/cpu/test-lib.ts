@@ -1,6 +1,6 @@
 import { test } from "vitest";
 
-import { CpuState, IMemory } from "../cpu-state";
+import { CpuState, IMemory } from "./cpu-state";
 
 class TestMemory implements IMemory {
   private ram = new Uint8Array(0x10000);
@@ -17,7 +17,7 @@ class TestMemory implements IMemory {
   public triggerIncrementRead() {}
 }
 
-export const testInstruction = test.extend({
+export const testCpuState = test.extend({
   state: async ({}, use: (state: CpuState) => Promise<void>) => {
     await use(new CpuState({ memory: new TestMemory(), onCycle: () => {} }));
   },

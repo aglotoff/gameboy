@@ -1,6 +1,8 @@
 import { describe, expect } from "vitest";
 
 import { Flag, Register, RegisterPair } from "../register";
+import { testCpuState } from "../test-lib";
+
 import {
   rotateLeftCircularAccumulator,
   rotateRightCircularAccumulator,
@@ -29,10 +31,9 @@ import {
   setBitRegister,
   setBitIndirectHL,
 } from "./bitwise";
-import { testInstruction } from "./test-lib";
 
 describe("Rotate, shift, and bit operation instructions", () => {
-  testInstruction("RLCA", ({ state }) => {
+  testCpuState("RLCA", ({ state }) => {
     state.writeRegister(Register.A, 0x85);
 
     rotateLeftCircularAccumulator(state);
@@ -45,7 +46,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("RRCA", ({ state }) => {
+  testCpuState("RRCA", ({ state }) => {
     state.writeRegister(Register.A, 0x3b);
 
     rotateRightCircularAccumulator(state);
@@ -58,7 +59,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("RLA", ({ state }) => {
+  testCpuState("RLA", ({ state }) => {
     state.writeRegister(Register.A, 0x95);
     state.setFlag(Flag.CY, true);
 
@@ -72,7 +73,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("RRA", ({ state }) => {
+  testCpuState("RRA", ({ state }) => {
     state.writeRegister(Register.A, 0x81);
     state.setFlag(Flag.CY, false);
 
@@ -86,7 +87,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("RLC r", ({ state }) => {
+  testCpuState("RLC r", ({ state }) => {
     state.writeRegister(Register.B, 0x85);
     state.setFlag(Flag.CY, false);
 
@@ -100,7 +101,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("RLC (HL)", ({ state }) => {
+  testCpuState("RLC (HL)", ({ state }) => {
     state.writeMemory(0x8ac5, 0x00);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
@@ -115,7 +116,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testInstruction("RRC r", ({ state }) => {
+  testCpuState("RRC r", ({ state }) => {
     state.writeRegister(Register.C, 0x01);
     state.setFlag(Flag.CY, false);
 
@@ -129,7 +130,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("RRC (HL)", ({ state }) => {
+  testCpuState("RRC (HL)", ({ state }) => {
     state.writeMemory(0x8ac5, 0x00);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
@@ -144,7 +145,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testInstruction("RL r", ({ state }) => {
+  testCpuState("RL r", ({ state }) => {
     state.writeRegister(Register.L, 0x80);
     state.setFlag(Flag.CY, false);
 
@@ -158,7 +159,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("RL (HL)", ({ state }) => {
+  testCpuState("RL (HL)", ({ state }) => {
     state.writeMemory(0x8ac5, 0x11);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
@@ -173,7 +174,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testInstruction("RR r", ({ state }) => {
+  testCpuState("RR r", ({ state }) => {
     state.writeRegister(Register.A, 0x01);
     state.setFlag(Flag.CY, false);
 
@@ -187,7 +188,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("RR (HL)", ({ state }) => {
+  testCpuState("RR (HL)", ({ state }) => {
     state.writeMemory(0x8ac5, 0x8a);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
@@ -202,7 +203,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testInstruction("SLA r", ({ state }) => {
+  testCpuState("SLA r", ({ state }) => {
     state.writeRegister(Register.D, 0x80);
     state.setFlag(Flag.CY, false);
 
@@ -216,7 +217,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("SLA (HL)", ({ state }) => {
+  testCpuState("SLA (HL)", ({ state }) => {
     state.writeMemory(0x8ac5, 0xff);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
@@ -231,7 +232,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testInstruction("SRA r", ({ state }) => {
+  testCpuState("SRA r", ({ state }) => {
     state.writeRegister(Register.A, 0x8a);
     state.setFlag(Flag.CY, false);
 
@@ -245,7 +246,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("SRA (HL)", ({ state }) => {
+  testCpuState("SRA (HL)", ({ state }) => {
     state.writeMemory(0x8ac5, 0x01);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
@@ -260,7 +261,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testInstruction("SRL r", ({ state }) => {
+  testCpuState("SRL r", ({ state }) => {
     state.writeRegister(Register.A, 0x01);
     state.setFlag(Flag.CY, false);
 
@@ -274,7 +275,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("SRL (HL)", ({ state }) => {
+  testCpuState("SRL (HL)", ({ state }) => {
     state.writeMemory(0x8ac5, 0xff);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
@@ -289,7 +290,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testInstruction("SWAP r", ({ state }) => {
+  testCpuState("SWAP r", ({ state }) => {
     state.writeRegister(Register.A, 0x00);
     state.setFlag(Flag.CY, false);
 
@@ -303,7 +304,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("SWAP (HL)", ({ state }) => {
+  testCpuState("SWAP (HL)", ({ state }) => {
     state.writeMemory(0x8ac5, 0xf0);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.setFlag(Flag.CY, false);
@@ -319,7 +320,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
   });
 
   describe("BIT b, r", () => {
-    testInstruction("BIT 7, A", ({ state }) => {
+    testCpuState("BIT 7, A", ({ state }) => {
       state.writeRegister(Register.A, 0x80);
 
       testBitRegister(state, 7, Register.A);
@@ -330,7 +331,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
       expect(state.getElapsedCycles()).toBe(1);
     });
 
-    testInstruction("BIT 4, L", ({ state }) => {
+    testCpuState("BIT 4, L", ({ state }) => {
       state.writeRegister(Register.L, 0xef);
 
       testBitRegister(state, 4, Register.L);
@@ -343,7 +344,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
   });
 
   describe("BIT b, (HL)", () => {
-    testInstruction("BIT 0, (HL)", ({ state }) => {
+    testCpuState("BIT 0, (HL)", ({ state }) => {
       state.writeMemory(0x8ac5, 0xfe);
       state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
@@ -355,7 +356,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
       expect(state.getElapsedCycles()).toBe(2);
     });
 
-    testInstruction("BIT 1, (HL)", ({ state }) => {
+    testCpuState("BIT 1, (HL)", ({ state }) => {
       state.writeMemory(0x8ac5, 0xfe);
       state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
@@ -369,7 +370,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
   });
 
   describe("RES b, r", () => {
-    testInstruction("RES 7, A", ({ state }) => {
+    testCpuState("RES 7, A", ({ state }) => {
       state.writeRegister(Register.A, 0x80);
 
       resetBitRegister(state, 7, Register.A);
@@ -378,7 +379,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
       expect(state.getElapsedCycles()).toBe(1);
     });
 
-    testInstruction("RES 1, L", ({ state }) => {
+    testCpuState("RES 1, L", ({ state }) => {
       state.writeRegister(Register.L, 0x3b);
 
       resetBitRegister(state, 1, Register.L);
@@ -388,7 +389,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     });
   });
 
-  testInstruction("RES b, (HL)", ({ state }) => {
+  testCpuState("RES b, (HL)", ({ state }) => {
     state.writeMemory(0x8ac5, 0xff);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
@@ -399,7 +400,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
   });
 
   describe("SET b, r", () => {
-    testInstruction("SET 2, A", ({ state }) => {
+    testCpuState("SET 2, A", ({ state }) => {
       state.writeRegister(Register.A, 0x80);
 
       setBitRegister(state, 2, Register.A);
@@ -408,7 +409,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
       expect(state.getElapsedCycles()).toBe(1);
     });
 
-    testInstruction("SET 7, L", ({ state }) => {
+    testCpuState("SET 7, L", ({ state }) => {
       state.writeRegister(Register.L, 0x3b);
 
       setBitRegister(state, 7, Register.L);
@@ -418,7 +419,7 @@ describe("Rotate, shift, and bit operation instructions", () => {
     });
   });
 
-  testInstruction("SET b, (HL)", ({ state }) => {
+  testCpuState("SET b, (HL)", ({ state }) => {
     state.writeMemory(0x8ac5, 0x00);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 

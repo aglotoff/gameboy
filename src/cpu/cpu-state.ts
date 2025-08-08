@@ -1,5 +1,12 @@
-import { Flag, Register, RegisterFile, RegisterPair } from "./register";
-import { makeWord, wrappingIncrementWord } from "../utils";
+import {
+  Flag,
+  getHighRegister,
+  getLowRegister,
+  Register,
+  RegisterFile,
+  RegisterPair,
+} from "./register";
+import { getLSB, getMSB, makeWord, wrappingIncrementWord } from "../utils";
 
 export interface IMemory {
   read(address: number): number;
@@ -51,11 +58,15 @@ export class CpuState {
   }
 
   public readRegisterPair(pair: RegisterPair) {
-    return this.regs.readRegisterPair(pair);
+    return makeWord(
+      this.regs.readRegister(getHighRegister(pair)),
+      this.regs.readRegister(getLowRegister(pair))
+    );
   }
 
   public writeRegisterPair(pair: RegisterPair, value: number) {
-    this.regs.writeRegisterPair(pair, value);
+    this.regs.writeRegister(getHighRegister(pair), getMSB(value));
+    this.regs.writeRegister(getLowRegister(pair), getLSB(value));
   }
 
   public getFlag(flag: Flag) {

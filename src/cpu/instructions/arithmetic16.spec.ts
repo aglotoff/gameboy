@@ -1,16 +1,17 @@
 import { describe, expect } from "vitest";
 
 import { Flag, RegisterPair } from "../register";
+import { testCpuState } from "../test-lib";
+
 import {
   addRegisterPair,
   addToStackPointer,
   decrementRegisterPair,
   incrementRegisterPair,
 } from "./arithmetic16";
-import { testInstruction } from "./test-lib";
 
 describe("16-bit arithmetic instructions", () => {
-  testInstruction("INC rr", ({ state }) => {
+  testCpuState("INC rr", ({ state }) => {
     state.writeRegisterPair(RegisterPair.DE, 0x235f);
 
     incrementRegisterPair(state, RegisterPair.DE);
@@ -19,7 +20,7 @@ describe("16-bit arithmetic instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("DEC rr", ({ state }) => {
+  testCpuState("DEC rr", ({ state }) => {
     state.writeRegisterPair(RegisterPair.DE, 0x235f);
 
     decrementRegisterPair(state, RegisterPair.DE);
@@ -28,7 +29,7 @@ describe("16-bit arithmetic instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("ADD HL,rr", ({ state }) => {
+  testCpuState("ADD HL,rr", ({ state }) => {
     state.writeRegisterPair(RegisterPair.HL, 0x8a23);
     state.writeRegisterPair(RegisterPair.BC, 0x0605);
 
@@ -51,7 +52,7 @@ describe("16-bit arithmetic instructions", () => {
     expect(state.getElapsedCycles()).toBe(4);
   });
 
-  testInstruction("ADD SP,e", ({ state }) => {
+  testCpuState("ADD SP,e", ({ state }) => {
     state.writeRegisterPair(RegisterPair.SP, 0xfff8);
     state.writeMemory(0, 0x2);
 

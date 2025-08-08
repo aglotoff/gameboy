@@ -1,6 +1,7 @@
 import { describe, expect } from "vitest";
 
 import { Flag, Register, RegisterPair } from "../register";
+import { testCpuState } from "../test-lib";
 
 import {
   loadDirectFromStackPointer,
@@ -10,10 +11,9 @@ import {
   popFromStack,
   pushToStack,
 } from "./load16";
-import { testInstruction } from "./test-lib";
 
 describe("16-bit load instructions", () => {
-  testInstruction("LD dd,nn", ({ state }) => {
+  testCpuState("LD dd,nn", ({ state }) => {
     state.writeMemory(0x00, 0x5b);
     state.writeMemory(0x01, 0x3a);
 
@@ -24,7 +24,7 @@ describe("16-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testInstruction("LD (nn),SP", ({ state }) => {
+  testCpuState("LD (nn),SP", ({ state }) => {
     state.writeRegisterPair(RegisterPair.SP, 0xfff8);
     state.writeMemory(0x00, 0x00);
     state.writeMemory(0x01, 0xc1);
@@ -36,7 +36,7 @@ describe("16-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(5);
   });
 
-  testInstruction("LD SP,HL", ({ state }) => {
+  testCpuState("LD SP,HL", ({ state }) => {
     state.writeRegisterPair(RegisterPair.HL, 0x3a5b);
 
     loadStackPointerFromHL(state);
@@ -45,7 +45,7 @@ describe("16-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("PUSH qq", ({ state }) => {
+  testCpuState("PUSH qq", ({ state }) => {
     state.writeRegisterPair(RegisterPair.SP, 0xfffe);
     state.writeRegisterPair(RegisterPair.BC, 0x8ac5);
 
@@ -57,7 +57,7 @@ describe("16-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(4);
   });
 
-  testInstruction("POP qq", ({ state }) => {
+  testCpuState("POP qq", ({ state }) => {
     state.writeRegisterPair(RegisterPair.SP, 0xfffc);
     state.writeMemory(0xfffc, 0x5f);
     state.writeMemory(0xfffd, 0x3c);
@@ -69,7 +69,7 @@ describe("16-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testInstruction("LDHL SP,e", ({ state }) => {
+  testCpuState("LDHL SP,e", ({ state }) => {
     state.writeRegisterPair(RegisterPair.SP, 0xfff8);
     state.writeMemory(0x00, 0x2);
 

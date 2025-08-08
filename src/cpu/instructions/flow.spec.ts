@@ -1,6 +1,9 @@
 import { describe, expect } from "vitest";
 
 import { Flag, RegisterPair } from "../register";
+import { testCpuState } from "../test-lib";
+import { getLSB, getMSB } from "../../utils";
+
 import {
   callFunction,
   callFunctionConditional,
@@ -14,12 +17,10 @@ import {
   returnFromFunctionConditional,
   returnFromInterruptHandler,
 } from "./flow";
-import { getLSB, getMSB } from "../../utils";
-import { testInstruction } from "./test-lib";
 import { Condition } from "./lib";
 
 describe("Control flow instructions", () => {
-  testInstruction("JP nn", ({ state }) => {
+  testCpuState("JP nn", ({ state }) => {
     state.writeMemory(0x00, getLSB(0x8000));
     state.writeMemory(0x01, getMSB(0x8000));
 
@@ -29,7 +30,7 @@ describe("Control flow instructions", () => {
     expect(state.getElapsedCycles()).toBe(4);
   });
 
-  testInstruction("JP (HL)", ({ state }) => {
+  testCpuState("JP (HL)", ({ state }) => {
     state.writeRegisterPair(RegisterPair.HL, 0x8000);
 
     jumpToHL(state);
@@ -39,7 +40,7 @@ describe("Control flow instructions", () => {
   });
 
   describe("JP cc,nn", () => {
-    testInstruction("JP NZ, nn", ({ state }) => {
+    testCpuState("JP NZ, nn", ({ state }) => {
       state.writeMemory(0x00, getLSB(0x8000));
       state.writeMemory(0x01, getMSB(0x8000));
       state.setFlag(Flag.Z, true);
@@ -50,7 +51,7 @@ describe("Control flow instructions", () => {
       expect(state.getElapsedCycles()).toBe(3);
     });
 
-    testInstruction("JP Z, nn", ({ state }) => {
+    testCpuState("JP Z, nn", ({ state }) => {
       state.writeMemory(0x00, getLSB(0x8000));
       state.writeMemory(0x01, getMSB(0x8000));
       state.setFlag(Flag.Z, true);
@@ -61,7 +62,7 @@ describe("Control flow instructions", () => {
       expect(state.getElapsedCycles()).toBe(4);
     });
 
-    testInstruction("JP C, nn", ({ state }) => {
+    testCpuState("JP C, nn", ({ state }) => {
       state.writeMemory(0x00, getLSB(0x8000));
       state.writeMemory(0x01, getMSB(0x8000));
       state.setFlag(Flag.Z, true);
@@ -72,7 +73,7 @@ describe("Control flow instructions", () => {
       expect(state.getElapsedCycles()).toBe(3);
     });
 
-    testInstruction("JP NC, nn", ({ state }) => {
+    testCpuState("JP NC, nn", ({ state }) => {
       state.writeMemory(0x00, getLSB(0x8000));
       state.writeMemory(0x01, getMSB(0x8000));
       state.setFlag(Flag.Z, true);
@@ -84,7 +85,7 @@ describe("Control flow instructions", () => {
     });
   });
 
-  testInstruction("JR e", ({ state }) => {
+  testCpuState("JR e", ({ state }) => {
     state.writeRegisterPair(RegisterPair.PC, 0x8000);
     state.writeMemory(0x8000, 0x14);
 
@@ -95,7 +96,7 @@ describe("Control flow instructions", () => {
   });
 
   describe("JR cc,e", () => {
-    testInstruction("JR NZ, e", ({ state }) => {
+    testCpuState("JR NZ, e", ({ state }) => {
       state.writeRegisterPair(RegisterPair.PC, 0x8000);
       state.writeMemory(0x8000, 0xfa);
       state.setFlag(Flag.Z, true);
@@ -106,7 +107,7 @@ describe("Control flow instructions", () => {
       expect(state.getElapsedCycles()).toBe(2);
     });
 
-    testInstruction("JR Z, e", ({ state }) => {
+    testCpuState("JR Z, e", ({ state }) => {
       state.writeRegisterPair(RegisterPair.PC, 0x8000);
       state.writeMemory(0x8000, 0xfa);
       state.setFlag(Flag.Z, true);
@@ -117,7 +118,7 @@ describe("Control flow instructions", () => {
       expect(state.getElapsedCycles()).toBe(3);
     });
 
-    testInstruction("JR C, e", ({ state }) => {
+    testCpuState("JR C, e", ({ state }) => {
       state.writeRegisterPair(RegisterPair.PC, 0x8000);
       state.writeMemory(0x8000, 0xfa);
       state.setFlag(Flag.Z, true);
@@ -128,7 +129,7 @@ describe("Control flow instructions", () => {
       expect(state.getElapsedCycles()).toBe(2);
     });
 
-    testInstruction("JR NC, e", ({ state }) => {
+    testCpuState("JR NC, e", ({ state }) => {
       state.writeRegisterPair(RegisterPair.PC, 0x8000);
       state.writeMemory(0x8000, 0xfa);
       state.setFlag(Flag.Z, true);
@@ -140,7 +141,7 @@ describe("Control flow instructions", () => {
     });
   });
 
-  testInstruction("CALL nn", ({ state }) => {
+  testCpuState("CALL nn", ({ state }) => {
     state.writeRegisterPair(RegisterPair.PC, 0x8000);
     state.writeRegisterPair(RegisterPair.SP, 0xfffe);
     state.writeMemory(0x8000, getLSB(0x1234));
@@ -156,7 +157,7 @@ describe("Control flow instructions", () => {
   });
 
   describe("CALL cc, nn", () => {
-    testInstruction("CALL NZ, nn", ({ state }) => {
+    testCpuState("CALL NZ, nn", ({ state }) => {
       state.writeRegisterPair(RegisterPair.PC, 0x8000);
       state.writeRegisterPair(RegisterPair.SP, 0xfffe);
       state.writeMemory(0x8000, getLSB(0x1234));
@@ -170,7 +171,7 @@ describe("Control flow instructions", () => {
       expect(state.getElapsedCycles()).toBe(3);
     });
 
-    testInstruction("CALL Z, nn", ({ state }) => {
+    testCpuState("CALL Z, nn", ({ state }) => {
       state.writeRegisterPair(RegisterPair.PC, 0x8000);
       state.writeRegisterPair(RegisterPair.SP, 0xfffe);
       state.writeMemory(0x8000, getLSB(0x1234));
@@ -186,7 +187,7 @@ describe("Control flow instructions", () => {
       expect(state.getElapsedCycles()).toBe(6);
     });
 
-    testInstruction("CALL C, nn", ({ state }) => {
+    testCpuState("CALL C, nn", ({ state }) => {
       state.writeRegisterPair(RegisterPair.PC, 0x8000);
       state.writeRegisterPair(RegisterPair.SP, 0xfffe);
       state.writeMemory(0x8000, getLSB(0x1234));
@@ -200,7 +201,7 @@ describe("Control flow instructions", () => {
       expect(state.getElapsedCycles()).toBe(3);
     });
 
-    testInstruction("CALL NC, nn", ({ state }) => {
+    testCpuState("CALL NC, nn", ({ state }) => {
       state.writeRegisterPair(RegisterPair.PC, 0x8000);
       state.writeRegisterPair(RegisterPair.SP, 0xfffe);
       state.writeMemory(0x8000, getLSB(0x1234));
@@ -217,7 +218,7 @@ describe("Control flow instructions", () => {
     });
   });
 
-  testInstruction("RET", ({ state }) => {
+  testCpuState("RET", ({ state }) => {
     state.writeRegisterPair(RegisterPair.PC, 0x9000);
     state.writeRegisterPair(RegisterPair.SP, 0xfffc);
     state.writeMemory(0xfffd, getMSB(0x8003));
@@ -231,7 +232,7 @@ describe("Control flow instructions", () => {
   });
 
   describe("RET cc", () => {
-    testInstruction("RET NZ", ({ state }) => {
+    testCpuState("RET NZ", ({ state }) => {
       state.writeRegisterPair(RegisterPair.PC, 0x9000);
       state.writeRegisterPair(RegisterPair.SP, 0xfffc);
       state.writeMemory(0xfffd, getMSB(0x8003));
@@ -245,7 +246,7 @@ describe("Control flow instructions", () => {
       expect(state.getElapsedCycles()).toBe(2);
     });
 
-    testInstruction("RET Z", ({ state }) => {
+    testCpuState("RET Z", ({ state }) => {
       state.writeRegisterPair(RegisterPair.PC, 0x9000);
       state.writeRegisterPair(RegisterPair.SP, 0xfffc);
       state.writeMemory(0xfffd, getMSB(0x8003));
@@ -259,7 +260,7 @@ describe("Control flow instructions", () => {
       expect(state.getElapsedCycles()).toBe(5);
     });
 
-    testInstruction("RET C", ({ state }) => {
+    testCpuState("RET C", ({ state }) => {
       state.writeRegisterPair(RegisterPair.PC, 0x9000);
       state.writeRegisterPair(RegisterPair.SP, 0xfffc);
       state.writeMemory(0xfffd, getMSB(0x8003));
@@ -273,7 +274,7 @@ describe("Control flow instructions", () => {
       expect(state.getElapsedCycles()).toBe(2);
     });
 
-    testInstruction("RET NC", ({ state }) => {
+    testCpuState("RET NC", ({ state }) => {
       state.writeRegisterPair(RegisterPair.PC, 0x9000);
       state.writeRegisterPair(RegisterPair.SP, 0xfffc);
       state.writeMemory(0xfffd, getMSB(0x8003));
@@ -288,7 +289,7 @@ describe("Control flow instructions", () => {
     });
   });
 
-  testInstruction("RETI", ({ state }) => {
+  testCpuState("RETI", ({ state }) => {
     state.writeRegisterPair(RegisterPair.PC, 0x9000);
     state.writeRegisterPair(RegisterPair.SP, 0xfffc);
     state.writeMemory(0xfffd, getMSB(0x8001));
@@ -302,7 +303,7 @@ describe("Control flow instructions", () => {
     expect(state.getElapsedCycles()).toBe(4);
   });
 
-  testInstruction("RST t", ({ state }) => {
+  testCpuState("RST t", ({ state }) => {
     state.writeRegisterPair(RegisterPair.PC, 0x8001);
     state.writeRegisterPair(RegisterPair.SP, 0xfffe);
 

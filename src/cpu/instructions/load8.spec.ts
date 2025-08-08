@@ -1,6 +1,7 @@
 import { describe, expect } from "vitest";
 
 import { Register, RegisterPair } from "../register";
+import { testCpuState } from "../test-lib";
 import { getLSB, getMSB } from "../../utils";
 
 import {
@@ -24,10 +25,9 @@ import {
   loadIndirectHLDecrementFromAccumulator,
   loadIndirectHLIncrementFromAccumulator,
 } from "./load8";
-import { testInstruction } from "./test-lib";
 
 describe("8-bit load instructions", () => {
-  testInstruction("LD r,r'", ({ state }) => {
+  testCpuState("LD r,r'", ({ state }) => {
     state.writeRegister(Register.B, 0x3c);
     state.writeRegister(Register.D, 0x5c);
 
@@ -39,7 +39,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("LD r,n", ({ state }) => {
+  testCpuState("LD r,n", ({ state }) => {
     state.writeMemory(0, 0x24);
 
     loadRegisterFromImmediate(state, Register.B);
@@ -48,7 +48,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("LD r,(HL)", ({ state }) => {
+  testCpuState("LD r,(HL)", ({ state }) => {
     state.writeMemory(0x8ac5, 0x5c);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
@@ -58,7 +58,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("LD (HL),r", ({ state }) => {
+  testCpuState("LD (HL),r", ({ state }) => {
     state.writeRegister(Register.A, 0x3c);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
@@ -68,7 +68,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("LD (HL),n", ({ state }) => {
+  testCpuState("LD (HL),n", ({ state }) => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeMemory(0, 0x3c);
 
@@ -78,7 +78,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testInstruction("LD A,(BC)", ({ state }) => {
+  testCpuState("LD A,(BC)", ({ state }) => {
     state.writeRegisterPair(RegisterPair.BC, 0x8ac5);
     state.writeMemory(0x8ac5, 0x2f);
 
@@ -88,7 +88,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("LD A,(DE)", ({ state }) => {
+  testCpuState("LD A,(DE)", ({ state }) => {
     state.writeRegisterPair(RegisterPair.DE, 0x8ac5);
     state.writeMemory(0x8ac5, 0x5f);
 
@@ -98,7 +98,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("LD (BC),A", ({ state }) => {
+  testCpuState("LD (BC),A", ({ state }) => {
     state.writeRegisterPair(RegisterPair.BC, 0x205f);
     state.writeRegister(Register.A, 0x56);
 
@@ -108,7 +108,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("LD (DE),A", ({ state }) => {
+  testCpuState("LD (DE),A", ({ state }) => {
     state.writeRegisterPair(RegisterPair.DE, 0x205c);
     state.writeRegister(Register.A, 0xaa);
 
@@ -118,7 +118,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("LD A,(nn)", ({ state }) => {
+  testCpuState("LD A,(nn)", ({ state }) => {
     state.writeMemory(0, getLSB(0x8000));
     state.writeMemory(1, getMSB(0x8000));
     state.writeMemory(0x8000, 0x5c);
@@ -129,7 +129,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(4);
   });
 
-  testInstruction("LD (nn),A", ({ state }) => {
+  testCpuState("LD (nn),A", ({ state }) => {
     state.writeMemory(0, getLSB(0x8000));
     state.writeMemory(1, getMSB(0x8000));
     state.writeRegister(Register.A, 0x2f);
@@ -140,7 +140,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(4);
   });
 
-  testInstruction("LD A,(C)", ({ state }) => {
+  testCpuState("LD A,(C)", ({ state }) => {
     state.writeMemory(0xff95, 0x2c);
     state.writeRegister(Register.C, 0x95);
 
@@ -150,7 +150,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("LD (C),A", ({ state }) => {
+  testCpuState("LD (C),A", ({ state }) => {
     state.writeRegister(Register.A, 0x5c);
     state.writeRegister(Register.C, 0x9f);
 
@@ -160,7 +160,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("LD A,(n)", ({ state }) => {
+  testCpuState("LD A,(n)", ({ state }) => {
     state.writeMemory(0, getLSB(0x34));
     state.writeMemory(0xff34, 0x5f);
 
@@ -170,7 +170,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testInstruction("LD (n),A", ({ state }) => {
+  testCpuState("LD (n),A", ({ state }) => {
     state.writeMemory(0, getLSB(0x34));
     state.writeRegister(Register.A, 0x2f);
 
@@ -180,7 +180,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testInstruction("LD A,(HLD)", ({ state }) => {
+  testCpuState("LD A,(HLD)", ({ state }) => {
     state.writeRegisterPair(RegisterPair.HL, 0x8a5c);
     state.writeMemory(0x8a5c, 0x3c);
 
@@ -191,7 +191,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("LD A,(HLI)", ({ state }) => {
+  testCpuState("LD A,(HLI)", ({ state }) => {
     state.writeRegisterPair(RegisterPair.HL, 0x1ff);
     state.writeMemory(0x1ff, 0x56);
 
@@ -202,7 +202,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("LD (HLD),A", ({ state }) => {
+  testCpuState("LD (HLD),A", ({ state }) => {
     state.writeRegisterPair(RegisterPair.HL, 0x4000);
     state.writeRegister(Register.A, 0x5);
 
@@ -213,7 +213,7 @@ describe("8-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("LD (HLI),A", ({ state }) => {
+  testCpuState("LD (HLI),A", ({ state }) => {
     state.writeRegisterPair(RegisterPair.HL, 0xffff);
     state.writeRegister(Register.A, 0x56);
 

@@ -1,6 +1,8 @@
 import { describe, expect } from "vitest";
 
 import { Flag, Register, RegisterPair } from "../register";
+import { testCpuState } from "../test-lib";
+
 import {
   addImmediate,
   addImmediateWithCarry,
@@ -35,10 +37,9 @@ import {
   xorIndirectHL,
   xorRegister,
 } from "./arithmetic8";
-import { testInstruction } from "./test-lib";
 
 describe("8-bit arithmetic and logical instructions", () => {
-  testInstruction("ADD A,r", ({ state }) => {
+  testCpuState("ADD A,r", ({ state }) => {
     state.writeRegister(Register.A, 0x3a);
     state.writeRegister(Register.B, 0xc6);
 
@@ -52,7 +53,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("ADD A,(HL)", ({ state }) => {
+  testCpuState("ADD A,(HL)", ({ state }) => {
     state.writeRegister(Register.A, 0x3c);
     state.writeRegisterPair(RegisterPair.HL, 0x3ab6);
     state.writeMemory(0x3ab6, 0x12);
@@ -67,7 +68,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("ADD A,n", ({ state }) => {
+  testCpuState("ADD A,n", ({ state }) => {
     state.writeRegister(Register.A, 0x3c);
     state.writeMemory(0, 0xff);
 
@@ -81,7 +82,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("ADC A,r", ({ state }) => {
+  testCpuState("ADC A,r", ({ state }) => {
     state.writeRegister(Register.A, 0xe1);
     state.writeRegister(Register.E, 0x0f);
     state.setFlag(Flag.CY, true);
@@ -96,7 +97,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("ADC A,(HL)", ({ state }) => {
+  testCpuState("ADC A,(HL)", ({ state }) => {
     state.writeRegister(Register.A, 0xe1);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeMemory(0x8ac5, 0x1e);
@@ -112,7 +113,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("ADC A,n", ({ state }) => {
+  testCpuState("ADC A,n", ({ state }) => {
     state.writeRegister(Register.A, 0xe1);
     state.writeMemory(0, 0x3b);
     state.setFlag(Flag.CY, true);
@@ -127,7 +128,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("SUB r", ({ state }) => {
+  testCpuState("SUB r", ({ state }) => {
     state.writeRegister(Register.A, 0x3e);
     state.writeRegister(Register.E, 0x3e);
 
@@ -141,7 +142,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("SUB (HL)", ({ state }) => {
+  testCpuState("SUB (HL)", ({ state }) => {
     state.writeRegister(Register.A, 0x3e);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeMemory(0x8ac5, 0x40);
@@ -156,7 +157,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("SUB n", ({ state }) => {
+  testCpuState("SUB n", ({ state }) => {
     state.writeRegister(Register.A, 0x3e);
     state.writeMemory(0, 0x0f);
 
@@ -170,7 +171,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("SBC A,r", ({ state }) => {
+  testCpuState("SBC A,r", ({ state }) => {
     state.writeRegister(Register.A, 0x3b);
     state.writeRegister(Register.H, 0x2a);
     state.setFlag(Flag.CY, true);
@@ -185,7 +186,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("SBC A,(HL)", ({ state }) => {
+  testCpuState("SBC A,(HL)", ({ state }) => {
     state.writeRegister(Register.A, 0x3b);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeMemory(0x8ac5, 0x4f);
@@ -201,7 +202,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("SBC A,n", ({ state }) => {
+  testCpuState("SBC A,n", ({ state }) => {
     state.writeRegister(Register.A, 0x3b);
     state.writeMemory(0, 0x3a);
     state.setFlag(Flag.CY, true);
@@ -216,7 +217,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("CP r", ({ state }) => {
+  testCpuState("CP r", ({ state }) => {
     state.writeRegister(Register.A, 0x3c);
     state.writeRegister(Register.B, 0x2f);
 
@@ -229,7 +230,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("CP (HL)", ({ state }) => {
+  testCpuState("CP (HL)", ({ state }) => {
     state.writeRegister(Register.A, 0x3c);
     state.writeRegisterPair(RegisterPair.HL, 0x3ab6);
     state.writeMemory(0x3ab6, 0x40);
@@ -243,7 +244,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("CP n", ({ state }) => {
+  testCpuState("CP n", ({ state }) => {
     state.writeRegister(Register.A, 0x3c);
     state.writeMemory(0, 0x3c);
 
@@ -256,7 +257,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("INC r", ({ state }) => {
+  testCpuState("INC r", ({ state }) => {
     state.writeRegister(Register.A, 0xff);
 
     incrementRegister(state, Register.A);
@@ -268,7 +269,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("INC (HL)", ({ state }) => {
+  testCpuState("INC (HL)", ({ state }) => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeMemory(0x8ac5, 0x50);
 
@@ -283,7 +284,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testInstruction("DEC r", ({ state }) => {
+  testCpuState("DEC r", ({ state }) => {
     state.writeRegister(Register.L, 0x01);
 
     decrementRegister(state, Register.L);
@@ -295,7 +296,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("DEC (HL)", ({ state }) => {
+  testCpuState("DEC (HL)", ({ state }) => {
     state.writeRegisterPair(RegisterPair.HL, 0xff34);
     state.writeMemory(0xff34, 0x00);
 
@@ -310,7 +311,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testInstruction("AND r", ({ state }) => {
+  testCpuState("AND r", ({ state }) => {
     state.writeRegister(Register.A, 0x5a);
     state.writeRegister(Register.L, 0x3f);
 
@@ -324,7 +325,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("AND (HL)", ({ state }) => {
+  testCpuState("AND (HL)", ({ state }) => {
     state.writeRegister(Register.A, 0x5a);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeMemory(0x8ac5, 0x00);
@@ -339,7 +340,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("AND n", ({ state }) => {
+  testCpuState("AND n", ({ state }) => {
     state.writeRegister(Register.A, 0x5a);
     state.writeMemory(0, 0x38);
 
@@ -353,7 +354,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("OR r", ({ state }) => {
+  testCpuState("OR r", ({ state }) => {
     state.writeRegister(Register.A, 0x5a);
 
     orRegister(state, Register.A);
@@ -366,7 +367,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("OR (HL)", ({ state }) => {
+  testCpuState("OR (HL)", ({ state }) => {
     state.writeRegister(Register.A, 0x5a);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac2);
     state.writeMemory(0x8ac2, 0x0f);
@@ -381,7 +382,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("OR n", ({ state }) => {
+  testCpuState("OR n", ({ state }) => {
     state.writeRegister(Register.A, 0x5a);
     state.writeMemory(0, 0x3);
 
@@ -395,7 +396,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("XOR r", ({ state }) => {
+  testCpuState("XOR r", ({ state }) => {
     state.writeRegister(Register.A, 0xff);
 
     xorRegister(state, Register.A);
@@ -408,7 +409,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(1);
   });
 
-  testInstruction("XOR (HL)", ({ state }) => {
+  testCpuState("XOR (HL)", ({ state }) => {
     state.writeRegister(Register.A, 0xff);
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeMemory(0x8ac5, 0x8a);
@@ -423,7 +424,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("XOR n", ({ state }) => {
+  testCpuState("XOR n", ({ state }) => {
     state.writeRegister(Register.A, 0xff);
     state.writeMemory(0, 0xf);
 
@@ -437,7 +438,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("CCF", ({ state }) => {
+  testCpuState("CCF", ({ state }) => {
     state.setFlag(Flag.CY, true);
 
     complementCarryFlag(state);
@@ -451,7 +452,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("SCF", ({ state }) => {
+  testCpuState("SCF", ({ state }) => {
     state.setFlag(Flag.CY, false);
 
     setCarryFlag(state);
@@ -465,7 +466,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testInstruction("DAA", ({ state }) => {
+  testCpuState("DAA", ({ state }) => {
     state.writeRegister(Register.A, 0x45);
     state.writeRegister(Register.B, 0x38);
 
@@ -494,7 +495,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     expect(state.getElapsedCycles()).toBe(4);
   });
 
-  testInstruction("CPL", ({ state }) => {
+  testCpuState("CPL", ({ state }) => {
     state.writeRegister(Register.A, 0x35);
 
     complementAccumulator(state);
