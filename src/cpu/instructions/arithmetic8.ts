@@ -1,5 +1,5 @@
-import { CpuState } from "../cpu-state";
-import { Flag, Register, RegisterPair } from "../register";
+import { InstructionContext, RegisterPair } from "../cpu-state";
+import { Flag, Register } from "../register";
 import {
   addBytes,
   makeInstruction,
@@ -7,270 +7,240 @@ import {
   subtractBytes,
 } from "./lib";
 
-export const addRegister = makeInstruction((cpu, reg: Register) => {
-  doAdd(cpu, cpu.readRegister(reg));
+export const addRegister = makeInstruction((ctx, reg: Register) => {
+  doAdd(ctx, ctx.readRegister(reg));
 });
 
-export const addIndirectHL = makeInstruction((cpu) => {
-  const data = cpu.readMemory(cpu.readRegisterPair(RegisterPair.HL));
+export const addIndirectHL = makeInstruction((ctx) => {
+  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
 
-  cpu.beginNextCycle();
-
-  doAdd(cpu, data);
+  doAdd(ctx, data);
 });
 
 export const addImmediate = makeInstructionWithImmediateByte(doAdd);
 
-export const addRegisterWithCarry = makeInstruction((cpu, reg: Register) => {
-  doAdd(cpu, cpu.readRegister(reg), cpu.getFlag(Flag.CY));
+export const addRegisterWithCarry = makeInstruction((ctx, reg: Register) => {
+  doAdd(ctx, ctx.readRegister(reg), ctx.getFlag(Flag.CY));
 });
 
-export const addIndirectHLWithCarry = makeInstruction((cpu) => {
-  const data = cpu.readMemory(cpu.readRegisterPair(RegisterPair.HL));
+export const addIndirectHLWithCarry = makeInstruction((ctx) => {
+  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
 
-  cpu.beginNextCycle();
-
-  doAdd(cpu, data, cpu.getFlag(Flag.CY));
+  doAdd(ctx, data, ctx.getFlag(Flag.CY));
 });
 
 export const addImmediateWithCarry = makeInstructionWithImmediateByte(
-  (cpu, data) => {
-    doAdd(cpu, data, cpu.getFlag(Flag.CY));
+  (ctx, data) => {
+    doAdd(ctx, data, ctx.getFlag(Flag.CY));
   }
 );
 
-function doAdd(cpu: CpuState, value: number, carry = false) {
+function doAdd(ctx: InstructionContext, value: number, carry = false) {
   const { result, carryFrom3, carryFrom7 } = addBytes(
-    cpu.readRegister(Register.A),
+    ctx.readRegister(Register.A),
     value,
     carry
   );
 
-  cpu.writeRegister(Register.A, result);
+  ctx.writeRegister(Register.A, result);
 
-  cpu.setFlag(Flag.Z, result === 0);
-  cpu.setFlag(Flag.N, false);
-  cpu.setFlag(Flag.H, carryFrom3);
-  cpu.setFlag(Flag.CY, carryFrom7);
+  ctx.setFlag(Flag.Z, result === 0);
+  ctx.setFlag(Flag.N, false);
+  ctx.setFlag(Flag.H, carryFrom3);
+  ctx.setFlag(Flag.CY, carryFrom7);
 }
 
-export const subtractRegister = makeInstruction((cpu, reg: Register) => {
-  doSubtract(cpu, cpu.readRegister(reg));
+export const subtractRegister = makeInstruction((ctx, reg: Register) => {
+  doSubtract(ctx, ctx.readRegister(reg));
 });
 
-export const subtractIndirectHL = makeInstruction((cpu) => {
-  const data = cpu.readMemory(cpu.readRegisterPair(RegisterPair.HL));
+export const subtractIndirectHL = makeInstruction((ctx) => {
+  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
 
-  cpu.beginNextCycle();
-
-  doSubtract(cpu, data);
+  doSubtract(ctx, data);
 });
 
 export const subtractImmediate = makeInstructionWithImmediateByte(doSubtract);
 
 export const subtractRegisterWithCarry = makeInstruction(
-  (cpu, reg: Register) => {
-    doSubtract(cpu, cpu.readRegister(reg), cpu.getFlag(Flag.CY));
+  (ctx, reg: Register) => {
+    doSubtract(ctx, ctx.readRegister(reg), ctx.getFlag(Flag.CY));
   }
 );
 
-export const subtractIndirectHLWithCarry = makeInstruction((cpu) => {
-  const data = cpu.readMemory(cpu.readRegisterPair(RegisterPair.HL));
-
-  cpu.beginNextCycle();
-
-  doSubtract(cpu, data, cpu.getFlag(Flag.CY));
+export const subtractIndirectHLWithCarry = makeInstruction((ctx) => {
+  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
+  doSubtract(ctx, data, ctx.getFlag(Flag.CY));
 });
 
 export const subtractImmediateWithCarry = makeInstructionWithImmediateByte(
-  (cpu, data) => {
-    doSubtract(cpu, data, cpu.getFlag(Flag.CY));
+  (ctx, data) => {
+    doSubtract(ctx, data, ctx.getFlag(Flag.CY));
   }
 );
 
-function doSubtract(cpu: CpuState, value: number, carry = false) {
+function doSubtract(ctx: InstructionContext, value: number, carry = false) {
   const { result, borrowTo3, borrowTo7 } = subtractBytes(
-    cpu.readRegister(Register.A),
+    ctx.readRegister(Register.A),
     value,
     carry
   );
 
-  cpu.writeRegister(Register.A, result);
+  ctx.writeRegister(Register.A, result);
 
-  cpu.setFlag(Flag.Z, result === 0);
-  cpu.setFlag(Flag.N, true);
-  cpu.setFlag(Flag.H, borrowTo3);
-  cpu.setFlag(Flag.CY, borrowTo7);
+  ctx.setFlag(Flag.Z, result === 0);
+  ctx.setFlag(Flag.N, true);
+  ctx.setFlag(Flag.H, borrowTo3);
+  ctx.setFlag(Flag.CY, borrowTo7);
 }
 
-export const compareRegister = makeInstruction((cpu, reg: Register) => {
-  doCompare(cpu, cpu.readRegister(reg));
+export const compareRegister = makeInstruction((ctx, reg: Register) => {
+  doCompare(ctx, ctx.readRegister(reg));
 });
 
-export const compareIndirectHL = makeInstruction((cpu) => {
-  const data = cpu.readMemory(cpu.readRegisterPair(RegisterPair.HL));
-
-  cpu.beginNextCycle();
-
-  doCompare(cpu, data);
+export const compareIndirectHL = makeInstruction((ctx) => {
+  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
+  doCompare(ctx, data);
 });
 
 export const compareImmediate = makeInstructionWithImmediateByte(doCompare);
 
-function doCompare(cpu: CpuState, value: number) {
+function doCompare(ctx: InstructionContext, value: number) {
   const { result, borrowTo3, borrowTo7 } = subtractBytes(
-    cpu.readRegister(Register.A),
+    ctx.readRegister(Register.A),
     value
   );
 
-  cpu.setFlag(Flag.Z, result === 0);
-  cpu.setFlag(Flag.N, true);
-  cpu.setFlag(Flag.H, borrowTo3);
-  cpu.setFlag(Flag.CY, borrowTo7);
+  ctx.setFlag(Flag.Z, result === 0);
+  ctx.setFlag(Flag.N, true);
+  ctx.setFlag(Flag.H, borrowTo3);
+  ctx.setFlag(Flag.CY, borrowTo7);
 }
 
-export const incrementRegister = makeInstruction((cpu, reg: Register) => {
-  cpu.writeRegister(reg, doIncrement(cpu, cpu.readRegister(reg)));
+export const incrementRegister = makeInstruction((ctx, reg: Register) => {
+  ctx.writeRegister(reg, doIncrement(ctx, ctx.readRegister(reg)));
 });
 
-export const incrementIndirectHL = makeInstruction((cpu) => {
-  const address = cpu.readRegisterPair(RegisterPair.HL);
-  const data = cpu.readMemory(address);
+export const incrementIndirectHL = makeInstruction((ctx) => {
+  const address = ctx.readRegisterPair(RegisterPair.HL);
+  const data = ctx.readMemoryCycle(address);
 
-  cpu.beginNextCycle();
-
-  cpu.writeMemory(address, doIncrement(cpu, data));
-
-  cpu.beginNextCycle();
+  ctx.writeMemoryCycle(address, doIncrement(ctx, data));
 });
 
-function doIncrement(cpu: CpuState, value: number) {
+function doIncrement(ctx: InstructionContext, value: number) {
   const { result, carryFrom3 } = addBytes(value, 1);
 
-  cpu.setFlag(Flag.Z, result === 0);
-  cpu.setFlag(Flag.N, false);
-  cpu.setFlag(Flag.H, carryFrom3);
+  ctx.setFlag(Flag.Z, result === 0);
+  ctx.setFlag(Flag.N, false);
+  ctx.setFlag(Flag.H, carryFrom3);
 
   return result;
 }
 
-export const decrementRegister = makeInstruction((cpu, reg: Register) => {
-  cpu.writeRegister(reg, doDecrement(cpu, cpu.readRegister(reg)));
+export const decrementRegister = makeInstruction((ctx, reg: Register) => {
+  ctx.writeRegister(reg, doDecrement(ctx, ctx.readRegister(reg)));
 });
 
-export const decrementIndirectHL = makeInstruction((cpu) => {
-  const address = cpu.readRegisterPair(RegisterPair.HL);
-  const data = cpu.readMemory(address);
-
-  cpu.beginNextCycle();
-
-  cpu.writeMemory(address, doDecrement(cpu, data));
-
-  cpu.beginNextCycle();
+export const decrementIndirectHL = makeInstruction((ctx) => {
+  const address = ctx.readRegisterPair(RegisterPair.HL);
+  const data = ctx.readMemoryCycle(address);
+  ctx.writeMemoryCycle(address, doDecrement(ctx, data));
 });
 
-function doDecrement(cpu: CpuState, value: number) {
+function doDecrement(ctx: InstructionContext, value: number) {
   const { result, borrowTo3 } = subtractBytes(value, 1);
 
-  cpu.setFlag(Flag.Z, result === 0);
-  cpu.setFlag(Flag.N, true);
-  cpu.setFlag(Flag.H, borrowTo3);
+  ctx.setFlag(Flag.Z, result === 0);
+  ctx.setFlag(Flag.N, true);
+  ctx.setFlag(Flag.H, borrowTo3);
 
   return result;
 }
 
-export const andRegister = makeInstruction((cpu, reg: Register) => {
-  doAnd(cpu, cpu.readRegister(reg));
+export const andRegister = makeInstruction((ctx, reg: Register) => {
+  doAnd(ctx, ctx.readRegister(reg));
 });
 
-export const andIndirectHL = makeInstruction((cpu) => {
-  const data = cpu.readMemory(cpu.readRegisterPair(RegisterPair.HL));
-
-  cpu.beginNextCycle();
-
-  doAnd(cpu, data);
+export const andIndirectHL = makeInstruction((ctx) => {
+  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
+  doAnd(ctx, data);
 });
 
 export const andImmediate = makeInstructionWithImmediateByte(doAnd);
 
-function doAnd(cpu: CpuState, value: number) {
-  const result = cpu.readRegister(Register.A) & value;
+function doAnd(ctx: InstructionContext, value: number) {
+  const result = ctx.readRegister(Register.A) & value;
 
-  cpu.writeRegister(Register.A, result);
+  ctx.writeRegister(Register.A, result);
 
-  cpu.setFlag(Flag.Z, result === 0);
-  cpu.setFlag(Flag.N, false);
-  cpu.setFlag(Flag.H, true);
-  cpu.setFlag(Flag.CY, false);
+  ctx.setFlag(Flag.Z, result === 0);
+  ctx.setFlag(Flag.N, false);
+  ctx.setFlag(Flag.H, true);
+  ctx.setFlag(Flag.CY, false);
 }
 
-export const orRegister = makeInstruction((cpu, reg: Register) => {
-  doOr(cpu, cpu.readRegister(reg));
+export const orRegister = makeInstruction((ctx, reg: Register) => {
+  doOr(ctx, ctx.readRegister(reg));
 });
 
-export const orIndirectHL = makeInstruction((cpu) => {
-  const data = cpu.readMemory(cpu.readRegisterPair(RegisterPair.HL));
-
-  cpu.beginNextCycle();
-
-  doOr(cpu, data);
+export const orIndirectHL = makeInstruction((ctx) => {
+  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
+  doOr(ctx, data);
 });
 
 export const orImmediate = makeInstructionWithImmediateByte(doOr);
 
-function doOr(cpu: CpuState, value: number) {
-  const result = cpu.readRegister(Register.A) | value;
+function doOr(ctx: InstructionContext, value: number) {
+  const result = ctx.readRegister(Register.A) | value;
 
-  cpu.writeRegister(Register.A, result);
+  ctx.writeRegister(Register.A, result);
 
-  cpu.setFlag(Flag.Z, result === 0);
-  cpu.setFlag(Flag.N, false);
-  cpu.setFlag(Flag.H, false);
-  cpu.setFlag(Flag.CY, false);
+  ctx.setFlag(Flag.Z, result === 0);
+  ctx.setFlag(Flag.N, false);
+  ctx.setFlag(Flag.H, false);
+  ctx.setFlag(Flag.CY, false);
 }
 
-export const xorRegister = makeInstruction((cpu, reg: Register) => {
-  doXor(cpu, cpu.readRegister(reg));
+export const xorRegister = makeInstruction((ctx, reg: Register) => {
+  doXor(ctx, ctx.readRegister(reg));
 });
 
-export const xorIndirectHL = makeInstruction((cpu) => {
-  const data = cpu.readMemory(cpu.readRegisterPair(RegisterPair.HL));
-
-  cpu.beginNextCycle();
-
-  doXor(cpu, data);
+export const xorIndirectHL = makeInstruction((ctx) => {
+  const data = ctx.readMemoryCycle(ctx.readRegisterPair(RegisterPair.HL));
+  doXor(ctx, data);
 });
 
 export const xorImmediate = makeInstructionWithImmediateByte(doXor);
 
-function doXor(cpu: CpuState, value: number) {
-  const result = cpu.readRegister(Register.A) ^ value;
+function doXor(ctx: InstructionContext, value: number) {
+  const result = ctx.readRegister(Register.A) ^ value;
 
-  cpu.writeRegister(Register.A, result);
+  ctx.writeRegister(Register.A, result);
 
-  cpu.setFlag(Flag.Z, result === 0);
-  cpu.setFlag(Flag.N, false);
-  cpu.setFlag(Flag.H, false);
-  cpu.setFlag(Flag.CY, false);
+  ctx.setFlag(Flag.Z, result === 0);
+  ctx.setFlag(Flag.N, false);
+  ctx.setFlag(Flag.H, false);
+  ctx.setFlag(Flag.CY, false);
 }
 
-export const complementCarryFlag = makeInstruction((cpu) => {
-  cpu.setFlag(Flag.N, false);
-  cpu.setFlag(Flag.H, false);
-  cpu.setFlag(Flag.CY, !cpu.getFlag(Flag.CY));
+export const complementCarryFlag = makeInstruction((ctx) => {
+  ctx.setFlag(Flag.N, false);
+  ctx.setFlag(Flag.H, false);
+  ctx.setFlag(Flag.CY, !ctx.getFlag(Flag.CY));
 });
 
-export const setCarryFlag = makeInstruction((cpu) => {
-  cpu.setFlag(Flag.N, false);
-  cpu.setFlag(Flag.H, false);
-  cpu.setFlag(Flag.CY, true);
+export const setCarryFlag = makeInstruction((ctx) => {
+  ctx.setFlag(Flag.N, false);
+  ctx.setFlag(Flag.H, false);
+  ctx.setFlag(Flag.CY, true);
 });
 
-export const decimalAdjustAccumulator = makeInstruction((cpu) => {
-  let a = cpu.readRegister(Register.A);
-  const cy = cpu.getFlag(Flag.CY);
-  const h = cpu.getFlag(Flag.H);
-  const n = cpu.getFlag(Flag.N);
+export const decimalAdjustAccumulator = makeInstruction((ctx) => {
+  let a = ctx.readRegister(Register.A);
+  const cy = ctx.getFlag(Flag.CY);
+  const h = ctx.getFlag(Flag.H);
+  const n = ctx.getFlag(Flag.N);
 
   let offset = 0;
   let carry = false;
@@ -290,15 +260,15 @@ export const decimalAdjustAccumulator = makeInstruction((cpu) => {
     a = (a - offset) & 0xff;
   }
 
-  cpu.writeRegister(Register.A, a);
+  ctx.writeRegister(Register.A, a);
 
-  cpu.setFlag(Flag.Z, a === 0);
-  cpu.setFlag(Flag.H, false);
-  cpu.setFlag(Flag.CY, carry);
+  ctx.setFlag(Flag.Z, a === 0);
+  ctx.setFlag(Flag.H, false);
+  ctx.setFlag(Flag.CY, carry);
 });
 
-export const complementAccumulator = makeInstruction((cpu) => {
-  cpu.writeRegister(Register.A, ~cpu.readRegister(Register.A));
-  cpu.setFlag(Flag.N, true);
-  cpu.setFlag(Flag.H, true);
+export const complementAccumulator = makeInstruction((ctx) => {
+  ctx.writeRegister(Register.A, ~ctx.readRegister(Register.A));
+  ctx.setFlag(Flag.N, true);
+  ctx.setFlag(Flag.H, true);
 });

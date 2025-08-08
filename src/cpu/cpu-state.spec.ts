@@ -1,11 +1,7 @@
 import { describe, expect } from "vitest";
-import {
-  getLowRegister,
-  getHighRegister,
-  Register,
-  RegisterPair,
-} from "./register";
+import { Register } from "./register";
 import { testCpuState } from "./test-lib";
+import { RegisterPair } from "./cpu-state";
 
 describe("CPU state", () => {
   testCpuState("16-bit registers", ({ state }) => {
@@ -26,9 +22,6 @@ describe("CPU state", () => {
 
   describe("register pairs", () => {
     testCpuState("AF", ({ state }) => {
-      expect(getHighRegister(RegisterPair.AF)).toBe(Register.A);
-      expect(getLowRegister(RegisterPair.AF)).toBe(Register.F);
-
       state.writeRegisterPair(RegisterPair.AF, 0xba58);
 
       expect(state.readRegister(Register.A)).toBe(0xba);
@@ -42,9 +35,6 @@ describe("CPU state", () => {
     });
 
     testCpuState("BC", ({ state }) => {
-      expect(getHighRegister(RegisterPair.BC)).toBe(Register.B);
-      expect(getLowRegister(RegisterPair.BC)).toBe(Register.C);
-
       state.writeRegisterPair(RegisterPair.BC, 0xac34);
 
       expect(state.readRegister(Register.B)).toBe(0xac);
@@ -58,9 +48,6 @@ describe("CPU state", () => {
     });
 
     testCpuState("DE", ({ state }) => {
-      expect(getHighRegister(RegisterPair.DE)).toBe(Register.D);
-      expect(getLowRegister(RegisterPair.DE)).toBe(Register.E);
-
       state.writeRegisterPair(RegisterPair.DE, 0xff80);
 
       expect(state.readRegister(Register.D)).toBe(0xff);
@@ -74,9 +61,6 @@ describe("CPU state", () => {
     });
 
     testCpuState("HL", ({ state }) => {
-      expect(getHighRegister(RegisterPair.HL)).toBe(Register.H);
-      expect(getLowRegister(RegisterPair.HL)).toBe(Register.L);
-
       state.writeRegisterPair(RegisterPair.HL, 0xeeec);
 
       expect(state.readRegister(Register.H)).toBe(0xee);
@@ -90,9 +74,6 @@ describe("CPU state", () => {
     });
 
     testCpuState("SP", ({ state }) => {
-      expect(getHighRegister(RegisterPair.SP)).toBe(Register.SP_H);
-      expect(getLowRegister(RegisterPair.SP)).toBe(Register.SP_L);
-
       state.writeRegisterPair(RegisterPair.SP, 0x21ac);
 
       expect(state.readRegister(Register.SP_H)).toBe(0x21);
@@ -106,9 +87,6 @@ describe("CPU state", () => {
     });
 
     testCpuState("PC", ({ state }) => {
-      expect(getHighRegister(RegisterPair.PC)).toBe(Register.PC_H);
-      expect(getLowRegister(RegisterPair.PC)).toBe(Register.PC_L);
-
       state.writeRegisterPair(RegisterPair.PC, 0x51a8);
 
       expect(state.readRegister(Register.PC_H)).toBe(0x51);

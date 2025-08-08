@@ -1,55 +1,59 @@
-import { CpuState, IMemory } from "./cpu-state";
+import { CpuState, IMemory, RegisterPair } from "./cpu-state";
 import { getInstruction, getPrefixCBInstruction } from "./instructions";
 import { InterruptController } from "../hw/interrupt-controller";
-import { RegisterPair } from "./register";
 import { getLSB, getMSB, wrappingDecrementWord } from "../utils";
+import { Register } from "./register";
 
-export class Cpu extends CpuState {
+export class Cpu {
+  private state: CpuState;
+
   public constructor(
     memory: IMemory,
     private interruptController: InterruptController,
     onCycle: () => void
   ) {
-    super({ memory, onCycle });
+    this.state = new CpuState({ memory, onCycle });
 
     // TODO: this extra M-cycle was added to pass boot_div-dmgABCmgb, do we
     // miss something?
-    this.beginNextCycle();
+    this.state.beginNextCycle();
   }
 
   public step() {
     try {
-      if (this.isHalted()) {
-        this.beginNextCycle();
+      if (this.state.isHalted()) {
+        this.state.beginNextCycle();
       } else {
         this.executeNextInstruction();
 
         if (this.isHaltBug()) {
           // HALT mode is not entered, but the CPU fails to increase PC
-          this.setHalted(false);
+          this.state.setHalted(false);
           return;
         }
       }
 
       this.processInterruptRequests();
 
-      if (!this.isHalted()) {
-        this.advancePC();
+      if (!this.state.isHalted()) {
+        this.state.advancePC();
+        this.state.updateInterruptMasterEnabled();
       }
     } catch (error) {
-      this.stop();
+      this.state.stop();
       throw error;
     }
   }
 
   private executeNextInstruction() {
-    const instruction = this.decodeInstruction(this.getOpcode());
-    instruction[1](this);
+    const instruction = this.decodeInstruction(this.state.getOpcode());
+    instruction[1](this.state);
+    this.state.fetchNextOpcode();
   }
 
   private decodeInstruction(opcode: number) {
     if (opcode == 0xcb) {
-      return this.decodePrefixCBInstruction(this.fetchImmediateByte());
+      return this.decodePrefixCBInstruction(this.state.fetchImmediateByte());
     }
 
     const instruction = getInstruction(opcode);
@@ -73,53 +77,79 @@ export class Cpu extends CpuState {
 
   private isHaltBug() {
     return (
-      this.isHalted() &&
-      !this.isInterruptMasterEnabled() &&
+      this.state.isHalted() &&
+      !this.state.isInterruptMasterEnabled() &&
       this.interruptController.hasPendingInterrupt()
     );
   }
 
   private processInterruptRequests() {
     if (this.interruptController.hasPendingInterrupt()) {
-      this.setHalted(false);
+      this.state.setHalted(false);
 
-      if (this.isInterruptMasterEnabled()) {
+      if (this.state.isInterruptMasterEnabled()) {
         this.handleInterrupt();
       }
     }
   }
 
   private handleInterrupt() {
-    this.setInterruptMasterEnable(false);
+    this.state.setInterruptMasterEnable(false);
 
-    this.beginNextCycle();
+    this.state.beginNextCycle();
 
-    let sp = this.readRegisterPair(RegisterPair.SP);
+    let sp = this.state.readRegisterPair(RegisterPair.SP);
     sp = wrappingDecrementWord(sp);
 
-    this.beginNextCycle();
+    this.state.beginNextCycle();
 
-    this.writeMemory(sp, getMSB(this.readRegisterPair(RegisterPair.PC)));
+    this.state.writeMemory(
+      sp,
+      getMSB(this.state.readRegisterPair(RegisterPair.PC))
+    );
+
+    this.state.beginNextCycle();
+
     sp = wrappingDecrementWord(sp);
-
-    this.beginNextCycle();
 
     const irq = this.interruptController.getPendingInterrupt();
 
-    this.writeMemory(sp, getLSB(this.readRegisterPair(RegisterPair.PC)));
-    this.writeRegisterPair(RegisterPair.SP, sp);
+    this.state.writeMemory(
+      sp,
+      getLSB(this.state.readRegisterPair(RegisterPair.PC))
+    );
+    this.state.writeRegisterPair(RegisterPair.SP, sp);
 
-    this.beginNextCycle();
+    this.state.beginNextCycle();
 
     if (irq < 0) {
-      this.writeRegisterPair(RegisterPair.PC, 0);
+      this.state.writeRegisterPair(RegisterPair.PC, 0);
     } else {
       this.interruptController.acknowledgeInterrupt(irq);
-      this.writeRegisterPair(RegisterPair.PC, getInterruptVectorAddress(irq));
+      this.state.writeRegisterPair(
+        RegisterPair.PC,
+        getInterruptVectorAddress(irq)
+      );
     }
 
-    this.beginNextCycle();
-    this.fetchNextOpcode();
+    this.state.beginNextCycle();
+    this.state.fetchNextOpcode();
+  }
+
+  public writeRegister(reg: Register, value: number) {
+    this.state.writeRegister(reg, value);
+  }
+
+  public resetCycle() {
+    this.state.resetCycle();
+  }
+
+  public getElapsedCycles() {
+    return this.state.getElapsedCycles();
+  }
+
+  public isStopped() {
+    return this.state.isStopped();
   }
 }
 

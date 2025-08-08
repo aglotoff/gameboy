@@ -1,53 +1,42 @@
-import { CpuState } from "../cpu-state";
-import {
-  getLSB,
-  getMSB,
-  makeWord,
-  wrappingDecrementWord,
-  wrappingIncrementWord,
-} from "../../utils";
-import { Flag, RegisterPair } from "../register";
+import { InstructionContext } from "../cpu-state";
 
 export type OpTable = Partial<
-  Record<number, [string, (cpu: CpuState) => void]>
+  Record<number, [string, (ctx: InstructionContext) => void]>
 >;
 
 export function makeInstruction<T extends unknown[]>(
-  cb: (cpu: CpuState, ...args: T) => void
+  cb: (ctx: InstructionContext, ...args: T) => void
 ) {
-  return function (cpu: CpuState, ...args: T) {
-    cpu.beginNextCycle();
-    cb(cpu, ...args);
-    cpu.fetchNextOpcode();
+  return function (ctx: InstructionContext, ...args: T) {
+    ctx.beginNextCycle();
+    cb(ctx, ...args);
   };
 }
 
 export function makeInstructionWithImmediateByte<T extends unknown[]>(
-  cb: (cpu: CpuState, byte: number, ...args: T) => void
+  cb: (ctx: InstructionContext, byte: number, ...args: T) => void
 ) {
-  return (cpu: CpuState, ...args: T) => {
-    cpu.beginNextCycle();
-    cb(cpu, cpu.fetchImmediateByte(), ...args);
-    cpu.fetchNextOpcode();
+  return (ctx: InstructionContext, ...args: T) => {
+    ctx.beginNextCycle();
+    cb(ctx, ctx.fetchImmediateByte(), ...args);
   };
 }
 
 export function makeInstructionWithImmediateWord<T extends unknown[]>(
-  cb: (cpu: CpuState, word: number, ...args: T) => void
+  cb: (ctx: InstructionContext, word: number, ...args: T) => void
 ) {
-  return (cpu: CpuState, ...args: T) => {
-    cpu.beginNextCycle();
-    cb(cpu, cpu.fetchImmediateWord(), ...args);
-    cpu.fetchNextOpcode();
+  return (ctx: InstructionContext, ...args: T) => {
+    ctx.beginNextCycle();
+    cb(ctx, ctx.fetchImmediateWord(), ...args);
   };
 }
 
 export function bindInstructionArgs<T extends unknown[]>(
-  instruction: (cpu: CpuState, ...args: T) => void,
+  instruction: (ctx: InstructionContext, ...args: T) => void,
   ...args: T
 ) {
-  return (cpu: CpuState) => {
-    instruction(cpu, ...args);
+  return (ctx: InstructionContext) => {
+    instruction(ctx, ...args);
   };
 }
 
@@ -77,66 +66,4 @@ export function subtractBytes(a: number, b: number, carryFlag = false) {
     borrowTo7: (a & BYTE_MASK) < (b & BYTE_MASK) + c,
     result: (a - b - c) & BYTE_MASK,
   };
-}
-
-export const enum Condition {
-  Z,
-  C,
-  NZ,
-  NC,
-}
-
-export function checkCondition(cpu: CpuState, condition: Condition) {
-  switch (condition) {
-    case Condition.Z:
-      return cpu.getFlag(Flag.Z);
-    case Condition.C:
-      return cpu.getFlag(Flag.CY);
-    case Condition.NZ:
-      return !cpu.getFlag(Flag.Z);
-    case Condition.NC:
-      return !cpu.getFlag(Flag.CY);
-  }
-}
-
-export function pushWord(cpu: CpuState, data: number) {
-  let address = cpu.readRegisterPair(RegisterPair.SP);
-
-  cpu.triggerMemoryWrite(address);
-  address = wrappingDecrementWord(address);
-
-  cpu.beginNextCycle();
-
-  cpu.writeMemory(address, getMSB(data));
-
-  cpu.triggerMemoryWrite(address);
-  address = wrappingDecrementWord(address);
-
-  cpu.beginNextCycle();
-
-  cpu.writeMemory(address, getLSB(data));
-  cpu.writeRegisterPair(RegisterPair.SP, address);
-}
-
-export function popWord(cpu: CpuState) {
-  let address = cpu.readRegisterPair(RegisterPair.SP);
-
-  cpu.triggerMemoryIncrementRead(address);
-  const lsb = cpu.readMemory(address);
-
-  address = wrappingIncrementWord(address);
-
-  cpu.writeRegisterPair(RegisterPair.SP, address);
-
-  cpu.beginNextCycle();
-
-  const msb = cpu.readMemory(address);
-
-  address = wrappingIncrementWord(address);
-
-  cpu.writeRegisterPair(RegisterPair.SP, address);
-
-  cpu.beginNextCycle();
-
-  return makeWord(msb, lsb);
 }

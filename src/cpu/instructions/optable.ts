@@ -1,4 +1,5 @@
-import { RegisterPair, Register } from "../register";
+import { Condition, RegisterPair } from "../cpu-state";
+import { Register } from "../register";
 
 import {
   addRegisterPair,
@@ -59,7 +60,7 @@ import {
   returnFromFunctionConditional,
   returnFromInterruptHandler,
 } from "./flow";
-import { bindInstructionArgs as bia, Condition, OpTable } from "./lib";
+import { bindInstructionArgs as bia, OpTable } from "./lib";
 import {
   loadDirectFromStackPointer,
   loadHLFromAdjustedStackPointer,

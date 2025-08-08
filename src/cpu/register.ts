@@ -16,24 +16,6 @@ export const enum Register {
   IE = 13,
 }
 
-// High byte is always (pair + 0), low byte is always (pair + 1)
-export const enum RegisterPair {
-  AF = 0,
-  BC = 2,
-  DE = 4,
-  HL = 6,
-  SP = 8,
-  PC = 10,
-}
-
-export function getHighRegister(pair: RegisterPair): Register {
-  return pair + 0;
-}
-
-export function getLowRegister(pair: RegisterPair): Register {
-  return pair + 1;
-}
-
 // Use bit masks for flag names to avoid extra shifts
 export const enum Flag {
   Z = 0b1000_0000,

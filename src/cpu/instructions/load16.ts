@@ -1,4 +1,5 @@
-import { Flag, Register, RegisterPair } from "../register";
+import { RegisterPair } from "../cpu-state";
+import { Flag, Register } from "../register";
 
 import {
   addBytes,
@@ -6,65 +7,58 @@ import {
   makeInstructionWithImmediateByte,
   makeInstructionWithImmediateWord,
   isNegative,
-  popWord,
-  pushWord,
 } from "./lib";
 
 export const loadRegisterPair = makeInstructionWithImmediateWord(
-  (cpu, data, dst: RegisterPair) => {
-    cpu.writeRegisterPair(dst, data);
+  (ctx, data, dst: RegisterPair) => {
+    ctx.writeRegisterPair(dst, data);
   }
 );
 
 export const loadDirectFromStackPointer = makeInstructionWithImmediateWord(
-  (cpu, address) => {
-    cpu.writeMemory(address, cpu.readRegister(Register.SP_L));
-
-    cpu.beginNextCycle();
-
-    cpu.writeMemory(address + 1, cpu.readRegister(Register.SP_H));
-
-    cpu.beginNextCycle();
+  (ctx, address) => {
+    ctx.writeMemoryCycle(address, ctx.readRegister(Register.SP_L));
+    ctx.writeMemoryCycle(address + 1, ctx.readRegister(Register.SP_H));
   }
 );
 
-export const loadStackPointerFromHL = makeInstruction((cpu) => {
-  cpu.writeRegisterPair(RegisterPair.SP, cpu.readRegisterPair(RegisterPair.HL));
-  cpu.beginNextCycle();
+export const loadStackPointerFromHL = makeInstruction((ctx) => {
+  ctx.writeRegisterPair(RegisterPair.SP, ctx.readRegisterPair(RegisterPair.HL));
+  ctx.beginNextCycle();
 });
 
-export const pushToStack = makeInstruction((cpu, pair: RegisterPair) => {
-  pushWord(cpu, cpu.readRegisterPair(pair));
-  cpu.beginNextCycle();
+export const pushToStack = makeInstruction((ctx, pair: RegisterPair) => {
+  ctx.pushWord(ctx.readRegisterPair(pair));
+  ctx.beginNextCycle();
 });
 
-export const popFromStack = makeInstruction((cpu, pair: RegisterPair) => {
-  cpu.writeRegisterPair(pair, popWord(cpu));
+export const popFromStack = makeInstruction((ctx, pair: RegisterPair) => {
+  ctx.writeRegisterPair(pair, ctx.popWord());
 });
 
 export const loadHLFromAdjustedStackPointer = makeInstructionWithImmediateByte(
-  (cpu, e) => {
+  (ctx, e) => {
     const {
       result: lsb,
       carryFrom3,
       carryFrom7,
-    } = addBytes(cpu.readRegister(Register.SP_L), e);
+    } = addBytes(ctx.readRegister(Register.SP_L), e);
 
-    cpu.writeRegister(Register.L, lsb);
+    ctx.writeRegister(Register.L, lsb);
 
-    cpu.setFlag(Flag.Z, false);
-    cpu.setFlag(Flag.N, false);
-    cpu.setFlag(Flag.H, carryFrom3);
-    cpu.setFlag(Flag.CY, carryFrom7);
+    ctx.setFlag(Flag.Z, false);
+    ctx.setFlag(Flag.N, false);
+    ctx.setFlag(Flag.H, carryFrom3);
+    ctx.setFlag(Flag.CY, carryFrom7);
 
-    cpu.beginNextCycle();
+    ctx.beginNextCycle();
 
     const { result: msb } = addBytes(
-      cpu.readRegister(Register.SP_H),
+      ctx.readRegister(Register.SP_H),
       isNegative(e) ? 0xff : 0x00,
       carryFrom7
     );
 
-    cpu.writeRegister(Register.H, msb);
+    ctx.writeRegister(Register.H, msb);
   }
 );

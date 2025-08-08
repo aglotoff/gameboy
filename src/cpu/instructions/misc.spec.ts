@@ -35,13 +35,11 @@ describe("Miscellaneous instructions", () => {
   testCpuState("EI", ({ state }) => {
     enableInterrupts(state);
 
-    expect(state.isInterruptMasterEnableScheduled()).toBe(true);
     expect(state.isInterruptMasterEnabled()).toBe(false);
     expect(state.getElapsedCycles()).toBe(1);
 
-    state.advancePC();
+    state.updateInterruptMasterEnabled();
 
-    expect(state.isInterruptMasterEnableScheduled()).toBe(false);
     expect(state.isInterruptMasterEnabled()).toBe(true);
   });
 

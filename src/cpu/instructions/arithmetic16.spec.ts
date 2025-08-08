@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest";
 
-import { Flag, RegisterPair } from "../register";
+import { Flag } from "../register";
 import { testCpuState } from "../test-lib";
 
 import {
@@ -9,6 +9,7 @@ import {
   decrementRegisterPair,
   incrementRegisterPair,
 } from "./arithmetic16";
+import { RegisterPair } from "../cpu-state";
 
 describe("16-bit arithmetic instructions", () => {
   testCpuState("INC rr", ({ state }) => {

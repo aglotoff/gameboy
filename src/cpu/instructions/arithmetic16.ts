@@ -1,10 +1,4 @@
-import {
-  RegisterPair,
-  Flag,
-  Register,
-  getLowRegister,
-  getHighRegister,
-} from "../register";
+import { Flag, Register } from "../register";
 import {
   makeWord,
   wrappingDecrementWord,
@@ -16,89 +10,87 @@ import {
   makeInstructionWithImmediateByte,
   isNegative,
 } from "./lib";
+import { RegisterPair } from "../cpu-state";
 
 export const incrementRegisterPair = makeInstruction(
-  (cpu, pair: RegisterPair) => {
-    cpu.triggerMemoryWrite(cpu.readRegisterPair(pair));
+  (ctx, pair: RegisterPair) => {
+    ctx.triggerMemoryWrite(ctx.readRegisterPair(pair));
 
-    cpu.writeRegisterPair(
+    ctx.writeRegisterPair(
       pair,
-      wrappingIncrementWord(cpu.readRegisterPair(pair))
+      wrappingIncrementWord(ctx.readRegisterPair(pair))
     );
 
-    cpu.beginNextCycle();
+    ctx.beginNextCycle();
   }
 );
 
 export const decrementRegisterPair = makeInstruction(
-  (cpu, pair: RegisterPair) => {
-    cpu.triggerMemoryWrite(cpu.readRegisterPair(pair));
+  (ctx, pair: RegisterPair) => {
+    ctx.triggerMemoryWrite(ctx.readRegisterPair(pair));
 
-    cpu.writeRegisterPair(
+    ctx.writeRegisterPair(
       pair,
-      wrappingDecrementWord(cpu.readRegisterPair(pair))
+      wrappingDecrementWord(ctx.readRegisterPair(pair))
     );
 
-    cpu.beginNextCycle();
+    ctx.beginNextCycle();
   }
 );
 
-export const addRegisterPair = makeInstruction((cpu, pair: RegisterPair) => {
+export const addRegisterPair = makeInstruction((ctx, pair: RegisterPair) => {
   const {
     result: lsb,
     carryFrom3,
     carryFrom7,
-  } = addBytes(
-    cpu.readRegister(Register.L),
-    cpu.readRegister(getLowRegister(pair))
-  );
+  } = addBytes(ctx.readRegister(Register.L), ctx.readLowRegisterOfPair(pair));
 
-  cpu.writeRegister(Register.L, lsb);
+  ctx.writeRegister(Register.L, lsb);
 
-  cpu.setFlag(Flag.N, false);
-  cpu.setFlag(Flag.H, carryFrom3);
-  cpu.setFlag(Flag.CY, carryFrom7);
+  ctx.setFlag(Flag.N, false);
+  ctx.setFlag(Flag.H, carryFrom3);
+  ctx.setFlag(Flag.CY, carryFrom7);
 
-  cpu.beginNextCycle();
+  ctx.beginNextCycle();
 
   const {
     result: msb,
     carryFrom3: carryFrom11,
     carryFrom7: carryFrom15,
   } = addBytes(
-    cpu.readRegister(Register.H),
-    cpu.readRegister(getHighRegister(pair)),
+    ctx.readRegister(Register.H),
+    ctx.readHighRegisterOfPair(pair),
     carryFrom7
   );
 
-  cpu.writeRegister(Register.H, msb);
+  ctx.writeRegister(Register.H, msb);
 
-  cpu.setFlag(Flag.N, false);
-  cpu.setFlag(Flag.H, carryFrom11);
-  cpu.setFlag(Flag.CY, carryFrom15);
+  ctx.setFlag(Flag.N, false);
+  ctx.setFlag(Flag.H, carryFrom11);
+  ctx.setFlag(Flag.CY, carryFrom15);
 });
 
-export const addToStackPointer = makeInstructionWithImmediateByte((cpu, e) => {
+export const addToStackPointer = makeInstructionWithImmediateByte((ctx, e) => {
   const {
     result: lsb,
     carryFrom3,
     carryFrom7,
-  } = addBytes(cpu.readRegister(Register.SP_L), e);
+  } = addBytes(ctx.readRegister(Register.SP_L), e);
 
-  cpu.setFlag(Flag.Z, false);
-  cpu.setFlag(Flag.N, false);
-  cpu.setFlag(Flag.H, carryFrom3);
-  cpu.setFlag(Flag.CY, carryFrom7);
+  ctx.setFlag(Flag.Z, false);
+  ctx.setFlag(Flag.N, false);
+  ctx.setFlag(Flag.H, carryFrom3);
+  ctx.setFlag(Flag.CY, carryFrom7);
 
-  cpu.beginNextCycle();
+  ctx.beginNextCycle();
 
   const { result: msb } = addBytes(
-    cpu.readRegister(Register.SP_H),
+    ctx.readRegister(Register.SP_H),
     isNegative(e) ? 0xff : 0x00,
     carryFrom7
   );
 
-  cpu.beginNextCycle();
+  ctx.beginNextCycle();
 
-  cpu.writeRegisterPair(RegisterPair.SP, makeWord(msb, lsb));
+  ctx.writeRegisterPair(RegisterPair.SP, makeWord(msb, lsb));
 });

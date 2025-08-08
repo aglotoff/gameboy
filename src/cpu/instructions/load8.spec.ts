@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest";
 
-import { Register, RegisterPair } from "../register";
+import { Register } from "../register";
 import { testCpuState } from "../test-lib";
 import { getLSB, getMSB } from "../../utils";
 
@@ -25,6 +25,7 @@ import {
   loadIndirectHLDecrementFromAccumulator,
   loadIndirectHLIncrementFromAccumulator,
 } from "./load8";
+import { RegisterPair } from "../cpu-state";
 
 describe("8-bit load instructions", () => {
   testCpuState("LD r,r'", ({ state }) => {
