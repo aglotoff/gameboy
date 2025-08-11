@@ -1,16 +1,13 @@
 import { Flag, Register } from "../register";
-import {
-  makeWord,
-  wrappingDecrementWord,
-  wrappingIncrementWord,
-} from "../../utils";
+import { makeWord } from "../../utils";
+import { RegisterPair } from "../cpu-state";
+
 import {
   addBytes,
   makeInstruction,
   makeInstructionWithImmediateByte,
   isNegative,
 } from "./lib";
-import { RegisterPair } from "../cpu-state";
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#INC_r16
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#INC_SP
@@ -18,8 +15,7 @@ export const incrementRegisterPair = makeInstruction(
   (ctx, pair: RegisterPair) => {
     const data = ctx.readRegisterPair(pair);
 
-    ctx.writeRegisterPair(pair, wrappingIncrementWord(data));
-    ctx.triggerMemoryWrite(data);
+    ctx.writeRegisterPair(pair, ctx.incrementAndTriggerWrite(data));
 
     ctx.beginNextCycle();
   }
@@ -31,8 +27,7 @@ export const decrementRegisterPair = makeInstruction(
   (ctx, pair: RegisterPair) => {
     const data = ctx.readRegisterPair(pair);
 
-    ctx.writeRegisterPair(pair, wrappingDecrementWord(data));
-    ctx.triggerMemoryWrite(data);
+    ctx.writeRegisterPair(pair, ctx.decrementAndTriggerWrite(data));
 
     ctx.beginNextCycle();
   }

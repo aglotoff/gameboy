@@ -1,8 +1,11 @@
+import { Mask } from "../../utils";
 import { InstructionContext } from "../cpu-state";
 
-export type OpTable = Partial<
-  Record<number, [string, (ctx: InstructionContext) => void]>
->;
+export type OpTable = Array<(ctx: InstructionContext) => void>;
+
+export const invalidOpcode = makeInstruction((_ctx, opcode: number) => {
+  throw new Error(`Invalid opcode ${opcode.toString(16)}`);
+});
 
 export function makeInstruction<T extends unknown[]>(
   cb: (ctx: InstructionContext, ...args: T) => void
@@ -40,30 +43,26 @@ export function bindInstructionArgs<T extends unknown[]>(
   };
 }
 
-const BYTE_MASK = 0xff;
-const NIBBLE_MASK = 0xf;
-const BYTE_SIGN_MASK = 0b10000000;
-
 export function addBytes(a: number, b: number, carryFlag = false) {
   const c = carryFlag ? 1 : 0;
 
   return {
-    carryFrom3: (a & NIBBLE_MASK) + (b & NIBBLE_MASK) + c > NIBBLE_MASK,
-    carryFrom7: (a & BYTE_MASK) + (b & BYTE_MASK) + c > BYTE_MASK,
-    result: (a + b + c) & BYTE_MASK,
+    carryFrom3: (a & Mask.Nibble) + (b & Mask.Nibble) + c > Mask.Nibble,
+    carryFrom7: (a & Mask.Byte) + (b & Mask.Byte) + c > Mask.Byte,
+    result: (a + b + c) & Mask.Byte,
   };
 }
 
 export function isNegative(a: number) {
-  return (a & BYTE_SIGN_MASK) !== 0;
+  return (a & Mask.MSB) !== 0;
 }
 
 export function subtractBytes(a: number, b: number, carryFlag = false) {
   const c = carryFlag ? 1 : 0;
 
   return {
-    borrowTo3: (a & NIBBLE_MASK) < (b & NIBBLE_MASK) + c,
-    borrowTo7: (a & BYTE_MASK) < (b & BYTE_MASK) + c,
-    result: (a - b - c) & BYTE_MASK,
+    borrowTo3: (a & Mask.Nibble) < (b & Mask.Nibble) + c,
+    borrowTo7: (a & Mask.Byte) < (b & Mask.Byte) + c,
+    result: (a - b - c) & Mask.Byte,
   };
 }

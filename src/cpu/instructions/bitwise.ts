@@ -1,12 +1,8 @@
 import { Flag, Register } from "../register";
-import { resetBit, setBit } from "../../utils";
-import { makeInstruction } from "./lib";
+import { Mask, resetBit, setBit } from "../../utils";
 import { InstructionContext, RegisterPair } from "../cpu-state";
 
-const BYTE_MASK = 0b11111111;
-const NIBBLE_MASK = 0b1111;
-const HIGH_BIT_MASK = 0b10000000;
-const LOW_BIT_MASK = 0b00000001;
+import { makeInstruction } from "./lib";
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RLCA
 export const rotateAccumulatorLeft = makeInstruction((ctx) => {
@@ -40,8 +36,8 @@ export const rotateIndirectHLLeft = makeInstruction((ctx) => {
 });
 
 function rotateLeft(ctx: InstructionContext, value: number) {
-  const result = ((value << 1) | (value >> 7)) & BYTE_MASK;
-  const carry = (value & HIGH_BIT_MASK) != 0;
+  const result = ((value << 1) | (value >> 7)) & Mask.Byte;
+  const carry = (value & Mask.MSB) != 0;
 
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, false);
@@ -82,7 +78,7 @@ export const rotateIndirectHLRight = makeInstruction((ctx) => {
 });
 
 function rotateRight(ctx: InstructionContext, value: number) {
-  const result = ((value >> 1) | (value << 7)) & BYTE_MASK;
+  const result = ((value >> 1) | (value << 7)) & Mask.Byte;
   const carry = (value & 1) != 0;
 
   ctx.setFlag(Flag.N, false);
@@ -126,8 +122,8 @@ export const rotateIndirectHLLeftThroughCarry = makeInstruction((ctx) => {
 
 function rotateLeftThroughCarry(ctx: InstructionContext, value: number) {
   const result =
-    ((value << 1) & BYTE_MASK) | (ctx.getFlag(Flag.CY) ? LOW_BIT_MASK : 0);
-  const carry = (value & HIGH_BIT_MASK) != 0;
+    ((value << 1) & Mask.Byte) | (ctx.getFlag(Flag.CY) ? Mask.LSB : 0);
+  const carry = (value & Mask.MSB) != 0;
 
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, false);
@@ -171,8 +167,8 @@ export const rotateIndirectHLRightThroughCarry = makeInstruction((ctx) => {
 
 function rotateRightThroughCarry(ctx: InstructionContext, value: number) {
   const result =
-    ((value >> 1) & BYTE_MASK) | (ctx.getFlag(Flag.CY) ? HIGH_BIT_MASK : 0);
-  const carry = (value & LOW_BIT_MASK) != 0;
+    ((value >> 1) & Mask.Byte) | (ctx.getFlag(Flag.CY) ? Mask.MSB : 0);
+  const carry = (value & Mask.LSB) != 0;
 
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, false);
@@ -205,8 +201,8 @@ export const shiftLeftArithmeticallyIndirectHL = makeInstruction((ctx) => {
 });
 
 function shiftLeftArithmetically(ctx: InstructionContext, value: number) {
-  const result = (value << 1) & BYTE_MASK;
-  const carry = (value & HIGH_BIT_MASK) !== 0;
+  const result = (value << 1) & Mask.Byte;
+  const carry = (value & Mask.MSB) !== 0;
 
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, false);
@@ -239,7 +235,7 @@ export const shiftRightArithmeticallyIndirectHL = makeInstruction((ctx) => {
 });
 
 function shiftRightArithmetically(ctx: InstructionContext, value: number) {
-  const result = ((value >> 1) & BYTE_MASK) | (value & HIGH_BIT_MASK);
+  const result = ((value >> 1) & Mask.Byte) | (value & Mask.MSB);
   const carry = (value & 1) !== 0;
 
   ctx.setFlag(Flag.N, false);
@@ -273,8 +269,8 @@ export const shiftRightLogicallyIndirectHL = makeInstruction((ctx) => {
 });
 
 function shiftRightLogically(ctx: InstructionContext, value: number) {
-  const result = (value >> 1) & BYTE_MASK;
-  const carry = (value & LOW_BIT_MASK) !== 0;
+  const result = (value >> 1) & Mask.Byte;
+  const carry = (value & Mask.LSB) !== 0;
 
   ctx.setFlag(Flag.N, false);
   ctx.setFlag(Flag.H, false);
@@ -301,7 +297,7 @@ export const swapNibblesInIndirectHL = makeInstruction((ctx) => {
 });
 
 function swapNibbles(ctx: InstructionContext, value: number) {
-  const result = ((value & NIBBLE_MASK) << 4) | ((value >> 4) & NIBBLE_MASK);
+  const result = ((value & Mask.Nibble) << 4) | ((value >> 4) & Mask.Nibble);
 
   ctx.setFlag(Flag.Z, result === 0);
   ctx.setFlag(Flag.N, false);

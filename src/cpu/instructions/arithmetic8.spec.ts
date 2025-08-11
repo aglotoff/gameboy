@@ -6,35 +6,35 @@ import { testCpuState } from "../test-lib";
 import {
   addImmediateToAccumulator,
   addImmediateToAccumulatorWithCarry,
-  addIndirectHLToAccumulator,
-  addIndirectHLToAccumulatorWithCarry,
+  addPointerInHLToAccumulator,
+  addPointerInHLToAccumulatorWithCarry,
   addRegisterToAccumulator,
   addRegisterToAccumulatorWithCarry,
   andAccumulatorWithImmediate,
-  andAccumulatorWithIndirectHL,
+  andAccumulatorWithPointerInHL,
   andAccumulatorWithRegister,
   compareAccumulatorToImmediate,
-  compareAccumulatorToIndirectHL,
+  compareAccumulatorToPointerInHL,
   compareAccumulatorToRegister,
   complementAccumulator,
   complementCarryFlag,
   decimalAdjustAccumulator,
-  decrementIndirectHL,
+  decrementPointerInHL,
   decrementRegister,
-  incrementIndirectHL,
+  incrementPointerInHL,
   incrementRegister,
   orAccumulatorWithImmediate,
-  orAccumulatorWithIndirectHL,
+  orAccumulatorWithPointerInHL,
   orAccumulatorWithRegister,
   setCarryFlag,
   subtractImmediateFromAccumualtor,
   subtractImmediateFromAccumualtorWithCarry,
-  subtractIndirectHLFromAccumualtor,
-  subtractIndirectHLFromAccumualtorWithCarry,
+  subtractPointerInHLFromAccumualtor,
+  subtractPointerInHLFromAccumualtorWithCarry,
   subtractRegisterFromAccumualtor,
   subtractRegisterFromAccumualtorWithCarry,
   xorAccumulatorWithImmediate,
-  xorAccumulatorWithIndirectHL,
+  xorAccumulatorWithPointerInHL,
   xorAccumulatorWithRegister,
 } from "./arithmetic8";
 import { RegisterPair } from "../cpu-state";
@@ -59,7 +59,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x3ab6);
     state.writeMemory(0x3ab6, 0x12);
 
-    addIndirectHLToAccumulator(state);
+    addPointerInHLToAccumulator(state);
 
     expect(state.readRegister(Register.A)).toBe(0x4e);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -104,7 +104,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeMemory(0x8ac5, 0x1e);
     state.setFlag(Flag.CY, true);
 
-    addIndirectHLToAccumulatorWithCarry(state);
+    addPointerInHLToAccumulatorWithCarry(state);
 
     expect(state.readRegister(Register.A)).toBe(0x00);
     expect(state.getFlag(Flag.Z)).toBe(true);
@@ -148,7 +148,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeMemory(0x8ac5, 0x40);
 
-    subtractIndirectHLFromAccumualtor(state);
+    subtractPointerInHLFromAccumualtor(state);
 
     expect(state.readRegister(Register.A)).toBe(0xfe);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -193,7 +193,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeMemory(0x8ac5, 0x4f);
     state.setFlag(Flag.CY, true);
 
-    subtractIndirectHLFromAccumualtorWithCarry(state);
+    subtractPointerInHLFromAccumualtorWithCarry(state);
 
     expect(state.readRegister(Register.A)).toBe(0xeb);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -236,7 +236,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x3ab6);
     state.writeMemory(0x3ab6, 0x40);
 
-    compareAccumulatorToIndirectHL(state);
+    compareAccumulatorToPointerInHL(state);
 
     expect(state.getFlag(Flag.Z)).toBe(false);
     expect(state.getFlag(Flag.H)).toBe(false);
@@ -274,7 +274,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeMemory(0x8ac5, 0x50);
 
-    incrementIndirectHL(state);
+    incrementPointerInHL(state);
 
     expect(state.readMemory(state.readRegisterPair(RegisterPair.HL))).toBe(
       0x51
@@ -301,7 +301,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0xff34);
     state.writeMemory(0xff34, 0x00);
 
-    decrementIndirectHL(state);
+    decrementPointerInHL(state);
 
     expect(state.readMemory(state.readRegisterPair(RegisterPair.HL))).toBe(
       0xff
@@ -331,7 +331,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeMemory(0x8ac5, 0x00);
 
-    andAccumulatorWithIndirectHL(state);
+    andAccumulatorWithPointerInHL(state);
 
     expect(state.readRegister(Register.A)).toBe(0x00);
     expect(state.getFlag(Flag.Z)).toBe(true);
@@ -373,7 +373,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac2);
     state.writeMemory(0x8ac2, 0x0f);
 
-    orAccumulatorWithIndirectHL(state);
+    orAccumulatorWithPointerInHL(state);
 
     expect(state.readRegister(Register.A)).toBe(0x5f);
     expect(state.getFlag(Flag.Z)).toBe(false);
@@ -415,7 +415,7 @@ describe("8-bit arithmetic and logical instructions", () => {
     state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
     state.writeMemory(0x8ac5, 0x8a);
 
-    xorAccumulatorWithIndirectHL(state);
+    xorAccumulatorWithPointerInHL(state);
 
     expect(state.readRegister(Register.A)).toBe(0x75);
     expect(state.getFlag(Flag.Z)).toBe(false);

@@ -1,5 +1,6 @@
 import { InstructionContext, RegisterPair } from "../cpu-state";
 import { Flag, Register } from "../register";
+
 import {
   addBytes,
   makeInstruction,
@@ -15,7 +16,7 @@ export const addRegisterToAccumulator = makeInstruction(
 );
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#ADD_A,_HL_
-export const addIndirectHLToAccumulator = makeInstruction((ctx) => {
+export const addPointerInHLToAccumulator = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
@@ -37,7 +38,7 @@ export const addRegisterToAccumulatorWithCarry = makeInstruction(
 );
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#ADC_A,_HL_
-export const addIndirectHLToAccumulatorWithCarry = makeInstruction((ctx) => {
+export const addPointerInHLToAccumulatorWithCarry = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
   const carry = ctx.getFlag(Flag.CY);
@@ -80,7 +81,7 @@ export const subtractRegisterFromAccumualtor = makeInstruction(
 );
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SUB_A,_HL_
-export const subtractIndirectHLFromAccumualtor = makeInstruction((ctx) => {
+export const subtractPointerInHLFromAccumualtor = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
@@ -102,7 +103,7 @@ export const subtractRegisterFromAccumualtorWithCarry = makeInstruction(
 );
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SBC_A,_HL_
-export const subtractIndirectHLFromAccumualtorWithCarry = makeInstruction(
+export const subtractPointerInHLFromAccumualtorWithCarry = makeInstruction(
   (ctx) => {
     const address = ctx.readRegisterPair(RegisterPair.HL);
     const data = ctx.readMemoryCycle(address);
@@ -148,7 +149,7 @@ export const compareAccumulatorToRegister = makeInstruction(
 );
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#CP_A,_HL_
-export const compareAccumulatorToIndirectHL = makeInstruction((ctx) => {
+export const compareAccumulatorToPointerInHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
@@ -177,7 +178,7 @@ export const incrementRegister = makeInstruction((ctx, reg: Register) => {
 });
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#INC__HL_
-export const incrementIndirectHL = makeInstruction((ctx) => {
+export const incrementPointerInHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
@@ -201,7 +202,7 @@ export const decrementRegister = makeInstruction((ctx, reg: Register) => {
 });
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#DEC__HL_
-export const decrementIndirectHL = makeInstruction((ctx) => {
+export const decrementPointerInHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
@@ -227,7 +228,7 @@ export const andAccumulatorWithRegister = makeInstruction(
 );
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#AND_A,_HL_
-export const andAccumulatorWithIndirectHL = makeInstruction((ctx) => {
+export const andAccumulatorWithPointerInHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
@@ -258,7 +259,7 @@ export const orAccumulatorWithRegister = makeInstruction(
 );
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#OR_A,_HL_
-export const orAccumulatorWithIndirectHL = makeInstruction((ctx) => {
+export const orAccumulatorWithPointerInHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 
@@ -289,7 +290,7 @@ export const xorAccumulatorWithRegister = makeInstruction(
 );
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#XOR_A,_HL_
-export const xorAccumulatorWithIndirectHL = makeInstruction((ctx) => {
+export const xorAccumulatorWithPointerInHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
   const data = ctx.readMemoryCycle(address);
 

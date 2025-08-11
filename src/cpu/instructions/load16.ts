@@ -1,3 +1,4 @@
+import { getLSB, getMSB, makeWord, wrappingIncrementWord } from "../../utils";
 import { RegisterPair } from "../cpu-state";
 import { Flag, Register } from "../register";
 
@@ -28,21 +29,48 @@ export const loadStackPointerFromHL = makeInstruction((ctx) => {
 });
 
 export const pushToStack = makeInstruction((ctx, pair: RegisterPair) => {
-  ctx.pushWord(ctx.readRegisterPair(pair));
+  const data = ctx.readRegisterPair(pair);
+
+  let sp = ctx.readRegisterPair(RegisterPair.SP);
+
+  ctx.writeRegisterPair(RegisterPair.SP, ctx.decrementAndTriggerWrite(sp));
+
   ctx.beginNextCycle();
+
+  sp = ctx.readRegisterPair(RegisterPair.SP);
+
+  ctx.writeRegisterPair(RegisterPair.SP, ctx.decrementAndTriggerWrite(sp));
+
+  ctx.writeMemoryCycle(sp, getMSB(data));
+
+  sp = ctx.readRegisterPair(RegisterPair.SP);
+  ctx.writeMemoryCycle(sp, getLSB(data));
 });
 
 export const popFromStack = makeInstruction((ctx, pair: RegisterPair) => {
-  ctx.writeRegisterPair(pair, ctx.popWord());
+  let sp = ctx.readRegisterPair(RegisterPair.SP);
+
+  ctx.writeRegisterPair(RegisterPair.SP, ctx.incrementAndTriggerReadWrite(sp));
+
+  const lsb = ctx.readMemoryCycle(sp);
+
+  sp = ctx.readRegisterPair(RegisterPair.SP);
+
+  ctx.writeRegisterPair(RegisterPair.SP, wrappingIncrementWord(sp));
+  // do not trigger OAM corruption bug this time!
+
+  const msb = ctx.readMemoryCycle(sp);
+
+  ctx.writeRegisterPair(pair, makeWord(msb, lsb));
 });
 
 export const loadHLFromAdjustedStackPointer = makeInstructionWithImmediateByte(
-  (ctx, e) => {
+  (ctx, offset) => {
     const {
       result: lsb,
       carryFrom3,
       carryFrom7,
-    } = addBytes(ctx.readRegister(Register.SP_L), e);
+    } = addBytes(ctx.readRegister(Register.SP_L), offset);
 
     ctx.writeRegister(Register.L, lsb);
 
@@ -55,7 +83,7 @@ export const loadHLFromAdjustedStackPointer = makeInstructionWithImmediateByte(
 
     const { result: msb } = addBytes(
       ctx.readRegister(Register.SP_H),
-      isNegative(e) ? 0xff : 0x00,
+      isNegative(offset) ? 0xff : 0x00,
       carryFrom7
     );
 

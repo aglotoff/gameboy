@@ -58,15 +58,12 @@ export interface InstructionContext {
   setFlag(flag: Flag, value: boolean): void;
   checkCondition(condition: Condition): boolean;
 
-  readMemory(address: number): number;
-  writeMemory(address: number, data: number): void;
-  triggerMemoryWrite(address: number): void;
-  triggerMemoryReadWrite(address: number): void;
   readMemoryCycle(address: number): number;
   writeMemoryCycle(address: number, data: number): void;
-
-  pushWord(value: number): void;
-  popWord(): number;
+  decrementAndTriggerWrite(address: number): number;
+  incrementAndTriggerWrite(address: number): number;
+  decrementAndTriggerReadWrite(address: number): number;
+  incrementAndTriggerReadWrite(address: number): number;
 
   halt(): void;
   stop(): void;
@@ -171,12 +168,24 @@ export class CpuState implements InstructionContext {
     this.beginNextCycle();
   }
 
-  public triggerMemoryWrite(address: number) {
-    this.memory.triggerWrite(address);
+  public incrementAndTriggerReadWrite(address: number): number {
+    this.memory.triggerReadWrite(address);
+    return wrappingIncrementWord(address);
   }
 
-  public triggerMemoryReadWrite(address: number) {
+  public decrementAndTriggerReadWrite(address: number): number {
     this.memory.triggerReadWrite(address);
+    return wrappingDecrementWord(address);
+  }
+
+  public incrementAndTriggerWrite(address: number): number {
+    this.memory.triggerWrite(address);
+    return wrappingIncrementWord(address);
+  }
+
+  public decrementAndTriggerWrite(address: number): number {
+    this.memory.triggerWrite(address);
+    return wrappingDecrementWord(address);
   }
 
   public setHalted(halted: boolean) {
@@ -251,42 +260,6 @@ export class CpuState implements InstructionContext {
       case Condition.NC:
         return !this.getFlag(Flag.CY);
     }
-  }
-
-  public pushWord(data: number) {
-    let address = this.readRegisterPair(RegisterPair.SP);
-
-    this.triggerMemoryWrite(address);
-    this.writeRegisterPair(RegisterPair.SP, wrappingDecrementWord(address));
-
-    this.beginNextCycle();
-
-    address = this.readRegisterPair(RegisterPair.SP);
-
-    this.triggerMemoryWrite(address);
-    this.writeRegisterPair(RegisterPair.SP, wrappingDecrementWord(address));
-
-    this.writeMemoryCycle(address, getMSB(data));
-
-    address = this.readRegisterPair(RegisterPair.SP);
-    this.writeMemory(address, getLSB(data));
-  }
-
-  public popWord() {
-    let address = this.readRegisterPair(RegisterPair.SP);
-
-    this.writeRegisterPair(RegisterPair.SP, wrappingIncrementWord(address));
-    this.triggerMemoryReadWrite(address);
-
-    const lsb = this.readMemoryCycle(address);
-
-    address = this.readRegisterPair(RegisterPair.SP);
-
-    this.writeRegisterPair(RegisterPair.SP, wrappingIncrementWord(address));
-
-    const msb = this.readMemoryCycle(address);
-
-    return makeWord(msb, lsb);
   }
 
   public updateInterruptMasterEnabled() {
