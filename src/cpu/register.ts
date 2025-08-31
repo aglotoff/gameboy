@@ -1,5 +1,3 @@
-import { getLSB, getMSB, makeWord } from "../utils";
-
 // Register names are array indices for maximum performance
 export const enum Register {
   A = 0,
@@ -28,41 +26,6 @@ export const enum Flag {
 
 const FLAG_MASK = 0b1111_0000;
 
-export const enum RegisterPair {
-  AF = 0,
-  BC = 1,
-  DE = 2,
-  HL = 3,
-  SP = 4,
-  PC = 5,
-}
-
-const highRegisterOfPair: Record<RegisterPair, Register> = {
-  [RegisterPair.AF]: Register.A,
-  [RegisterPair.BC]: Register.B,
-  [RegisterPair.DE]: Register.D,
-  [RegisterPair.HL]: Register.H,
-  [RegisterPair.SP]: Register.SP_H,
-  [RegisterPair.PC]: Register.PC_H,
-};
-
-const lowRegisterOfPair: Record<RegisterPair, Register> = {
-  [RegisterPair.AF]: Register.F,
-  [RegisterPair.BC]: Register.C,
-  [RegisterPair.DE]: Register.E,
-  [RegisterPair.HL]: Register.L,
-  [RegisterPair.SP]: Register.SP_L,
-  [RegisterPair.PC]: Register.PC_L,
-};
-
-export function getLowRegisterOfPair(pair: RegisterPair) {
-  return lowRegisterOfPair[pair];
-}
-
-export function getHighRegisterOfPair(pair: RegisterPair) {
-  return highRegisterOfPair[pair];
-}
-
 export class RegisterFile {
   private registers = new Uint8Array(14);
 
@@ -78,18 +41,6 @@ export class RegisterFile {
     } else {
       this.registers[register] = value;
     }
-  }
-
-  public readRegisterPair(pair: RegisterPair) {
-    return makeWord(
-      this.readRegister(highRegisterOfPair[pair]),
-      this.readRegister(lowRegisterOfPair[pair])
-    );
-  }
-
-  public writeRegisterPair(pair: RegisterPair, value: number) {
-    this.writeRegister(highRegisterOfPair[pair], getMSB(value));
-    this.writeRegister(lowRegisterOfPair[pair], getLSB(value));
   }
 
   public getFlag(flag: Flag) {

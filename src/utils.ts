@@ -41,6 +41,14 @@ export function testBit(value: number, bit: number) {
   return (value & (1 << bit)) !== 0;
 }
 
+export function resetBit(value: number, bit: number) {
+  return value & ~(1 << bit);
+}
+
+export function setBit(value: number, bit: number) {
+  return value | (1 << bit);
+}
+
 export const enum Mask {
   Word = 0b11111111_11111111,
   Byte = 0b11111111,

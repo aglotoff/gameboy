@@ -1,5 +1,11 @@
-import { Flag, Register, RegisterFile, RegisterPair } from "./register";
-import { wrappingDecrementWord, wrappingIncrementWord } from "../utils";
+import { Flag, Register, RegisterFile } from "./register";
+import {
+  getLSB,
+  getMSB,
+  makeWord,
+  wrappingDecrementWord,
+  wrappingIncrementWord,
+} from "../utils";
 
 export interface IMemory {
   read(address: number): number;
@@ -7,6 +13,33 @@ export interface IMemory {
   triggerWrite(address: number): void;
   triggerReadWrite(address: number): void;
 }
+
+export const enum RegisterPair {
+  AF = 0,
+  BC = 1,
+  DE = 2,
+  HL = 3,
+  SP = 4,
+  PC = 5,
+}
+
+const highRegisterOfPair: Record<RegisterPair, Register> = {
+  [RegisterPair.AF]: Register.A,
+  [RegisterPair.BC]: Register.B,
+  [RegisterPair.DE]: Register.D,
+  [RegisterPair.HL]: Register.H,
+  [RegisterPair.SP]: Register.SP_H,
+  [RegisterPair.PC]: Register.PC_H,
+};
+
+const lowRegisterOfPair: Record<RegisterPair, Register> = {
+  [RegisterPair.AF]: Register.F,
+  [RegisterPair.BC]: Register.C,
+  [RegisterPair.DE]: Register.E,
+  [RegisterPair.HL]: Register.L,
+  [RegisterPair.SP]: Register.SP_L,
+  [RegisterPair.PC]: Register.PC_L,
+};
 
 export interface CpuStateOptions {
   memory: IMemory;
@@ -17,9 +50,13 @@ export interface InstructionContext {
   readRegister(register: Register): number;
   writeRegister(register: Register, value: number): void;
   readRegisterPair(pair: RegisterPair): number;
+  readLowRegisterOfPair(pair: RegisterPair): number;
+  readHighRegisterOfPair(pair: RegisterPair): number;
   writeRegisterPair(pair: RegisterPair, value: number): void;
+
   getFlag(flag: Flag): boolean;
   setFlag(flag: Flag, value: boolean): void;
+  checkCondition(condition: Condition): boolean;
 
   readMemoryCycle(address: number): number;
   writeMemoryCycle(address: number, data: number): void;
@@ -34,7 +71,17 @@ export interface InstructionContext {
   setInterruptMasterEnable(enable: boolean): void;
   scheduleInterruptMasterEnable(): void;
 
+  fetchImmediateByte(): number;
+  fetchImmediateWord(): number;
+
   beginNextCycle(): void;
+}
+
+export const enum Condition {
+  Z,
+  C,
+  NZ,
+  NC,
 }
 
 export class CpuState implements InstructionContext {
@@ -75,11 +122,23 @@ export class CpuState implements InstructionContext {
   }
 
   public readRegisterPair(pair: RegisterPair) {
-    return this.regs.readRegisterPair(pair);
+    return makeWord(
+      this.regs.readRegister(highRegisterOfPair[pair]),
+      this.regs.readRegister(lowRegisterOfPair[pair])
+    );
+  }
+
+  public readLowRegisterOfPair(pair: RegisterPair) {
+    return this.regs.readRegister(lowRegisterOfPair[pair]);
+  }
+
+  public readHighRegisterOfPair(pair: RegisterPair) {
+    return this.regs.readRegister(highRegisterOfPair[pair]);
   }
 
   public writeRegisterPair(pair: RegisterPair, value: number) {
-    this.regs.writeRegisterPair(pair, value);
+    this.regs.writeRegister(highRegisterOfPair[pair], getMSB(value));
+    this.regs.writeRegister(lowRegisterOfPair[pair], getLSB(value));
   }
 
   public getFlag(flag: Flag) {
@@ -170,14 +229,47 @@ export class CpuState implements InstructionContext {
     return this.imeNext;
   }
 
+  public fetchImmediateByte() {
+    let address = this.readRegisterPair(RegisterPair.PC);
+    const data = this.readMemoryCycle(address);
+
+    this.advancePC();
+
+    return data;
+  }
+
+  public fetchImmediateWord() {
+    const lsb = this.fetchImmediateByte();
+    const msb = this.fetchImmediateByte();
+    return makeWord(msb, lsb);
+  }
+
   public fetchNextOpcode() {
     let address = this.readRegisterPair(RegisterPair.PC);
     this.opcode = this.readMemory(address);
+  }
+
+  public checkCondition(condition: Condition) {
+    switch (condition) {
+      case Condition.Z:
+        return this.getFlag(Flag.Z);
+      case Condition.C:
+        return this.getFlag(Flag.CY);
+      case Condition.NZ:
+        return !this.getFlag(Flag.Z);
+      case Condition.NC:
+        return !this.getFlag(Flag.CY);
+    }
   }
 
   public updateInterruptMasterEnabled() {
     if (this.isInterruptMasterEnableScheduled()) {
       this.setInterruptMasterEnable(true);
     }
+  }
+
+  public advancePC() {
+    const address = this.readRegisterPair(RegisterPair.PC);
+    this.writeRegisterPair(RegisterPair.PC, wrappingIncrementWord(address));
   }
 }

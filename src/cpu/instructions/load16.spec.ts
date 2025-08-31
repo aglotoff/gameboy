@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest";
 
-import { Flag, Register, RegisterPair } from "../register";
+import { Flag, Register } from "../register";
 import { testCpuState } from "../test-lib";
 
 import {
@@ -11,9 +11,10 @@ import {
   popFromStack,
   pushToStack,
 } from "./load16";
+import { RegisterPair } from "../cpu-state";
 
 describe("16-bit load instructions", () => {
-  testCpuState("LD r16,n16", ({ state }) => {
+  testCpuState("LD dd,nn", ({ state }) => {
     state.writeMemory(0x00, 0x5b);
     state.writeMemory(0x01, 0x3a);
 
@@ -24,7 +25,7 @@ describe("16-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testCpuState("LD [n16],SP", ({ state }) => {
+  testCpuState("LD (nn),SP", ({ state }) => {
     state.writeRegisterPair(RegisterPair.SP, 0xfff8);
     state.writeMemory(0x00, 0x00);
     state.writeMemory(0x01, 0xc1);
@@ -45,7 +46,7 @@ describe("16-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(2);
   });
 
-  testCpuState("PUSH r16", ({ state }) => {
+  testCpuState("PUSH qq", ({ state }) => {
     state.writeRegisterPair(RegisterPair.SP, 0xfffe);
     state.writeRegisterPair(RegisterPair.BC, 0x8ac5);
 
@@ -57,7 +58,7 @@ describe("16-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(4);
   });
 
-  testCpuState("POP r16", ({ state }) => {
+  testCpuState("POP qq", ({ state }) => {
     state.writeRegisterPair(RegisterPair.SP, 0xfffc);
     state.writeMemory(0xfffc, 0x5f);
     state.writeMemory(0xfffd, 0x3c);
@@ -69,7 +70,7 @@ describe("16-bit load instructions", () => {
     expect(state.getElapsedCycles()).toBe(3);
   });
 
-  testCpuState("LD HL,SP+e8", ({ state }) => {
+  testCpuState("LDHL SP,e", ({ state }) => {
     state.writeRegisterPair(RegisterPair.SP, 0xfff8);
     state.writeMemory(0x00, 0x2);
 

@@ -1,4 +1,5 @@
-import { Register, RegisterPair } from "../register";
+import { Condition, RegisterPair } from "../cpu-state";
+import { Register } from "../register";
 
 import {
   addRegisterPair,
@@ -49,7 +50,6 @@ import {
 import {
   callFunction,
   callFunctionConditionally,
-  Condition,
   jumpToAddress,
   jumpToAddressConditionally,
   jumpToAddressInHL,
