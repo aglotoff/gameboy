@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest";
 
-import { testCpuState } from "../test-lib";
+import { testInstruction } from "./test-lib";
 
 import {
   disableInterrupts,
@@ -11,41 +11,41 @@ import {
 } from "./misc";
 
 describe("Miscellaneous instructions", () => {
-  testCpuState("HALT", ({ state }) => {
-    halt(state);
+  testInstruction("HALT", ({ ctx }) => {
+    halt(ctx);
 
-    expect(state.isHalted()).toBe(true);
+    expect(ctx.state.isHalted()).toBe(true);
   });
 
-  testCpuState("STOP", ({ state }) => {
-    stop(state);
+  testInstruction("STOP", ({ ctx }) => {
+    stop(ctx);
 
-    expect(state.isStopped()).toBe(true);
+    expect(ctx.state.isStopped()).toBe(true);
   });
 
-  testCpuState("DI", ({ state }) => {
-    state.setInterruptMasterEnable(true);
+  testInstruction("DI", ({ ctx }) => {
+    ctx.state.setInterruptMasterEnable(true);
 
-    disableInterrupts(state);
+    disableInterrupts(ctx);
 
-    expect(state.isInterruptMasterEnabled()).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.state.isInterruptMasterEnabled()).toBe(false);
+    expect(ctx.state.getElapsedCycles()).toBe(1);
   });
 
-  testCpuState("EI", ({ state }) => {
-    enableInterrupts(state);
+  testInstruction("EI", ({ ctx }) => {
+    enableInterrupts(ctx);
 
-    expect(state.isInterruptMasterEnabled()).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.state.isInterruptMasterEnabled()).toBe(false);
+    expect(ctx.state.getElapsedCycles()).toBe(1);
 
-    state.updateInterruptMasterEnabled();
+    ctx.state.updateInterruptMasterEnabled();
 
-    expect(state.isInterruptMasterEnabled()).toBe(true);
+    expect(ctx.state.isInterruptMasterEnabled()).toBe(true);
   });
 
-  testCpuState("NOP", ({ state }) => {
-    noOperation(state);
+  testInstruction("NOP", ({ ctx }) => {
+    noOperation(ctx);
 
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.state.getElapsedCycles()).toBe(1);
   });
 });

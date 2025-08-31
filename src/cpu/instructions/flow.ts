@@ -1,5 +1,4 @@
-import { Condition, InstructionContext, RegisterPair } from "../cpu-state";
-import { Register } from "../register";
+import { Flag, Register, RegisterPair } from "../register";
 import {
   getLSB,
   getMSB,
@@ -15,29 +14,35 @@ import {
   makeInstructionWithImmediateByte,
   makeInstructionWithImmediateWord,
   isNegative,
+  readMemoryCycle,
+  writeMemoryCycle,
+  decrementAndTriggerWrite,
+  incrementAndTriggerReadWrite,
+  Condition,
+  InstructionContext,
 } from "./lib";
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#JP_n16
 export const jumpToAddress = makeInstructionWithImmediateWord(
   (ctx, address) => {
-    ctx.writeRegisterPair(RegisterPair.PC, address);
-    ctx.beginNextCycle();
+    ctx.registers.writePair(RegisterPair.PC, address);
+    ctx.state.beginNextCycle();
   }
 );
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#JP_HL
 export const jumpToAddressInHL = makeInstruction((ctx) => {
-  const address = ctx.readRegisterPair(RegisterPair.HL);
-  ctx.writeRegisterPair(RegisterPair.PC, address);
+  const address = ctx.registers.readPair(RegisterPair.HL);
+  ctx.registers.writePair(RegisterPair.PC, address);
 });
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#JR_cc,n16
 export const jumpToAddressConditionally = makeInstructionWithImmediateWord(
   (ctx, address, condition: Condition) => {
     // FIXME: condition check is performed during M3
-    if (ctx.checkCondition(condition)) {
-      ctx.writeRegisterPair(RegisterPair.PC, address);
-      ctx.beginNextCycle();
+    if (checkCondition(ctx, condition)) {
+      ctx.registers.writePair(RegisterPair.PC, address);
+      ctx.state.beginNextCycle();
     }
   }
 );
@@ -49,7 +54,7 @@ export const jumpToRelative = makeInstructionWithImmediateByte(jump);
 export const jumpToRelativeConditionally = makeInstructionWithImmediateByte(
   (ctx, offset, condition: Condition) => {
     // FIXME: condition check is performed during M2
-    if (ctx.checkCondition(condition)) {
+    if (checkCondition(ctx, condition)) {
       jump(ctx, offset);
     }
   }
@@ -59,11 +64,11 @@ function jump(ctx: InstructionContext, offset: number) {
   const isOffsetNegative = isNegative(offset);
 
   const { result: lsb, carryFrom7 } = addBytes(
-    ctx.readRegister(Register.PC_L),
+    ctx.registers.read(Register.PC_L),
     offset
   );
 
-  let msb = ctx.readRegister(Register.PC_H);
+  let msb = ctx.registers.read(Register.PC_H);
 
   if (carryFrom7 && !isOffsetNegative) {
     msb = wrappingIncrementByte(msb);
@@ -71,9 +76,9 @@ function jump(ctx: InstructionContext, offset: number) {
     msb = wrappingDecrementByte(msb);
   }
 
-  ctx.beginNextCycle();
+  ctx.state.beginNextCycle();
 
-  ctx.writeRegisterPair(RegisterPair.PC, makeWord(msb, lsb));
+  ctx.registers.writePair(RegisterPair.PC, makeWord(msb, lsb));
 }
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#CALL_n16
@@ -83,7 +88,7 @@ export const callFunction = makeInstructionWithImmediateWord(call);
 export const callFunctionConditionally = makeInstructionWithImmediateWord(
   (ctx, address, condition: Condition) => {
     // FIXME: condition check is performed during M3
-    if (ctx.checkCondition(condition)) {
+    if (checkCondition(ctx, condition)) {
       call(ctx, address);
     }
   }
@@ -97,23 +102,23 @@ export const restartFunction = makeInstruction(
 );
 
 function call(ctx: InstructionContext, address: number) {
-  const data = ctx.readRegisterPair(RegisterPair.PC);
+  const data = ctx.registers.readPair(RegisterPair.PC);
 
-  let sp = ctx.readRegisterPair(RegisterPair.SP);
+  let sp = ctx.registers.readPair(RegisterPair.SP);
 
-  ctx.writeRegisterPair(RegisterPair.SP, ctx.decrementAndTriggerWrite(sp));
+  ctx.registers.writePair(RegisterPair.SP, decrementAndTriggerWrite(ctx, sp));
 
-  ctx.beginNextCycle();
+  ctx.state.beginNextCycle();
 
-  sp = ctx.readRegisterPair(RegisterPair.SP);
+  sp = ctx.registers.readPair(RegisterPair.SP);
 
-  ctx.writeRegisterPair(RegisterPair.SP, ctx.decrementAndTriggerWrite(sp));
-  ctx.writeMemoryCycle(sp, getMSB(data));
+  ctx.registers.writePair(RegisterPair.SP, decrementAndTriggerWrite(ctx, sp));
+  writeMemoryCycle(ctx, sp, getMSB(data));
 
-  ctx.writeRegisterPair(RegisterPair.PC, address);
+  ctx.registers.writePair(RegisterPair.PC, address);
 
-  sp = ctx.readRegisterPair(RegisterPair.SP);
-  ctx.writeMemoryCycle(sp, getLSB(data));
+  sp = ctx.registers.readPair(RegisterPair.SP);
+  writeMemoryCycle(ctx, sp, getLSB(data));
 }
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RET
@@ -122,9 +127,9 @@ export const returnFromFunction = makeInstruction(doReturn);
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RET_cc
 export const returnFromFunctionConditionally = makeInstruction(
   (ctx, condition: Condition) => {
-    const isConditionTrue = ctx.checkCondition(condition);
+    const isConditionTrue = checkCondition(ctx, condition);
 
-    ctx.beginNextCycle();
+    ctx.state.beginNextCycle();
 
     if (isConditionTrue) {
       doReturn(ctx);
@@ -135,24 +140,40 @@ export const returnFromFunctionConditionally = makeInstruction(
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RETI
 export const returnFromInterruptHandler = makeInstruction((ctx) => {
   doReturn(ctx);
-  ctx.setInterruptMasterEnable(true);
+  ctx.state.setInterruptMasterEnable(true);
 });
 
 function doReturn(ctx: InstructionContext) {
-  let sp = ctx.readRegisterPair(RegisterPair.SP);
+  let sp = ctx.registers.readPair(RegisterPair.SP);
 
-  ctx.writeRegisterPair(RegisterPair.SP, ctx.incrementAndTriggerReadWrite(sp));
+  ctx.registers.writePair(
+    RegisterPair.SP,
+    incrementAndTriggerReadWrite(ctx, sp)
+  );
 
-  const lsb = ctx.readMemoryCycle(sp);
+  const lsb = readMemoryCycle(ctx, sp);
 
-  sp = ctx.readRegisterPair(RegisterPair.SP);
+  sp = ctx.registers.readPair(RegisterPair.SP);
 
-  ctx.writeRegisterPair(RegisterPair.SP, wrappingIncrementWord(sp));
+  ctx.registers.writePair(RegisterPair.SP, wrappingIncrementWord(sp));
   // do not trigger OAM corruption bug this time!
 
-  const msb = ctx.readMemoryCycle(sp);
+  const msb = readMemoryCycle(ctx, sp);
 
-  ctx.writeRegisterPair(RegisterPair.PC, makeWord(msb, lsb));
+  ctx.registers.writePair(RegisterPair.PC, makeWord(msb, lsb));
 
-  ctx.beginNextCycle();
+  ctx.state.beginNextCycle();
+}
+
+function checkCondition(ctx: InstructionContext, condition: Condition) {
+  switch (condition) {
+    case Condition.Z:
+      return ctx.registers.getFlag(Flag.Z);
+    case Condition.C:
+      return ctx.registers.getFlag(Flag.CY);
+    case Condition.NZ:
+      return !ctx.registers.getFlag(Flag.Z);
+    case Condition.NC:
+      return !ctx.registers.getFlag(Flag.CY);
+  }
 }

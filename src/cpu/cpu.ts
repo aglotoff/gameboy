@@ -1,54 +1,82 @@
-import { CpuState, IMemory, RegisterPair } from "./cpu-state";
-import { getInstruction } from "./instructions";
+import { CpuState, IMemory } from "./cpu-state";
+import { getInstruction, InstructionContext } from "./instructions";
 import { InterruptController } from "../hw/interrupt-controller";
-import { getLSB, getMSB, wrappingDecrementWord } from "../utils";
-import { Register } from "./register";
+import {
+  getLSB,
+  getMSB,
+  wrappingDecrementWord,
+  wrappingIncrementWord,
+} from "../utils";
+import { Register, RegisterFile, RegisterPair } from "./register";
 
 export class Cpu {
-  private state: CpuState;
+  private ctx: InstructionContext;
+  private opcode = 0;
 
   public constructor(
     memory: IMemory,
     private interruptController: InterruptController,
     onCycle: () => void
   ) {
-    this.state = new CpuState({ memory, onCycle });
+    this.ctx = {
+      registers: new RegisterFile(),
+      memory,
+      state: new CpuState(onCycle),
+    };
+
+    this.ctx.registers.write(Register.A, 0x01);
+    this.ctx.registers.write(Register.B, 0xff);
+    this.ctx.registers.write(Register.C, 0x13);
+    this.ctx.registers.write(Register.D, 0x00);
 
     // TODO: this extra M-cycle was added to pass boot_div-dmgABCmgb, do we
     // miss something?
-    this.state.beginNextCycle();
+    this.ctx.state.beginNextCycle();
   }
 
   public step() {
     try {
-      if (this.state.isHalted()) {
-        this.state.beginNextCycle();
+      if (this.ctx.state.isHalted()) {
+        this.ctx.state.beginNextCycle();
       } else {
         this.executeNextInstruction();
 
         if (this.isHaltBug()) {
           // HALT mode is not entered, but the CPU fails to increase PC
-          this.state.setHalted(false);
+          this.ctx.state.setHalted(false);
           return;
         }
       }
 
       this.processInterruptRequests();
 
-      if (!this.state.isHalted()) {
-        this.state.advancePC();
-        this.state.updateInterruptMasterEnabled();
+      if (!this.ctx.state.isHalted()) {
+        this.advancePC();
+        this.ctx.state.updateInterruptMasterEnabled();
       }
     } catch (error) {
-      this.state.stop();
+      this.ctx.state.stop();
       throw error;
     }
   }
 
+  private advancePC() {
+    const address = this.ctx.registers.readPair(RegisterPair.PC);
+    this.ctx.registers.writePair(
+      RegisterPair.PC,
+      wrappingIncrementWord(address)
+    );
+  }
+
   private executeNextInstruction() {
-    const instruction = this.decodeInstruction(this.state.getOpcode());
-    instruction(this.state);
-    this.state.fetchNextOpcode();
+    const instruction = this.decodeInstruction(this.opcode);
+    instruction(this.ctx);
+    this.fetchNextOpcode();
+  }
+
+  private fetchNextOpcode() {
+    let address = this.ctx.registers.readPair(RegisterPair.PC);
+    this.opcode = this.ctx.memory.read(address);
   }
 
   private decodeInstruction(opcode: number) {
@@ -57,79 +85,76 @@ export class Cpu {
 
   private isHaltBug() {
     return (
-      this.state.isHalted() &&
-      !this.state.isInterruptMasterEnabled() &&
+      this.ctx.state.isHalted() &&
+      !this.ctx.state.isInterruptMasterEnabled() &&
       this.interruptController.hasPendingInterrupt()
     );
   }
 
   private processInterruptRequests() {
     if (this.interruptController.hasPendingInterrupt()) {
-      this.state.setHalted(false);
+      this.ctx.state.setHalted(false);
 
-      if (this.state.isInterruptMasterEnabled()) {
+      if (this.ctx.state.isInterruptMasterEnabled()) {
         this.handleInterrupt();
       }
     }
   }
 
   private handleInterrupt() {
-    this.state.setInterruptMasterEnable(false);
+    this.ctx.state.setInterruptMasterEnable(false);
 
-    this.state.beginNextCycle();
+    this.ctx.state.beginNextCycle();
 
-    let sp = this.state.readRegisterPair(RegisterPair.SP);
+    let sp = this.ctx.registers.readPair(RegisterPair.SP);
     sp = wrappingDecrementWord(sp);
 
-    this.state.beginNextCycle();
+    this.ctx.state.beginNextCycle();
 
-    this.state.writeMemory(
+    this.ctx.memory.write(
       sp,
-      getMSB(this.state.readRegisterPair(RegisterPair.PC))
+      getMSB(this.ctx.registers.readPair(RegisterPair.PC))
     );
 
-    this.state.beginNextCycle();
+    this.ctx.state.beginNextCycle();
 
     sp = wrappingDecrementWord(sp);
 
     const irq = this.interruptController.getPendingInterrupt();
 
-    this.state.writeMemory(
+    this.ctx.memory.write(
       sp,
-      getLSB(this.state.readRegisterPair(RegisterPair.PC))
+      getLSB(this.ctx.registers.readPair(RegisterPair.PC))
     );
-    this.state.writeRegisterPair(RegisterPair.SP, sp);
+    this.ctx.registers.writePair(RegisterPair.SP, sp);
 
-    this.state.beginNextCycle();
+    this.ctx.state.beginNextCycle();
 
     if (irq < 0) {
-      this.state.writeRegisterPair(RegisterPair.PC, 0);
+      this.ctx.registers.writePair(RegisterPair.PC, 0);
     } else {
       this.interruptController.acknowledgeInterrupt(irq);
-      this.state.writeRegisterPair(
+      this.ctx.registers.writePair(
         RegisterPair.PC,
         getInterruptVectorAddress(irq)
       );
     }
 
-    this.state.beginNextCycle();
-    this.state.fetchNextOpcode();
-  }
+    this.ctx.state.beginNextCycle();
 
-  public writeRegister(reg: Register, value: number) {
-    this.state.writeRegister(reg, value);
+    this.fetchNextOpcode();
   }
 
   public resetCycle() {
-    this.state.resetCycle();
+    this.ctx.state.resetCycle();
   }
 
   public getElapsedCycles() {
-    return this.state.getElapsedCycles();
+    return this.ctx.state.getElapsedCycles();
   }
 
   public isStopped() {
-    return this.state.isStopped();
+    return this.ctx.state.isStopped();
   }
 }
 

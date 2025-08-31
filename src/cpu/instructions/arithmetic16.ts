@@ -1,23 +1,30 @@
-import { Flag, Register } from "../register";
+import {
+  Flag,
+  getHighRegisterOfPair,
+  getLowRegisterOfPair,
+  Register,
+  RegisterPair,
+} from "../register";
 import { makeWord } from "../../utils";
-import { RegisterPair } from "../cpu-state";
 
 import {
   addBytes,
   makeInstruction,
   makeInstructionWithImmediateByte,
   isNegative,
+  incrementAndTriggerWrite,
+  decrementAndTriggerWrite,
 } from "./lib";
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#INC_r16
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#INC_SP
 export const incrementRegisterPair = makeInstruction(
   (ctx, pair: RegisterPair) => {
-    const data = ctx.readRegisterPair(pair);
+    const data = ctx.registers.readPair(pair);
 
-    ctx.writeRegisterPair(pair, ctx.incrementAndTriggerWrite(data));
+    ctx.registers.writePair(pair, incrementAndTriggerWrite(ctx, data));
 
-    ctx.beginNextCycle();
+    ctx.state.beginNextCycle();
   }
 );
 
@@ -25,31 +32,31 @@ export const incrementRegisterPair = makeInstruction(
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#DEC_SP
 export const decrementRegisterPair = makeInstruction(
   (ctx, pair: RegisterPair) => {
-    const data = ctx.readRegisterPair(pair);
+    const data = ctx.registers.readPair(pair);
 
-    ctx.writeRegisterPair(pair, ctx.decrementAndTriggerWrite(data));
+    ctx.registers.writePair(pair, decrementAndTriggerWrite(ctx, data));
 
-    ctx.beginNextCycle();
+    ctx.state.beginNextCycle();
   }
 );
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#ADD_HL,r16
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#ADD_HL,SP
 export const addRegisterPair = makeInstruction((ctx, pair: RegisterPair) => {
-  const lsb1 = ctx.readRegister(Register.L);
-  const lsb2 = ctx.readLowRegisterOfPair(pair);
+  const lsb1 = ctx.registers.read(Register.L);
+  const lsb2 = ctx.registers.read(getLowRegisterOfPair(pair));
 
   const { result: lsbResult, carryFrom3, carryFrom7 } = addBytes(lsb1, lsb2);
 
-  ctx.writeRegister(Register.L, lsbResult);
-  ctx.setFlag(Flag.N, false);
-  ctx.setFlag(Flag.H, carryFrom3);
-  ctx.setFlag(Flag.CY, carryFrom7);
+  ctx.registers.write(Register.L, lsbResult);
+  ctx.registers.setFlag(Flag.N, false);
+  ctx.registers.setFlag(Flag.H, carryFrom3);
+  ctx.registers.setFlag(Flag.CY, carryFrom7);
 
-  ctx.beginNextCycle();
+  ctx.state.beginNextCycle();
 
-  const msb1 = ctx.readRegister(Register.H);
-  const msb2 = ctx.readHighRegisterOfPair(pair);
+  const msb1 = ctx.registers.read(Register.H);
+  const msb2 = ctx.registers.read(getHighRegisterOfPair(pair));
 
   const {
     result: msbResult,
@@ -57,34 +64,34 @@ export const addRegisterPair = makeInstruction((ctx, pair: RegisterPair) => {
     carryFrom7: carryFrom15,
   } = addBytes(msb1, msb2, carryFrom7);
 
-  ctx.writeRegister(Register.H, msbResult);
-  ctx.setFlag(Flag.N, false);
-  ctx.setFlag(Flag.H, carryFrom11);
-  ctx.setFlag(Flag.CY, carryFrom15);
+  ctx.registers.write(Register.H, msbResult);
+  ctx.registers.setFlag(Flag.N, false);
+  ctx.registers.setFlag(Flag.H, carryFrom11);
+  ctx.registers.setFlag(Flag.CY, carryFrom15);
 });
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#ADD_SP,e8
 export const addOffsetToStackPointer = makeInstructionWithImmediateByte(
   (ctx, offset) => {
-    const lsb = ctx.readRegister(Register.SP_L);
+    const lsb = ctx.registers.read(Register.SP_L);
 
     const { result: resultLsb, carryFrom3, carryFrom7 } = addBytes(lsb, offset);
 
-    ctx.setFlag(Flag.Z, false);
-    ctx.setFlag(Flag.N, false);
-    ctx.setFlag(Flag.H, carryFrom3);
-    ctx.setFlag(Flag.CY, carryFrom7);
+    ctx.registers.setFlag(Flag.Z, false);
+    ctx.registers.setFlag(Flag.N, false);
+    ctx.registers.setFlag(Flag.H, carryFrom3);
+    ctx.registers.setFlag(Flag.CY, carryFrom7);
 
-    ctx.beginNextCycle();
+    ctx.state.beginNextCycle();
 
-    const msb1 = ctx.readRegister(Register.SP_H);
+    const msb1 = ctx.registers.read(Register.SP_H);
     const msb2 = isNegative(offset) ? 0xff : 0x00;
 
     const { result: resultMsb } = addBytes(msb1, msb2, carryFrom7);
 
-    ctx.beginNextCycle();
+    ctx.state.beginNextCycle();
 
     const result = makeWord(resultMsb, resultLsb);
-    ctx.writeRegisterPair(RegisterPair.SP, result);
+    ctx.registers.writePair(RegisterPair.SP, result);
   }
 );

@@ -1,4 +1,4 @@
-import { Cpu, Register } from "./cpu";
+import { Cpu } from "./cpu";
 import { InterruptController } from "./hw/interrupt-controller";
 import { ILCD, PPU, OAM } from "./hw/graphics";
 import { Memory } from "./memory";
@@ -179,11 +179,6 @@ export class Emulator {
     console.log(`Title: ${cartridge.getTitle()}`);
     console.log(`Type: ${typeName}`);
     console.log(`ROM Size: ${cartridge.getROMSize()}`);
-
-    this.cpu.writeRegister(Register.A, 0x01);
-    this.cpu.writeRegister(Register.B, 0xff);
-    this.cpu.writeRegister(Register.C, 0x13);
-    this.cpu.writeRegister(Register.D, 0x00);
 
     this.timeout = setInterval(() => {
       const start = performance.now();

@@ -1,5 +1,24 @@
-import { Mask } from "../../utils";
-import { InstructionContext } from "../cpu-state";
+import {
+  makeWord,
+  Mask,
+  wrappingDecrementWord,
+  wrappingIncrementWord,
+} from "../../utils";
+import { CpuState, IMemory } from "../cpu-state";
+import { RegisterFile, RegisterPair } from "../register";
+
+export interface InstructionContext {
+  registers: RegisterFile;
+  state: CpuState;
+  memory: IMemory;
+}
+
+export const enum Condition {
+  Z,
+  C,
+  NZ,
+  NC,
+}
 
 export type OpTable = Array<(ctx: InstructionContext) => void>;
 
@@ -11,7 +30,7 @@ export function makeInstruction<T extends unknown[]>(
   cb: (ctx: InstructionContext, ...args: T) => void
 ) {
   return function (ctx: InstructionContext, ...args: T) {
-    ctx.beginNextCycle();
+    ctx.state.beginNextCycle();
     cb(ctx, ...args);
   };
 }
@@ -20,18 +39,33 @@ export function makeInstructionWithImmediateByte<T extends unknown[]>(
   cb: (ctx: InstructionContext, byte: number, ...args: T) => void
 ) {
   return (ctx: InstructionContext, ...args: T) => {
-    ctx.beginNextCycle();
-    cb(ctx, ctx.fetchImmediateByte(), ...args);
+    ctx.state.beginNextCycle();
+    cb(ctx, fetchImmediateByte(ctx), ...args);
   };
+}
+
+function fetchImmediateByte(ctx: InstructionContext) {
+  let address = ctx.registers.readPair(RegisterPair.PC);
+  const data = readMemoryCycle(ctx, address);
+
+  ctx.registers.writePair(RegisterPair.PC, wrappingIncrementWord(address));
+
+  return data;
 }
 
 export function makeInstructionWithImmediateWord<T extends unknown[]>(
   cb: (ctx: InstructionContext, word: number, ...args: T) => void
 ) {
   return (ctx: InstructionContext, ...args: T) => {
-    ctx.beginNextCycle();
-    cb(ctx, ctx.fetchImmediateWord(), ...args);
+    ctx.state.beginNextCycle();
+    cb(ctx, fetchImmediateWord(ctx), ...args);
   };
+}
+
+function fetchImmediateWord(ctx: InstructionContext) {
+  const lsb = fetchImmediateByte(ctx);
+  const msb = fetchImmediateByte(ctx);
+  return makeWord(msb, lsb);
 }
 
 export function bindInstructionArgs<T extends unknown[]>(
@@ -65,4 +99,54 @@ export function subtractBytes(a: number, b: number, carryFlag = false) {
     borrowTo7: (a & Mask.Byte) < (b & Mask.Byte) + c,
     result: (a - b - c) & Mask.Byte,
   };
+}
+
+export function readMemoryCycle(
+  ctx: InstructionContext,
+  address: number
+): number {
+  const value = ctx.memory.read(address);
+  ctx.state.beginNextCycle();
+  return value;
+}
+
+export function writeMemoryCycle(
+  ctx: InstructionContext,
+  address: number,
+  data: number
+) {
+  ctx.memory.write(address, data);
+  ctx.state.beginNextCycle();
+}
+
+export function incrementAndTriggerReadWrite(
+  ctx: InstructionContext,
+  address: number
+): number {
+  ctx.memory.triggerReadWrite(address);
+  return wrappingIncrementWord(address);
+}
+
+export function decrementAndTriggerReadWrite(
+  ctx: InstructionContext,
+  address: number
+): number {
+  ctx.memory.triggerReadWrite(address);
+  return wrappingDecrementWord(address);
+}
+
+export function incrementAndTriggerWrite(
+  ctx: InstructionContext,
+  address: number
+): number {
+  ctx.memory.triggerWrite(address);
+  return wrappingIncrementWord(address);
+}
+
+export function decrementAndTriggerWrite(
+  ctx: InstructionContext,
+  address: number
+): number {
+  ctx.memory.triggerWrite(address);
+  return wrappingDecrementWord(address);
 }

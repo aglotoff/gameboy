@@ -1,3 +1,5 @@
+import { getLSB, getMSB, makeWord } from "../utils";
+
 // Register names are array indices for maximum performance
 export const enum Register {
   A = 0,
@@ -16,6 +18,24 @@ export const enum Register {
   IE = 13,
 }
 
+// High byte is always (pair + 0), low byte is always (pair + 1)
+export enum RegisterPair {
+  AF = 0,
+  BC = 2,
+  DE = 4,
+  HL = 6,
+  SP = 8,
+  PC = 10,
+}
+
+export function getHighRegisterOfPair(pair: RegisterPair): Register {
+  return pair + 0;
+}
+
+export function getLowRegisterOfPair(pair: RegisterPair): Register {
+  return pair + 1;
+}
+
 // Use bit masks for flag names to avoid extra shifts
 export const enum Flag {
   Z = 0b1000_0000,
@@ -29,11 +49,11 @@ const FLAG_MASK = 0b1111_0000;
 export class RegisterFile {
   private registers = new Uint8Array(14);
 
-  public readRegister(register: Register) {
+  public read(register: Register) {
     return this.registers[register];
   }
 
-  public writeRegister(register: Register, value: number) {
+  public write(register: Register, value: number) {
     if (register === Register.F) {
       // High 4 bits of flags are always zero
       // TODO: re-check that
@@ -41,6 +61,18 @@ export class RegisterFile {
     } else {
       this.registers[register] = value;
     }
+  }
+
+  public readPair(pair: RegisterPair) {
+    return makeWord(
+      this.read(getHighRegisterOfPair(pair)),
+      this.read(getLowRegisterOfPair(pair))
+    );
+  }
+
+  public writePair(pair: RegisterPair, value: number) {
+    this.write(getHighRegisterOfPair(pair), getMSB(value));
+    this.write(getLowRegisterOfPair(pair), getLSB(value));
   }
 
   public getFlag(flag: Flag) {

@@ -1,6 +1,5 @@
 import { getLSB, getMSB, makeWord, wrappingIncrementWord } from "../../utils";
-import { RegisterPair } from "../cpu-state";
-import { Flag, Register } from "../register";
+import { Flag, Register, RegisterPair } from "../register";
 
 import {
   addBytes,
@@ -8,60 +7,70 @@ import {
   makeInstructionWithImmediateByte,
   makeInstructionWithImmediateWord,
   isNegative,
+  writeMemoryCycle,
+  readMemoryCycle,
+  decrementAndTriggerWrite,
+  incrementAndTriggerReadWrite,
 } from "./lib";
 
 export const loadRegisterPair = makeInstructionWithImmediateWord(
   (ctx, data, dst: RegisterPair) => {
-    ctx.writeRegisterPair(dst, data);
+    ctx.registers.writePair(dst, data);
   }
 );
 
 export const loadDirectFromStackPointer = makeInstructionWithImmediateWord(
   (ctx, address) => {
-    ctx.writeMemoryCycle(address, ctx.readRegister(Register.SP_L));
-    ctx.writeMemoryCycle(address + 1, ctx.readRegister(Register.SP_H));
+    writeMemoryCycle(ctx, address, ctx.registers.read(Register.SP_L));
+    writeMemoryCycle(ctx, address + 1, ctx.registers.read(Register.SP_H));
   }
 );
 
 export const loadStackPointerFromHL = makeInstruction((ctx) => {
-  ctx.writeRegisterPair(RegisterPair.SP, ctx.readRegisterPair(RegisterPair.HL));
-  ctx.beginNextCycle();
+  ctx.registers.writePair(
+    RegisterPair.SP,
+    ctx.registers.readPair(RegisterPair.HL)
+  );
+  ctx.state.beginNextCycle();
 });
 
 export const pushToStack = makeInstruction((ctx, pair: RegisterPair) => {
-  const data = ctx.readRegisterPair(pair);
+  const data = ctx.registers.readPair(pair);
 
-  let sp = ctx.readRegisterPair(RegisterPair.SP);
+  let sp = ctx.registers.readPair(RegisterPair.SP);
 
-  ctx.writeRegisterPair(RegisterPair.SP, ctx.decrementAndTriggerWrite(sp));
+  ctx.registers.writePair(RegisterPair.SP, decrementAndTriggerWrite(ctx, sp));
 
-  ctx.beginNextCycle();
+  ctx.state.beginNextCycle();
 
-  sp = ctx.readRegisterPair(RegisterPair.SP);
+  sp = ctx.registers.readPair(RegisterPair.SP);
 
-  ctx.writeRegisterPair(RegisterPair.SP, ctx.decrementAndTriggerWrite(sp));
+  ctx.registers.writePair(RegisterPair.SP, decrementAndTriggerWrite(ctx, sp));
 
-  ctx.writeMemoryCycle(sp, getMSB(data));
+  writeMemoryCycle(ctx, sp, getMSB(data));
 
-  sp = ctx.readRegisterPair(RegisterPair.SP);
-  ctx.writeMemoryCycle(sp, getLSB(data));
+  sp = ctx.registers.readPair(RegisterPair.SP);
+  writeMemoryCycle(ctx, sp, getLSB(data));
 });
 
 export const popFromStack = makeInstruction((ctx, pair: RegisterPair) => {
-  let sp = ctx.readRegisterPair(RegisterPair.SP);
+  let sp = ctx.registers.readPair(RegisterPair.SP);
 
-  ctx.writeRegisterPair(RegisterPair.SP, ctx.incrementAndTriggerReadWrite(sp));
+  ctx.registers.writePair(
+    RegisterPair.SP,
+    incrementAndTriggerReadWrite(ctx, sp)
+  );
 
-  const lsb = ctx.readMemoryCycle(sp);
+  const lsb = readMemoryCycle(ctx, sp);
 
-  sp = ctx.readRegisterPair(RegisterPair.SP);
+  sp = ctx.registers.readPair(RegisterPair.SP);
 
-  ctx.writeRegisterPair(RegisterPair.SP, wrappingIncrementWord(sp));
+  ctx.registers.writePair(RegisterPair.SP, wrappingIncrementWord(sp));
   // do not trigger OAM corruption bug this time!
 
-  const msb = ctx.readMemoryCycle(sp);
+  const msb = readMemoryCycle(ctx, sp);
 
-  ctx.writeRegisterPair(pair, makeWord(msb, lsb));
+  ctx.registers.writePair(pair, makeWord(msb, lsb));
 });
 
 export const loadHLFromAdjustedStackPointer = makeInstructionWithImmediateByte(
@@ -70,23 +79,23 @@ export const loadHLFromAdjustedStackPointer = makeInstructionWithImmediateByte(
       result: lsb,
       carryFrom3,
       carryFrom7,
-    } = addBytes(ctx.readRegister(Register.SP_L), offset);
+    } = addBytes(ctx.registers.read(Register.SP_L), offset);
 
-    ctx.writeRegister(Register.L, lsb);
+    ctx.registers.write(Register.L, lsb);
 
-    ctx.setFlag(Flag.Z, false);
-    ctx.setFlag(Flag.N, false);
-    ctx.setFlag(Flag.H, carryFrom3);
-    ctx.setFlag(Flag.CY, carryFrom7);
+    ctx.registers.setFlag(Flag.Z, false);
+    ctx.registers.setFlag(Flag.N, false);
+    ctx.registers.setFlag(Flag.H, carryFrom3);
+    ctx.registers.setFlag(Flag.CY, carryFrom7);
 
-    ctx.beginNextCycle();
+    ctx.state.beginNextCycle();
 
     const { result: msb } = addBytes(
-      ctx.readRegister(Register.SP_H),
+      ctx.registers.read(Register.SP_H),
       isNegative(offset) ? 0xff : 0x00,
       carryFrom7
     );
 
-    ctx.writeRegister(Register.H, msb);
+    ctx.registers.write(Register.H, msb);
   }
 );
