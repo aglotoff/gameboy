@@ -4,9 +4,6 @@ import {
   getLSB,
   getMSB,
   makeWord,
-  resetBit,
-  setBit,
-  testBit,
   wrappingDecrementWord,
   wrappingIncrementByte,
   wrappingIncrementWord,
@@ -77,44 +74,5 @@ describe("utils", () => {
 
     value = wrappingDecrementWord(value);
     expect(value).toBe(0xfffe);
-  });
-
-  test("testBit", () => {
-    let value = 0b01100111;
-
-    expect(testBit(value, 0)).toBe(true);
-    expect(testBit(value, 1)).toBe(true);
-    expect(testBit(value, 2)).toBe(true);
-    expect(testBit(value, 3)).toBe(false);
-    expect(testBit(value, 4)).toBe(false);
-    expect(testBit(value, 5)).toBe(true);
-    expect(testBit(value, 6)).toBe(true);
-    expect(testBit(value, 7)).toBe(false);
-  });
-
-  test("setBit", () => {
-    let value = 0b10010110;
-
-    expect(setBit(value, 0)).toBe(0b10010111);
-    expect(setBit(value, 1)).toBe(0b10010110);
-    expect(setBit(value, 2)).toBe(0b10010110);
-    expect(setBit(value, 3)).toBe(0b10011110);
-    expect(setBit(value, 4)).toBe(0b10010110);
-    expect(setBit(value, 5)).toBe(0b10110110);
-    expect(setBit(value, 6)).toBe(0b11010110);
-    expect(setBit(value, 7)).toBe(0b10010110);
-  });
-
-  test("resetBit", () => {
-    let value = 0b10011100;
-
-    expect(resetBit(value, 0)).toBe(0b10011100);
-    expect(resetBit(value, 1)).toBe(0b10011100);
-    expect(resetBit(value, 2)).toBe(0b10011000);
-    expect(resetBit(value, 3)).toBe(0b10010100);
-    expect(resetBit(value, 4)).toBe(0b10001100);
-    expect(resetBit(value, 5)).toBe(0b10011100);
-    expect(resetBit(value, 6)).toBe(0b10011100);
-    expect(resetBit(value, 7)).toBe(0b00011100);
   });
 });

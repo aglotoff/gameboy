@@ -1,5 +1,5 @@
-import { Condition, InstructionContext, RegisterPair } from "../cpu-state";
-import { Register } from "../register";
+import { InstructionContext } from "../cpu-state";
+import { Flag, Register, RegisterPair } from "../register";
 import {
   getLSB,
   getMSB,
@@ -35,7 +35,7 @@ export const jumpToAddressInHL = makeInstruction((ctx) => {
 export const jumpToAddressConditionally = makeInstructionWithImmediateWord(
   (ctx, address, condition: Condition) => {
     // FIXME: condition check is performed during M3
-    if (ctx.checkCondition(condition)) {
+    if (checkCondition(ctx, condition)) {
       ctx.writeRegisterPair(RegisterPair.PC, address);
       ctx.beginNextCycle();
     }
@@ -49,7 +49,7 @@ export const jumpToRelative = makeInstructionWithImmediateByte(jump);
 export const jumpToRelativeConditionally = makeInstructionWithImmediateByte(
   (ctx, offset, condition: Condition) => {
     // FIXME: condition check is performed during M2
-    if (ctx.checkCondition(condition)) {
+    if (checkCondition(ctx, condition)) {
       jump(ctx, offset);
     }
   }
@@ -83,7 +83,7 @@ export const callFunction = makeInstructionWithImmediateWord(call);
 export const callFunctionConditionally = makeInstructionWithImmediateWord(
   (ctx, address, condition: Condition) => {
     // FIXME: condition check is performed during M3
-    if (ctx.checkCondition(condition)) {
+    if (checkCondition(ctx, condition)) {
       call(ctx, address);
     }
   }
@@ -122,7 +122,7 @@ export const returnFromFunction = makeInstruction(doReturn);
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#RET_cc
 export const returnFromFunctionConditionally = makeInstruction(
   (ctx, condition: Condition) => {
-    const isConditionTrue = ctx.checkCondition(condition);
+    const isConditionTrue = checkCondition(ctx, condition);
 
     ctx.beginNextCycle();
 
@@ -155,4 +155,24 @@ function doReturn(ctx: InstructionContext) {
   ctx.writeRegisterPair(RegisterPair.PC, makeWord(msb, lsb));
 
   ctx.beginNextCycle();
+}
+
+export const enum Condition {
+  Z,
+  C,
+  NZ,
+  NC,
+}
+
+function checkCondition(ctx: InstructionContext, condition: Condition) {
+  switch (condition) {
+    case Condition.Z:
+      return ctx.getFlag(Flag.Z);
+    case Condition.C:
+      return ctx.getFlag(Flag.CY);
+    case Condition.NZ:
+      return !ctx.getFlag(Flag.Z);
+    case Condition.NC:
+      return !ctx.getFlag(Flag.CY);
+  }
 }

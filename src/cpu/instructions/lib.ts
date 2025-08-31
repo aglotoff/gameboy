@@ -1,5 +1,6 @@
-import { Mask } from "../../utils";
+import { makeWord, Mask, wrappingIncrementWord } from "../../utils";
 import { InstructionContext } from "../cpu-state";
+import { RegisterPair } from "../register";
 
 export type OpTable = Array<(ctx: InstructionContext) => void>;
 
@@ -21,8 +22,17 @@ export function makeInstructionWithImmediateByte<T extends unknown[]>(
 ) {
   return (ctx: InstructionContext, ...args: T) => {
     ctx.beginNextCycle();
-    cb(ctx, ctx.fetchImmediateByte(), ...args);
+    cb(ctx, fetchImmediateByte(ctx), ...args);
   };
+}
+
+function fetchImmediateByte(ctx: InstructionContext) {
+  const address = ctx.readRegisterPair(RegisterPair.PC);
+  const data = ctx.readMemoryCycle(address);
+
+  ctx.writeRegisterPair(RegisterPair.PC, wrappingIncrementWord(address));
+
+  return data;
 }
 
 export function makeInstructionWithImmediateWord<T extends unknown[]>(
@@ -30,8 +40,14 @@ export function makeInstructionWithImmediateWord<T extends unknown[]>(
 ) {
   return (ctx: InstructionContext, ...args: T) => {
     ctx.beginNextCycle();
-    cb(ctx, ctx.fetchImmediateWord(), ...args);
+    cb(ctx, fetchImmediateWord(ctx), ...args);
   };
+}
+
+function fetchImmediateWord(ctx: InstructionContext) {
+  const lsb = fetchImmediateByte(ctx);
+  const msb = fetchImmediateByte(ctx);
+  return makeWord(msb, lsb);
 }
 
 export function bindInstructionArgs<T extends unknown[]>(

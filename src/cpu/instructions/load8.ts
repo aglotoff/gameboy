@@ -1,5 +1,4 @@
-import { Register } from "../register";
-import { RegisterPair } from "../cpu-state";
+import { Register, RegisterPair } from "../register";
 
 import {
   makeInstruction,

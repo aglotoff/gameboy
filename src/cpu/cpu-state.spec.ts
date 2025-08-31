@@ -1,7 +1,6 @@
 import { describe, expect } from "vitest";
-import { Register } from "./register";
+import { Register, RegisterPair } from "./register";
 import { testCpuState } from "./test-lib";
-import { RegisterPair } from "./cpu-state";
 
 describe("CPU state", () => {
   testCpuState("16-bit registers", ({ state }) => {

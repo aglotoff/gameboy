@@ -1,6 +1,6 @@
-import { Flag, Register } from "../register";
-import { Mask, resetBit, setBit } from "../../utils";
-import { InstructionContext, RegisterPair } from "../cpu-state";
+import { Flag, Register, RegisterPair } from "../register";
+import { Mask } from "../../utils";
+import { InstructionContext } from "../cpu-state";
 
 import { makeInstruction } from "./lib";
 
@@ -345,6 +345,10 @@ export const resetBitInIndirectHL = makeInstruction((ctx, bit: number) => {
   ctx.writeMemoryCycle(address, resetBit(data, bit));
 });
 
+function resetBit(value: number, bit: number) {
+  return value & ~(1 << bit);
+}
+
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SET_u3,r8
 export const setBitInRegister = makeInstruction(
   (ctx, bit: number, reg: Register) => {
@@ -360,3 +364,7 @@ export const setBitInIndirectHL = makeInstruction((ctx, bit: number) => {
 
   ctx.writeMemoryCycle(address, setBit(data, bit));
 });
+
+function setBit(value: number, bit: number) {
+  return value | (1 << bit);
+}

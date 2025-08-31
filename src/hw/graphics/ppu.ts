@@ -1,4 +1,4 @@
-import { resetBit, setBit, testBit } from "../../utils";
+import { testBit } from "../../utils";
 import { OAM, OAM_TOTAL_OBJECTS, OAMEntry } from "./oam";
 import { VRAM } from "./vram";
 
@@ -779,9 +779,9 @@ export class PPU {
 
   private updateStatLYC() {
     if (this.scanline === this.scanlineToCompare && this.dot !== 0) {
-      this.statusRegister = setBit(this.statusRegister, 2);
+      this.statusRegister |= 1 << 2;
     } else {
-      this.statusRegister = resetBit(this.statusRegister, 2);
+      this.statusRegister &= 1 << 2;
     }
   }
 

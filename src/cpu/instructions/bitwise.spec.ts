@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest";
 
-import { Flag, Register } from "../register";
+import { Flag, Register, RegisterPair } from "../register";
 import { testCpuState } from "../test-lib";
 
 import {
@@ -31,7 +31,6 @@ import {
   setBitInRegister,
   setBitInIndirectHL,
 } from "./bitwise";
-import { RegisterPair } from "../cpu-state";
 
 describe("Rotate, shift, and bit operation instructions", () => {
   testCpuState("RLCA", ({ state }) => {

@@ -1,6 +1,5 @@
 import { getLSB, getMSB, makeWord, wrappingIncrementWord } from "../../utils";
-import { RegisterPair } from "../cpu-state";
-import { Flag, Register } from "../register";
+import { Flag, Register, RegisterPair } from "../register";
 
 import {
   addBytes,
@@ -10,12 +9,14 @@ import {
   isNegative,
 } from "./lib";
 
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#LD_r16,n16
 export const loadRegisterPair = makeInstructionWithImmediateWord(
   (ctx, data, dst: RegisterPair) => {
     ctx.writeRegisterPair(dst, data);
   }
 );
 
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#LD__n16_,SP
 export const loadDirectFromStackPointer = makeInstructionWithImmediateWord(
   (ctx, address) => {
     ctx.writeMemoryCycle(address, ctx.readRegister(Register.SP_L));
@@ -23,11 +24,15 @@ export const loadDirectFromStackPointer = makeInstructionWithImmediateWord(
   }
 );
 
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#LD_SP,HL
 export const loadStackPointerFromHL = makeInstruction((ctx) => {
-  ctx.writeRegisterPair(RegisterPair.SP, ctx.readRegisterPair(RegisterPair.HL));
+  const data = ctx.readRegisterPair(RegisterPair.HL);
+  ctx.writeRegisterPair(RegisterPair.SP, data);
+
   ctx.beginNextCycle();
 });
 
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#PUSH_r16
 export const pushToStack = makeInstruction((ctx, pair: RegisterPair) => {
   const data = ctx.readRegisterPair(pair);
 
@@ -47,6 +52,7 @@ export const pushToStack = makeInstruction((ctx, pair: RegisterPair) => {
   ctx.writeMemoryCycle(sp, getLSB(data));
 });
 
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#POP_r16
 export const popFromStack = makeInstruction((ctx, pair: RegisterPair) => {
   let sp = ctx.readRegisterPair(RegisterPair.SP);
 
@@ -64,6 +70,7 @@ export const popFromStack = makeInstruction((ctx, pair: RegisterPair) => {
   ctx.writeRegisterPair(pair, makeWord(msb, lsb));
 });
 
+// https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#LD_HL,SP+e8
 export const loadHLFromAdjustedStackPointer = makeInstructionWithImmediateByte(
   (ctx, offset) => {
     const {

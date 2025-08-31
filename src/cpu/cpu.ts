@@ -1,8 +1,13 @@
-import { CpuState, IMemory, RegisterPair } from "./cpu-state";
+import { CpuState, IMemory } from "./cpu-state";
 import { getInstruction } from "./instructions";
 import { InterruptController } from "../hw/interrupt-controller";
-import { getLSB, getMSB, wrappingDecrementWord } from "../utils";
-import { Register } from "./register";
+import {
+  getLSB,
+  getMSB,
+  wrappingDecrementWord,
+  wrappingIncrementWord,
+} from "../utils";
+import { Register, RegisterPair } from "./register";
 
 export class Cpu {
   private state: CpuState;
@@ -36,7 +41,7 @@ export class Cpu {
       this.processInterruptRequests();
 
       if (!this.state.isHalted()) {
-        this.state.advancePC();
+        this.advancePC();
         this.state.updateInterruptMasterEnabled();
       }
     } catch (error) {
@@ -46,13 +51,9 @@ export class Cpu {
   }
 
   private executeNextInstruction() {
-    const instruction = this.decodeInstruction(this.state.getOpcode());
+    const instruction = getInstruction(this.state.getOpcode());
     instruction(this.state);
     this.state.fetchNextOpcode();
-  }
-
-  private decodeInstruction(opcode: number) {
-    return getInstruction(opcode);
   }
 
   private isHaltBug() {
@@ -130,6 +131,14 @@ export class Cpu {
 
   public isStopped() {
     return this.state.isStopped();
+  }
+
+  private advancePC() {
+    const address = this.state.readRegisterPair(RegisterPair.PC);
+    this.state.writeRegisterPair(
+      RegisterPair.PC,
+      wrappingIncrementWord(address)
+    );
   }
 }
 
