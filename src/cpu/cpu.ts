@@ -1,5 +1,5 @@
 import { CpuState, IMemory, RegisterPair } from "./cpu-state";
-import { getInstruction, getPrefixCBInstruction } from "./instructions";
+import { getInstruction } from "./instructions";
 import { InterruptController } from "../hw/interrupt-controller";
 import { getLSB, getMSB, wrappingDecrementWord } from "../utils";
 import { Register } from "./register";
@@ -46,33 +46,9 @@ export class Cpu {
   }
 
   private executeNextInstruction() {
-    const instruction = this.decodeInstruction(this.state.getOpcode());
-    instruction[1](this.state);
+    const instruction = getInstruction(this.state.getOpcode());
+    instruction(this.state);
     this.state.fetchNextOpcode();
-  }
-
-  private decodeInstruction(opcode: number) {
-    if (opcode == 0xcb) {
-      return this.decodePrefixCBInstruction(this.state.fetchImmediateByte());
-    }
-
-    const instruction = getInstruction(opcode);
-
-    if (typeof instruction === "undefined") {
-      throw new Error(`Invalid opcode ${opcode.toString(16)}`);
-    }
-
-    return instruction;
-  }
-
-  private decodePrefixCBInstruction(opcode: number) {
-    const instruction = getPrefixCBInstruction(opcode);
-
-    if (typeof instruction === "undefined") {
-      throw new Error(`Invalid opcode CB ${opcode.toString(16)}`);
-    }
-
-    return instruction;
   }
 
   private isHaltBug() {

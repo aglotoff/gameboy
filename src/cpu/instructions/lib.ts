@@ -1,8 +1,10 @@
 import { InstructionContext } from "../cpu-state";
 
-export type OpTable = Partial<
-  Record<number, [string, (ctx: InstructionContext) => void]>
->;
+export type OpTable = Array<(ctx: InstructionContext) => void>;
+
+export const invalidOpcode = makeInstruction((_ctx, opcode: number) => {
+  throw new Error(`Invalid opcode ${opcode.toString(16)}`);
+});
 
 export function makeInstruction<T extends unknown[]>(
   cb: (ctx: InstructionContext, ...args: T) => void
