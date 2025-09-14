@@ -27,200 +27,200 @@ import {
 } from "./load8";
 
 describe("8-bit load instructions", () => {
-  testCpuState("LD r,r'", ({ state }) => {
-    state.writeRegister(Register.B, 0x3c);
-    state.writeRegister(Register.D, 0x5c);
+  testCpuState("LD r,r'", ({ ctx, onCycle }) => {
+    ctx.writeRegister(Register.B, 0x3c);
+    ctx.writeRegister(Register.D, 0x5c);
 
-    loadRegisterFromRegister(state, Register.A, Register.B);
-    loadRegisterFromRegister(state, Register.B, Register.D);
+    loadRegisterFromRegister(ctx, Register.A, Register.B);
+    loadRegisterFromRegister(ctx, Register.B, Register.D);
 
-    expect(state.readRegister(Register.A)).toBe(0x3c);
-    expect(state.readRegister(Register.B)).toBe(0x5c);
-    expect(state.getElapsedCycles()).toBe(2);
+    expect(ctx.readRegister(Register.A)).toBe(0x3c);
+    expect(ctx.readRegister(Register.B)).toBe(0x5c);
+    expect(onCycle).toBeCalledTimes(2);
   });
 
-  testCpuState("LD r,n", ({ state }) => {
-    state.writeMemory(0, 0x24);
+  testCpuState("LD r,n", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0, 0x24);
 
-    loadRegisterFromImmediate(state, Register.B);
+    loadRegisterFromImmediate(ctx, Register.B);
 
-    expect(state.readRegister(Register.B)).toBe(0x24);
-    expect(state.getElapsedCycles()).toBe(2);
+    expect(ctx.readRegister(Register.B)).toBe(0x24);
+    expect(onCycle).toBeCalledTimes(2);
   });
 
-  testCpuState("LD r,(HL)", ({ state }) => {
-    state.writeMemory(0x8ac5, 0x5c);
-    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+  testCpuState("LD r,(HL)", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0x8ac5, 0x5c);
+    ctx.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
-    loadRegisterFromIndirectHL(state, Register.H);
+    loadRegisterFromIndirectHL(ctx, Register.H);
 
-    expect(state.readRegister(Register.H)).toBe(0x5c);
-    expect(state.getElapsedCycles()).toBe(2);
+    expect(ctx.readRegister(Register.H)).toBe(0x5c);
+    expect(onCycle).toBeCalledTimes(2);
   });
 
-  testCpuState("LD (HL),r", ({ state }) => {
-    state.writeRegister(Register.A, 0x3c);
-    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+  testCpuState("LD (HL),r", ({ ctx, onCycle }) => {
+    ctx.writeRegister(Register.A, 0x3c);
+    ctx.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
-    loadIndirectHLFromRegister(state, Register.A);
+    loadIndirectHLFromRegister(ctx, Register.A);
 
-    expect(state.readMemory(0x8ac5)).toBe(0x3c);
-    expect(state.getElapsedCycles()).toBe(2);
+    expect(ctx.readMemory(0x8ac5)).toBe(0x3c);
+    expect(onCycle).toBeCalledTimes(2);
   });
 
-  testCpuState("LD (HL),n", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
-    state.writeMemory(0, 0x3c);
+  testCpuState("LD (HL),n", ({ ctx, onCycle }) => {
+    ctx.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    ctx.writeMemory(0, 0x3c);
 
-    loadIndirectHLFromImmediateData(state);
+    loadIndirectHLFromImmediateData(ctx);
 
-    expect(state.readMemory(0x8ac5)).toBe(0x3c);
-    expect(state.getElapsedCycles()).toBe(3);
+    expect(ctx.readMemory(0x8ac5)).toBe(0x3c);
+    expect(onCycle).toBeCalledTimes(3);
   });
 
-  testCpuState("LD A,(BC)", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.BC, 0x8ac5);
-    state.writeMemory(0x8ac5, 0x2f);
+  testCpuState("LD A,(BC)", ({ ctx, onCycle }) => {
+    ctx.writeRegisterPair(RegisterPair.BC, 0x8ac5);
+    ctx.writeMemory(0x8ac5, 0x2f);
 
-    loadAccumulatorFromIndirectBC(state);
+    loadAccumulatorFromIndirectBC(ctx);
 
-    expect(state.readRegister(Register.A)).toBe(0x2f);
-    expect(state.getElapsedCycles()).toBe(2);
+    expect(ctx.readRegister(Register.A)).toBe(0x2f);
+    expect(onCycle).toBeCalledTimes(2);
   });
 
-  testCpuState("LD A,(DE)", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.DE, 0x8ac5);
-    state.writeMemory(0x8ac5, 0x5f);
+  testCpuState("LD A,(DE)", ({ ctx, onCycle }) => {
+    ctx.writeRegisterPair(RegisterPair.DE, 0x8ac5);
+    ctx.writeMemory(0x8ac5, 0x5f);
 
-    loadAccumulatorFromIndirectDE(state);
+    loadAccumulatorFromIndirectDE(ctx);
 
-    expect(state.readRegister(Register.A)).toBe(0x5f);
-    expect(state.getElapsedCycles()).toBe(2);
+    expect(ctx.readRegister(Register.A)).toBe(0x5f);
+    expect(onCycle).toBeCalledTimes(2);
   });
 
-  testCpuState("LD (BC),A", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.BC, 0x205f);
-    state.writeRegister(Register.A, 0x56);
+  testCpuState("LD (BC),A", ({ ctx, onCycle }) => {
+    ctx.writeRegisterPair(RegisterPair.BC, 0x205f);
+    ctx.writeRegister(Register.A, 0x56);
 
-    loadIndirectBCFromAccumulator(state);
+    loadIndirectBCFromAccumulator(ctx);
 
-    expect(state.readMemory(0x205f)).toBe(0x56);
-    expect(state.getElapsedCycles()).toBe(2);
+    expect(ctx.readMemory(0x205f)).toBe(0x56);
+    expect(onCycle).toBeCalledTimes(2);
   });
 
-  testCpuState("LD (DE),A", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.DE, 0x205c);
-    state.writeRegister(Register.A, 0xaa);
+  testCpuState("LD (DE),A", ({ ctx, onCycle }) => {
+    ctx.writeRegisterPair(RegisterPair.DE, 0x205c);
+    ctx.writeRegister(Register.A, 0xaa);
 
-    loadIndirectDEFromAccumulator(state);
+    loadIndirectDEFromAccumulator(ctx);
 
-    expect(state.readMemory(0x205c)).toBe(0xaa);
-    expect(state.getElapsedCycles()).toBe(2);
+    expect(ctx.readMemory(0x205c)).toBe(0xaa);
+    expect(onCycle).toBeCalledTimes(2);
   });
 
-  testCpuState("LD A,(nn)", ({ state }) => {
-    state.writeMemory(0, getLSB(0x8000));
-    state.writeMemory(1, getMSB(0x8000));
-    state.writeMemory(0x8000, 0x5c);
+  testCpuState("LD A,(nn)", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0, getLSB(0x8000));
+    ctx.writeMemory(1, getMSB(0x8000));
+    ctx.writeMemory(0x8000, 0x5c);
 
-    loadAccumulatorFromDirectWord(state);
+    loadAccumulatorFromDirectWord(ctx);
 
-    expect(state.readRegister(Register.A)).toBe(0x5c);
-    expect(state.getElapsedCycles()).toBe(4);
+    expect(ctx.readRegister(Register.A)).toBe(0x5c);
+    expect(onCycle).toBeCalledTimes(4);
   });
 
-  testCpuState("LD (nn),A", ({ state }) => {
-    state.writeMemory(0, getLSB(0x8000));
-    state.writeMemory(1, getMSB(0x8000));
-    state.writeRegister(Register.A, 0x2f);
+  testCpuState("LD (nn),A", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0, getLSB(0x8000));
+    ctx.writeMemory(1, getMSB(0x8000));
+    ctx.writeRegister(Register.A, 0x2f);
 
-    loadDirectWordFromAccumulator(state);
+    loadDirectWordFromAccumulator(ctx);
 
-    expect(state.readMemory(0x8000)).toBe(0x2f);
-    expect(state.getElapsedCycles()).toBe(4);
+    expect(ctx.readMemory(0x8000)).toBe(0x2f);
+    expect(onCycle).toBeCalledTimes(4);
   });
 
-  testCpuState("LD A,(C)", ({ state }) => {
-    state.writeMemory(0xff95, 0x2c);
-    state.writeRegister(Register.C, 0x95);
+  testCpuState("LD A,(C)", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0xff95, 0x2c);
+    ctx.writeRegister(Register.C, 0x95);
 
-    loadAccumulatorFromIndirectC(state);
+    loadAccumulatorFromIndirectC(ctx);
 
-    expect(state.readRegister(Register.A)).toBe(0x2c);
-    expect(state.getElapsedCycles()).toBe(2);
+    expect(ctx.readRegister(Register.A)).toBe(0x2c);
+    expect(onCycle).toBeCalledTimes(2);
   });
 
-  testCpuState("LD (C),A", ({ state }) => {
-    state.writeRegister(Register.A, 0x5c);
-    state.writeRegister(Register.C, 0x9f);
+  testCpuState("LD (C),A", ({ ctx, onCycle }) => {
+    ctx.writeRegister(Register.A, 0x5c);
+    ctx.writeRegister(Register.C, 0x9f);
 
-    loadIndirectCFromAccumulator(state);
+    loadIndirectCFromAccumulator(ctx);
 
-    expect(state.readMemory(0xff9f)).toBe(0x5c);
-    expect(state.getElapsedCycles()).toBe(2);
+    expect(ctx.readMemory(0xff9f)).toBe(0x5c);
+    expect(onCycle).toBeCalledTimes(2);
   });
 
-  testCpuState("LD A,(n)", ({ state }) => {
-    state.writeMemory(0, getLSB(0x34));
-    state.writeMemory(0xff34, 0x5f);
+  testCpuState("LD A,(n)", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0, getLSB(0x34));
+    ctx.writeMemory(0xff34, 0x5f);
 
-    loadAccumulatorFromDirectByte(state);
+    loadAccumulatorFromDirectByte(ctx);
 
-    expect(state.readRegister(Register.A)).toBe(0x5f);
-    expect(state.getElapsedCycles()).toBe(3);
+    expect(ctx.readRegister(Register.A)).toBe(0x5f);
+    expect(onCycle).toBeCalledTimes(3);
   });
 
-  testCpuState("LD (n),A", ({ state }) => {
-    state.writeMemory(0, getLSB(0x34));
-    state.writeRegister(Register.A, 0x2f);
+  testCpuState("LD (n),A", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0, getLSB(0x34));
+    ctx.writeRegister(Register.A, 0x2f);
 
-    loadDirectByteFromAccumulator(state);
+    loadDirectByteFromAccumulator(ctx);
 
-    expect(state.readMemory(0xff34)).toBe(0x2f);
-    expect(state.getElapsedCycles()).toBe(3);
+    expect(ctx.readMemory(0xff34)).toBe(0x2f);
+    expect(onCycle).toBeCalledTimes(3);
   });
 
-  testCpuState("LD A,(HLD)", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.HL, 0x8a5c);
-    state.writeMemory(0x8a5c, 0x3c);
+  testCpuState("LD A,(HLD)", ({ ctx, onCycle }) => {
+    ctx.writeRegisterPair(RegisterPair.HL, 0x8a5c);
+    ctx.writeMemory(0x8a5c, 0x3c);
 
-    loadAccumulatorFromIndirectHLDecrement(state);
+    loadAccumulatorFromIndirectHLDecrement(ctx);
 
-    expect(state.readRegister(Register.A)).toBe(0x3c);
-    expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x8a5b);
-    expect(state.getElapsedCycles()).toBe(2);
+    expect(ctx.readRegister(Register.A)).toBe(0x3c);
+    expect(ctx.readRegisterPair(RegisterPair.HL)).toBe(0x8a5b);
+    expect(onCycle).toBeCalledTimes(2);
   });
 
-  testCpuState("LD A,(HLI)", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.HL, 0x1ff);
-    state.writeMemory(0x1ff, 0x56);
+  testCpuState("LD A,(HLI)", ({ ctx, onCycle }) => {
+    ctx.writeRegisterPair(RegisterPair.HL, 0x1ff);
+    ctx.writeMemory(0x1ff, 0x56);
 
-    loadAccumulatorFromIndirectHLIncrement(state);
+    loadAccumulatorFromIndirectHLIncrement(ctx);
 
-    expect(state.readRegister(Register.A)).toBe(0x56);
-    expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x200);
-    expect(state.getElapsedCycles()).toBe(2);
+    expect(ctx.readRegister(Register.A)).toBe(0x56);
+    expect(ctx.readRegisterPair(RegisterPair.HL)).toBe(0x200);
+    expect(onCycle).toBeCalledTimes(2);
   });
 
-  testCpuState("LD (HLD),A", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.HL, 0x4000);
-    state.writeRegister(Register.A, 0x5);
+  testCpuState("LD (HLD),A", ({ ctx, onCycle }) => {
+    ctx.writeRegisterPair(RegisterPair.HL, 0x4000);
+    ctx.writeRegister(Register.A, 0x5);
 
-    loadIndirectHLDecrementFromAccumulator(state);
+    loadIndirectHLDecrementFromAccumulator(ctx);
 
-    expect(state.readMemory(0x4000)).toBe(0x5);
-    expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x3fff);
-    expect(state.getElapsedCycles()).toBe(2);
+    expect(ctx.readMemory(0x4000)).toBe(0x5);
+    expect(ctx.readRegisterPair(RegisterPair.HL)).toBe(0x3fff);
+    expect(onCycle).toBeCalledTimes(2);
   });
 
-  testCpuState("LD (HLI),A", ({ state }) => {
-    state.writeRegisterPair(RegisterPair.HL, 0xffff);
-    state.writeRegister(Register.A, 0x56);
+  testCpuState("LD (HLI),A", ({ ctx, onCycle }) => {
+    ctx.writeRegisterPair(RegisterPair.HL, 0xffff);
+    ctx.writeRegister(Register.A, 0x56);
 
-    loadIndirectHLIncrementFromAccumulator(state);
+    loadIndirectHLIncrementFromAccumulator(ctx);
 
-    expect(state.readMemory(0xffff)).toBe(0x56);
-    expect(state.readRegisterPair(RegisterPair.HL)).toBe(0x0000);
-    expect(state.getElapsedCycles()).toBe(2);
+    expect(ctx.readMemory(0xffff)).toBe(0x56);
+    expect(ctx.readRegisterPair(RegisterPair.HL)).toBe(0x0000);
+    expect(onCycle).toBeCalledTimes(2);
   });
 });

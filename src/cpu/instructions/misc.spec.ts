@@ -11,41 +11,41 @@ import {
 } from "./misc";
 
 describe("Miscellaneous instructions", () => {
-  testCpuState("HALT", ({ state }) => {
-    halt(state);
+  testCpuState("HALT", ({ ctx }) => {
+    halt(ctx);
 
-    expect(state.isHalted()).toBe(true);
+    expect(ctx.isHalted()).toBe(true);
   });
 
-  testCpuState("STOP", ({ state }) => {
-    stop(state);
+  testCpuState("STOP", ({ ctx }) => {
+    stop(ctx);
 
-    expect(state.isStopped()).toBe(true);
+    expect(ctx.isStopped()).toBe(true);
   });
 
-  testCpuState("DI", ({ state }) => {
-    state.setInterruptMasterEnable(true);
+  testCpuState("DI", ({ ctx, onCycle }) => {
+    ctx.setInterruptMasterEnable(true);
 
-    disableInterrupts(state);
+    disableInterrupts(ctx);
 
-    expect(state.isInterruptMasterEnabled()).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.isInterruptMasterEnabled()).toBe(false);
+    expect(onCycle).toBeCalledTimes(1);
   });
 
-  testCpuState("EI", ({ state }) => {
-    enableInterrupts(state);
+  testCpuState("EI", ({ ctx, onCycle }) => {
+    enableInterrupts(ctx);
 
-    expect(state.isInterruptMasterEnabled()).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.isInterruptMasterEnabled()).toBe(false);
+    expect(onCycle).toBeCalledTimes(1);
 
-    state.updateInterruptMasterEnabled();
+    ctx.updateInterruptMasterEnabled();
 
-    expect(state.isInterruptMasterEnabled()).toBe(true);
+    expect(ctx.isInterruptMasterEnabled()).toBe(true);
   });
 
-  testCpuState("NOP", ({ state }) => {
-    noOperation(state);
+  testCpuState("NOP", ({ ctx, onCycle }) => {
+    noOperation(ctx);
 
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(onCycle).toBeCalledTimes(1);
   });
 });

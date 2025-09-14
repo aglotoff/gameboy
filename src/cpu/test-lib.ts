@@ -1,4 +1,4 @@
-import { test } from "vitest";
+import { test, vi } from "vitest";
 
 import { CpuState, IMemory } from "./cpu-state";
 
@@ -17,8 +17,16 @@ class TestMemory implements IMemory {
   public triggerReadWrite() {}
 }
 
-export const testCpuState = test.extend({
-  state: async ({}, use: (state: CpuState) => Promise<void>) => {
-    await use(new CpuState({ memory: new TestMemory(), onCycle: () => {} }));
+export interface Fixtures {
+  onCycle: () => void;
+  ctx: CpuState;
+}
+
+export const testCpuState = test.extend<Fixtures>({
+  onCycle: async ({}, use: (onCycle: () => void) => Promise<void>) => {
+    await use(vi.fn());
+  },
+  ctx: async ({ onCycle }, use: (ctx: CpuState) => Promise<void>) => {
+    await use(new CpuState({ memory: new TestMemory(), onCycle }));
   },
 });

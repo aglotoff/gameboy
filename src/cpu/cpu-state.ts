@@ -63,7 +63,7 @@ export class CpuState implements InstructionContext {
   private ime = false;
   private halted = false;
   private stopped = false;
-  private elapsedCycles = 0;
+
   private opcode = 0;
   private imeNext = false;
   private memory: IMemory;
@@ -75,16 +75,7 @@ export class CpuState implements InstructionContext {
   }
 
   public beginNextCycle() {
-    this.elapsedCycles += 1;
     this.onCycle();
-  }
-
-  public resetCycle() {
-    this.elapsedCycles = 0;
-  }
-
-  public getElapsedCycles() {
-    return this.elapsedCycles;
   }
 
   public readRegister(register: Register) {

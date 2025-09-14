@@ -72,6 +72,8 @@ export class Emulator {
   private systemCounter: SystemCounter;
   private serial: Serial;
 
+  private elapsedCycles = 0;
+
   public constructor(type: EmulatorType, lcd: ILCD) {
     this.interruptController = new InterruptController();
 
@@ -150,6 +152,8 @@ export class Emulator {
   }
 
   private mCycle() {
+    this.elapsedCycles += 1;
+
     for (let i = 0; i < 4; i++) {
       this.systemCounter.tick();
       this.timer.tick();
@@ -188,9 +192,9 @@ export class Emulator {
     this.timeout = setInterval(() => {
       const start = performance.now();
 
-      this.cpu.resetCycle();
+      this.elapsedCycles = 0;
 
-      while (this.cpu.getElapsedCycles() <= 17477) {
+      while (this.elapsedCycles <= 17477) {
         if (this.cpu.isStopped()) {
           clearInterval(this.timeout);
           console.log("STOPPED");

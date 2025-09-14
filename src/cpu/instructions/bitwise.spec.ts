@@ -33,399 +33,399 @@ import {
 } from "./bitwise";
 
 describe("Rotate, shift, and bit operation instructions", () => {
-  testCpuState("RLCA", ({ state }) => {
-    state.writeRegister(Register.A, 0x85);
+  testCpuState("RLCA", ({ ctx, onCycle }) => {
+    ctx.writeRegister(Register.A, 0x85);
 
-    rotateAccumulatorLeft(state);
+    rotateAccumulatorLeft(ctx);
 
-    expect(state.readRegister(Register.A)).toBe(0x0b);
-    expect(state.getFlag(Flag.CY)).toBe(true);
-    expect(state.getFlag(Flag.Z)).toBe(false);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.readRegister(Register.A)).toBe(0x0b);
+    expect(ctx.getFlag(Flag.CY)).toBe(true);
+    expect(ctx.getFlag(Flag.Z)).toBe(false);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(1);
   });
 
-  testCpuState("RRCA", ({ state }) => {
-    state.writeRegister(Register.A, 0x3b);
+  testCpuState("RRCA", ({ ctx, onCycle }) => {
+    ctx.writeRegister(Register.A, 0x3b);
 
-    rotateAccumulatorRight(state);
+    rotateAccumulatorRight(ctx);
 
-    expect(state.readRegister(Register.A)).toBe(0x9d);
-    expect(state.getFlag(Flag.CY)).toBe(true);
-    expect(state.getFlag(Flag.Z)).toBe(false);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.readRegister(Register.A)).toBe(0x9d);
+    expect(ctx.getFlag(Flag.CY)).toBe(true);
+    expect(ctx.getFlag(Flag.Z)).toBe(false);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(1);
   });
 
-  testCpuState("RLA", ({ state }) => {
-    state.writeRegister(Register.A, 0x95);
-    state.setFlag(Flag.CY, true);
+  testCpuState("RLA", ({ ctx, onCycle }) => {
+    ctx.writeRegister(Register.A, 0x95);
+    ctx.setFlag(Flag.CY, true);
 
-    rotateAccumulatorLeftThroughCarry(state);
+    rotateAccumulatorLeftThroughCarry(ctx);
 
-    expect(state.readRegister(Register.A)).toBe(0x2b);
-    expect(state.getFlag(Flag.CY)).toBe(true);
-    expect(state.getFlag(Flag.Z)).toBe(false);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.readRegister(Register.A)).toBe(0x2b);
+    expect(ctx.getFlag(Flag.CY)).toBe(true);
+    expect(ctx.getFlag(Flag.Z)).toBe(false);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(1);
   });
 
-  testCpuState("RRA", ({ state }) => {
-    state.writeRegister(Register.A, 0x81);
-    state.setFlag(Flag.CY, false);
+  testCpuState("RRA", ({ ctx, onCycle }) => {
+    ctx.writeRegister(Register.A, 0x81);
+    ctx.setFlag(Flag.CY, false);
 
-    rotateAccumulatorRightThroughCarry(state);
+    rotateAccumulatorRightThroughCarry(ctx);
 
-    expect(state.readRegister(Register.A)).toBe(0x40);
-    expect(state.getFlag(Flag.CY)).toBe(true);
-    expect(state.getFlag(Flag.Z)).toBe(false);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.readRegister(Register.A)).toBe(0x40);
+    expect(ctx.getFlag(Flag.CY)).toBe(true);
+    expect(ctx.getFlag(Flag.Z)).toBe(false);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(1);
   });
 
-  testCpuState("RLC r8", ({ state }) => {
-    state.writeRegister(Register.B, 0x85);
-    state.setFlag(Flag.CY, false);
+  testCpuState("RLC r8", ({ ctx, onCycle }) => {
+    ctx.writeRegister(Register.B, 0x85);
+    ctx.setFlag(Flag.CY, false);
 
-    rotateRegisterLeft(state, Register.B);
+    rotateRegisterLeft(ctx, Register.B);
 
-    expect(state.readRegister(Register.B)).toBe(0x0b);
-    expect(state.getFlag(Flag.CY)).toBe(true);
-    expect(state.getFlag(Flag.Z)).toBe(false);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.readRegister(Register.B)).toBe(0x0b);
+    expect(ctx.getFlag(Flag.CY)).toBe(true);
+    expect(ctx.getFlag(Flag.Z)).toBe(false);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(1);
   });
 
-  testCpuState("RLC (HL)", ({ state }) => {
-    state.writeMemory(0x8ac5, 0x00);
-    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
-    state.setFlag(Flag.CY, false);
+  testCpuState("RLC (HL)", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0x8ac5, 0x00);
+    ctx.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    ctx.setFlag(Flag.CY, false);
 
-    rotateIndirectHLLeft(state);
+    rotateIndirectHLLeft(ctx);
 
-    expect(state.readMemory(0x8ac5)).toBe(0x00);
-    expect(state.getFlag(Flag.CY)).toBe(false);
-    expect(state.getFlag(Flag.Z)).toBe(true);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(3);
+    expect(ctx.readMemory(0x8ac5)).toBe(0x00);
+    expect(ctx.getFlag(Flag.CY)).toBe(false);
+    expect(ctx.getFlag(Flag.Z)).toBe(true);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(3);
   });
 
-  testCpuState("RRC r8", ({ state }) => {
-    state.writeRegister(Register.C, 0x01);
-    state.setFlag(Flag.CY, false);
+  testCpuState("RRC r8", ({ ctx, onCycle }) => {
+    ctx.writeRegister(Register.C, 0x01);
+    ctx.setFlag(Flag.CY, false);
 
-    rotateRegisterRight(state, Register.C);
+    rotateRegisterRight(ctx, Register.C);
 
-    expect(state.readRegister(Register.C)).toBe(0x80);
-    expect(state.getFlag(Flag.CY)).toBe(true);
-    expect(state.getFlag(Flag.Z)).toBe(false);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.readRegister(Register.C)).toBe(0x80);
+    expect(ctx.getFlag(Flag.CY)).toBe(true);
+    expect(ctx.getFlag(Flag.Z)).toBe(false);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(1);
   });
 
-  testCpuState("RRC (HL)", ({ state }) => {
-    state.writeMemory(0x8ac5, 0x00);
-    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
-    state.setFlag(Flag.CY, false);
+  testCpuState("RRC (HL)", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0x8ac5, 0x00);
+    ctx.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    ctx.setFlag(Flag.CY, false);
 
-    rotateIndirectHLRight(state);
+    rotateIndirectHLRight(ctx);
 
-    expect(state.readMemory(0x8ac5)).toBe(0x00);
-    expect(state.getFlag(Flag.CY)).toBe(false);
-    expect(state.getFlag(Flag.Z)).toBe(true);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(3);
+    expect(ctx.readMemory(0x8ac5)).toBe(0x00);
+    expect(ctx.getFlag(Flag.CY)).toBe(false);
+    expect(ctx.getFlag(Flag.Z)).toBe(true);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(3);
   });
 
-  testCpuState("RL r8", ({ state }) => {
-    state.writeRegister(Register.L, 0x80);
-    state.setFlag(Flag.CY, false);
+  testCpuState("RL r8", ({ ctx, onCycle }) => {
+    ctx.writeRegister(Register.L, 0x80);
+    ctx.setFlag(Flag.CY, false);
 
-    rotateRegisterLeftThroughCarry(state, Register.L);
+    rotateRegisterLeftThroughCarry(ctx, Register.L);
 
-    expect(state.readRegister(Register.L)).toBe(0x00);
-    expect(state.getFlag(Flag.CY)).toBe(true);
-    expect(state.getFlag(Flag.Z)).toBe(true);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.readRegister(Register.L)).toBe(0x00);
+    expect(ctx.getFlag(Flag.CY)).toBe(true);
+    expect(ctx.getFlag(Flag.Z)).toBe(true);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(1);
   });
 
-  testCpuState("RL (HL)", ({ state }) => {
-    state.writeMemory(0x8ac5, 0x11);
-    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
-    state.setFlag(Flag.CY, false);
+  testCpuState("RL (HL)", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0x8ac5, 0x11);
+    ctx.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    ctx.setFlag(Flag.CY, false);
 
-    rotateIndirectHLLeftThroughCarry(state);
+    rotateIndirectHLLeftThroughCarry(ctx);
 
-    expect(state.readMemory(0x8ac5)).toBe(0x22);
-    expect(state.getFlag(Flag.CY)).toBe(false);
-    expect(state.getFlag(Flag.Z)).toBe(false);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(3);
+    expect(ctx.readMemory(0x8ac5)).toBe(0x22);
+    expect(ctx.getFlag(Flag.CY)).toBe(false);
+    expect(ctx.getFlag(Flag.Z)).toBe(false);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(3);
   });
 
-  testCpuState("RR r8", ({ state }) => {
-    state.writeRegister(Register.A, 0x01);
-    state.setFlag(Flag.CY, false);
+  testCpuState("RR r8", ({ ctx, onCycle }) => {
+    ctx.writeRegister(Register.A, 0x01);
+    ctx.setFlag(Flag.CY, false);
 
-    rotateRegisterRightThroughCarry(state, Register.A);
+    rotateRegisterRightThroughCarry(ctx, Register.A);
 
-    expect(state.readRegister(Register.A)).toBe(0x00);
-    expect(state.getFlag(Flag.CY)).toBe(true);
-    expect(state.getFlag(Flag.Z)).toBe(true);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.readRegister(Register.A)).toBe(0x00);
+    expect(ctx.getFlag(Flag.CY)).toBe(true);
+    expect(ctx.getFlag(Flag.Z)).toBe(true);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(1);
   });
 
-  testCpuState("RR (HL)", ({ state }) => {
-    state.writeMemory(0x8ac5, 0x8a);
-    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
-    state.setFlag(Flag.CY, false);
+  testCpuState("RR (HL)", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0x8ac5, 0x8a);
+    ctx.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    ctx.setFlag(Flag.CY, false);
 
-    rotateIndirectHLRightThroughCarry(state);
+    rotateIndirectHLRightThroughCarry(ctx);
 
-    expect(state.readMemory(0x8ac5)).toBe(0x45);
-    expect(state.getFlag(Flag.CY)).toBe(false);
-    expect(state.getFlag(Flag.Z)).toBe(false);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(3);
+    expect(ctx.readMemory(0x8ac5)).toBe(0x45);
+    expect(ctx.getFlag(Flag.CY)).toBe(false);
+    expect(ctx.getFlag(Flag.Z)).toBe(false);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(3);
   });
 
-  testCpuState("SLA r8", ({ state }) => {
-    state.writeRegister(Register.D, 0x80);
-    state.setFlag(Flag.CY, false);
+  testCpuState("SLA r8", ({ ctx, onCycle }) => {
+    ctx.writeRegister(Register.D, 0x80);
+    ctx.setFlag(Flag.CY, false);
 
-    shiftLeftArithmeticallyRegister(state, Register.D);
+    shiftLeftArithmeticallyRegister(ctx, Register.D);
 
-    expect(state.readRegister(Register.D)).toBe(0x00);
-    expect(state.getFlag(Flag.CY)).toBe(true);
-    expect(state.getFlag(Flag.Z)).toBe(true);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.readRegister(Register.D)).toBe(0x00);
+    expect(ctx.getFlag(Flag.CY)).toBe(true);
+    expect(ctx.getFlag(Flag.Z)).toBe(true);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(1);
   });
 
-  testCpuState("SLA (HL)", ({ state }) => {
-    state.writeMemory(0x8ac5, 0xff);
-    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
-    state.setFlag(Flag.CY, false);
+  testCpuState("SLA (HL)", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0x8ac5, 0xff);
+    ctx.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    ctx.setFlag(Flag.CY, false);
 
-    shiftLeftArithmeticallyIndirectHL(state);
+    shiftLeftArithmeticallyIndirectHL(ctx);
 
-    expect(state.readMemory(0x8ac5)).toBe(0xfe);
-    expect(state.getFlag(Flag.CY)).toBe(true);
-    expect(state.getFlag(Flag.Z)).toBe(false);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(3);
+    expect(ctx.readMemory(0x8ac5)).toBe(0xfe);
+    expect(ctx.getFlag(Flag.CY)).toBe(true);
+    expect(ctx.getFlag(Flag.Z)).toBe(false);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(3);
   });
 
-  testCpuState("SRA r8", ({ state }) => {
-    state.writeRegister(Register.A, 0x8a);
-    state.setFlag(Flag.CY, false);
+  testCpuState("SRA r8", ({ ctx, onCycle }) => {
+    ctx.writeRegister(Register.A, 0x8a);
+    ctx.setFlag(Flag.CY, false);
 
-    shiftRightArithmeticallyRegister(state, Register.A);
+    shiftRightArithmeticallyRegister(ctx, Register.A);
 
-    expect(state.readRegister(Register.A)).toBe(0xc5);
-    expect(state.getFlag(Flag.CY)).toBe(false);
-    expect(state.getFlag(Flag.Z)).toBe(false);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.readRegister(Register.A)).toBe(0xc5);
+    expect(ctx.getFlag(Flag.CY)).toBe(false);
+    expect(ctx.getFlag(Flag.Z)).toBe(false);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(1);
   });
 
-  testCpuState("SRA (HL)", ({ state }) => {
-    state.writeMemory(0x8ac5, 0x01);
-    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
-    state.setFlag(Flag.CY, false);
+  testCpuState("SRA (HL)", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0x8ac5, 0x01);
+    ctx.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    ctx.setFlag(Flag.CY, false);
 
-    shiftRightArithmeticallyIndirectHL(state);
+    shiftRightArithmeticallyIndirectHL(ctx);
 
-    expect(state.readMemory(0x8ac5)).toBe(0x00);
-    expect(state.getFlag(Flag.CY)).toBe(true);
-    expect(state.getFlag(Flag.Z)).toBe(true);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(3);
+    expect(ctx.readMemory(0x8ac5)).toBe(0x00);
+    expect(ctx.getFlag(Flag.CY)).toBe(true);
+    expect(ctx.getFlag(Flag.Z)).toBe(true);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(3);
   });
 
-  testCpuState("SRL r8", ({ state }) => {
-    state.writeRegister(Register.A, 0x01);
-    state.setFlag(Flag.CY, false);
+  testCpuState("SRL r8", ({ ctx, onCycle }) => {
+    ctx.writeRegister(Register.A, 0x01);
+    ctx.setFlag(Flag.CY, false);
 
-    shiftRightLogicallyRegister(state, Register.A);
+    shiftRightLogicallyRegister(ctx, Register.A);
 
-    expect(state.readRegister(Register.A)).toBe(0x00);
-    expect(state.getFlag(Flag.CY)).toBe(true);
-    expect(state.getFlag(Flag.Z)).toBe(true);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.readRegister(Register.A)).toBe(0x00);
+    expect(ctx.getFlag(Flag.CY)).toBe(true);
+    expect(ctx.getFlag(Flag.Z)).toBe(true);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(1);
   });
 
-  testCpuState("SRL (HL)", ({ state }) => {
-    state.writeMemory(0x8ac5, 0xff);
-    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
-    state.setFlag(Flag.CY, false);
+  testCpuState("SRL (HL)", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0x8ac5, 0xff);
+    ctx.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    ctx.setFlag(Flag.CY, false);
 
-    shiftRightLogicallyIndirectHL(state);
+    shiftRightLogicallyIndirectHL(ctx);
 
-    expect(state.readMemory(0x8ac5)).toBe(0x7f);
-    expect(state.getFlag(Flag.CY)).toBe(true);
-    expect(state.getFlag(Flag.Z)).toBe(false);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(3);
+    expect(ctx.readMemory(0x8ac5)).toBe(0x7f);
+    expect(ctx.getFlag(Flag.CY)).toBe(true);
+    expect(ctx.getFlag(Flag.Z)).toBe(false);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(3);
   });
 
-  testCpuState("SWAP r8", ({ state }) => {
-    state.writeRegister(Register.A, 0x00);
-    state.setFlag(Flag.CY, false);
+  testCpuState("SWAP r8", ({ ctx, onCycle }) => {
+    ctx.writeRegister(Register.A, 0x00);
+    ctx.setFlag(Flag.CY, false);
 
-    swapNibblesInRegister(state, Register.A);
+    swapNibblesInRegister(ctx, Register.A);
 
-    expect(state.readRegister(Register.A)).toBe(0x00);
-    expect(state.getFlag(Flag.CY)).toBe(false);
-    expect(state.getFlag(Flag.Z)).toBe(true);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(1);
+    expect(ctx.readRegister(Register.A)).toBe(0x00);
+    expect(ctx.getFlag(Flag.CY)).toBe(false);
+    expect(ctx.getFlag(Flag.Z)).toBe(true);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(1);
   });
 
-  testCpuState("SWAP (HL)", ({ state }) => {
-    state.writeMemory(0x8ac5, 0xf0);
-    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
-    state.setFlag(Flag.CY, false);
+  testCpuState("SWAP (HL)", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0x8ac5, 0xf0);
+    ctx.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    ctx.setFlag(Flag.CY, false);
 
-    swapNibblesInIndirectHL(state);
+    swapNibblesInIndirectHL(ctx);
 
-    expect(state.readMemory(0x8ac5)).toBe(0x0f);
-    expect(state.getFlag(Flag.CY)).toBe(false);
-    expect(state.getFlag(Flag.Z)).toBe(false);
-    expect(state.getFlag(Flag.H)).toBe(false);
-    expect(state.getFlag(Flag.N)).toBe(false);
-    expect(state.getElapsedCycles()).toBe(3);
+    expect(ctx.readMemory(0x8ac5)).toBe(0x0f);
+    expect(ctx.getFlag(Flag.CY)).toBe(false);
+    expect(ctx.getFlag(Flag.Z)).toBe(false);
+    expect(ctx.getFlag(Flag.H)).toBe(false);
+    expect(ctx.getFlag(Flag.N)).toBe(false);
+    expect(onCycle).toBeCalledTimes(3);
   });
 
   describe("BIT u3,r8", () => {
-    testCpuState("BIT 7,A", ({ state }) => {
-      state.writeRegister(Register.A, 0x80);
+    testCpuState("BIT 7,A", ({ ctx, onCycle }) => {
+      ctx.writeRegister(Register.A, 0x80);
 
-      testBitInRegister(state, 7, Register.A);
+      testBitInRegister(ctx, 7, Register.A);
 
-      expect(state.getFlag(Flag.Z)).toBe(false);
-      expect(state.getFlag(Flag.H)).toBe(true);
-      expect(state.getFlag(Flag.N)).toBe(false);
-      expect(state.getElapsedCycles()).toBe(1);
+      expect(ctx.getFlag(Flag.Z)).toBe(false);
+      expect(ctx.getFlag(Flag.H)).toBe(true);
+      expect(ctx.getFlag(Flag.N)).toBe(false);
+      expect(onCycle).toBeCalledTimes(1);
     });
 
-    testCpuState("BIT 4,L", ({ state }) => {
-      state.writeRegister(Register.L, 0xef);
+    testCpuState("BIT 4,L", ({ ctx, onCycle }) => {
+      ctx.writeRegister(Register.L, 0xef);
 
-      testBitInRegister(state, 4, Register.L);
+      testBitInRegister(ctx, 4, Register.L);
 
-      expect(state.getFlag(Flag.Z)).toBe(true);
-      expect(state.getFlag(Flag.H)).toBe(true);
-      expect(state.getFlag(Flag.N)).toBe(false);
-      expect(state.getElapsedCycles()).toBe(1);
+      expect(ctx.getFlag(Flag.Z)).toBe(true);
+      expect(ctx.getFlag(Flag.H)).toBe(true);
+      expect(ctx.getFlag(Flag.N)).toBe(false);
+      expect(onCycle).toBeCalledTimes(1);
     });
   });
 
   describe("BIT u3,(HL)", () => {
-    testCpuState("BIT 0,(HL)", ({ state }) => {
-      state.writeMemory(0x8ac5, 0xfe);
-      state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    testCpuState("BIT 0,(HL)", ({ ctx, onCycle }) => {
+      ctx.writeMemory(0x8ac5, 0xfe);
+      ctx.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
-      testBitInIndirectHL(state, 0);
+      testBitInIndirectHL(ctx, 0);
 
-      expect(state.getFlag(Flag.Z)).toBe(true);
-      expect(state.getFlag(Flag.H)).toBe(true);
-      expect(state.getFlag(Flag.N)).toBe(false);
-      expect(state.getElapsedCycles()).toBe(2);
+      expect(ctx.getFlag(Flag.Z)).toBe(true);
+      expect(ctx.getFlag(Flag.H)).toBe(true);
+      expect(ctx.getFlag(Flag.N)).toBe(false);
+      expect(onCycle).toBeCalledTimes(2);
     });
 
-    testCpuState("BIT 1,(HL)", ({ state }) => {
-      state.writeMemory(0x8ac5, 0xfe);
-      state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+    testCpuState("BIT 1,(HL)", ({ ctx, onCycle }) => {
+      ctx.writeMemory(0x8ac5, 0xfe);
+      ctx.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
-      testBitInIndirectHL(state, 1);
+      testBitInIndirectHL(ctx, 1);
 
-      expect(state.getFlag(Flag.Z)).toBe(false);
-      expect(state.getFlag(Flag.H)).toBe(true);
-      expect(state.getFlag(Flag.N)).toBe(false);
-      expect(state.getElapsedCycles()).toBe(2);
+      expect(ctx.getFlag(Flag.Z)).toBe(false);
+      expect(ctx.getFlag(Flag.H)).toBe(true);
+      expect(ctx.getFlag(Flag.N)).toBe(false);
+      expect(onCycle).toBeCalledTimes(2);
     });
   });
 
   describe("RES u3,r8", () => {
-    testCpuState("RES 7,A", ({ state }) => {
-      state.writeRegister(Register.A, 0x80);
+    testCpuState("RES 7,A", ({ ctx, onCycle }) => {
+      ctx.writeRegister(Register.A, 0x80);
 
-      resetBitInRegister(state, 7, Register.A);
+      resetBitInRegister(ctx, 7, Register.A);
 
-      expect(state.readRegister(Register.A)).toBe(0x00);
-      expect(state.getElapsedCycles()).toBe(1);
+      expect(ctx.readRegister(Register.A)).toBe(0x00);
+      expect(onCycle).toBeCalledTimes(1);
     });
 
-    testCpuState("RES 1,L", ({ state }) => {
-      state.writeRegister(Register.L, 0x3b);
+    testCpuState("RES 1,L", ({ ctx, onCycle }) => {
+      ctx.writeRegister(Register.L, 0x3b);
 
-      resetBitInRegister(state, 1, Register.L);
+      resetBitInRegister(ctx, 1, Register.L);
 
-      expect(state.readRegister(Register.L)).toBe(0x39);
-      expect(state.getElapsedCycles()).toBe(1);
+      expect(ctx.readRegister(Register.L)).toBe(0x39);
+      expect(onCycle).toBeCalledTimes(1);
     });
   });
 
-  testCpuState("RES u3,(HL)", ({ state }) => {
-    state.writeMemory(0x8ac5, 0xff);
-    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+  testCpuState("RES u3,(HL)", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0x8ac5, 0xff);
+    ctx.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
-    resetBitInIndirectHL(state, 3);
+    resetBitInIndirectHL(ctx, 3);
 
-    expect(state.readMemory(0x8ac5)).toBe(0xf7);
-    expect(state.getElapsedCycles()).toBe(3);
+    expect(ctx.readMemory(0x8ac5)).toBe(0xf7);
+    expect(onCycle).toBeCalledTimes(3);
   });
 
   describe("SET u3,r8", () => {
-    testCpuState("SET 2,A", ({ state }) => {
-      state.writeRegister(Register.A, 0x80);
+    testCpuState("SET 2,A", ({ ctx, onCycle }) => {
+      ctx.writeRegister(Register.A, 0x80);
 
-      setBitInRegister(state, 2, Register.A);
+      setBitInRegister(ctx, 2, Register.A);
 
-      expect(state.readRegister(Register.A)).toBe(0x84);
-      expect(state.getElapsedCycles()).toBe(1);
+      expect(ctx.readRegister(Register.A)).toBe(0x84);
+      expect(onCycle).toBeCalledTimes(1);
     });
 
-    testCpuState("SET 7,L", ({ state }) => {
-      state.writeRegister(Register.L, 0x3b);
+    testCpuState("SET 7,L", ({ ctx, onCycle }) => {
+      ctx.writeRegister(Register.L, 0x3b);
 
-      setBitInRegister(state, 7, Register.L);
+      setBitInRegister(ctx, 7, Register.L);
 
-      expect(state.readRegister(Register.L)).toBe(0xbb);
-      expect(state.getElapsedCycles()).toBe(1);
+      expect(ctx.readRegister(Register.L)).toBe(0xbb);
+      expect(onCycle).toBeCalledTimes(1);
     });
   });
 
-  testCpuState("SET u3,(HL)", ({ state }) => {
-    state.writeMemory(0x8ac5, 0x00);
-    state.writeRegisterPair(RegisterPair.HL, 0x8ac5);
+  testCpuState("SET u3,(HL)", ({ ctx, onCycle }) => {
+    ctx.writeMemory(0x8ac5, 0x00);
+    ctx.writeRegisterPair(RegisterPair.HL, 0x8ac5);
 
-    setBitInIndirectHL(state, 3);
+    setBitInIndirectHL(ctx, 3);
 
-    expect(state.readMemory(0x8ac5)).toBe(0x08);
-    expect(state.getElapsedCycles()).toBe(3);
+    expect(ctx.readMemory(0x8ac5)).toBe(0x08);
+    expect(onCycle).toBeCalledTimes(3);
   });
 });

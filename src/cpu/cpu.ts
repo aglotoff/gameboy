@@ -116,14 +116,6 @@ export class Cpu {
     this.state.writeRegister(reg, value);
   }
 
-  public resetCycle() {
-    this.state.resetCycle();
-  }
-
-  public getElapsedCycles() {
-    return this.state.getElapsedCycles();
-  }
-
   public isStopped() {
     return this.state.isStopped();
   }
