@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest";
 
-import { Flag, Register } from "../register";
+import { Flag, Register, RegisterPair } from "../register";
 import { testCpuState } from "../test-lib";
 
 import {
@@ -11,7 +11,6 @@ import {
   popFromStack,
   pushToStack,
 } from "./load16";
-import { RegisterPair } from "../cpu-state";
 
 describe("16-bit load instructions", () => {
   testCpuState("LD dd,nn", ({ state }) => {

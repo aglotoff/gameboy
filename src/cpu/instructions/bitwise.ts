@@ -1,7 +1,7 @@
-import { Flag, Register } from "../register";
+import { Flag, Register, RegisterPair } from "../register";
 import { resetBit, setBit } from "../../utils";
 import { makeInstruction } from "./lib";
-import { InstructionContext, RegisterPair } from "../cpu-state";
+import { InstructionContext } from "../cpu-state";
 
 const BYTE_MASK = 0b11111111;
 const NIBBLE_MASK = 0b1111;

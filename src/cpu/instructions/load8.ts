@@ -1,11 +1,10 @@
-import { Register } from "../register";
+import { Register, RegisterPair } from "../register";
 import { wrappingDecrementWord, wrappingIncrementWord } from "../../utils";
 import {
   makeInstruction,
   makeInstructionWithImmediateByte,
   makeInstructionWithImmediateWord,
 } from "./lib";
-import { RegisterPair } from "../cpu-state";
 
 export const loadRegisterFromRegister = makeInstruction(
   (ctx, dst: Register, src: Register) => {

@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest";
 
-import { Flag, Register } from "../register";
+import { Flag, Register, RegisterPair } from "../register";
 import { testCpuState } from "../test-lib";
 
 import {
@@ -37,7 +37,6 @@ import {
   xorAccumulatorWithIndirectHL,
   xorAccumulatorWithRegister,
 } from "./arithmetic8";
-import { RegisterPair } from "../cpu-state";
 
 describe("8-bit arithmetic and logical instructions", () => {
   testCpuState("ADD A,r8", ({ state }) => {

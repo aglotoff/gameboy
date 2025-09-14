@@ -1,4 +1,4 @@
-import { Flag, Register, RegisterFile } from "./register";
+import { Flag, Register, RegisterFile, RegisterPair } from "./register";
 import {
   getLSB,
   getMSB,
@@ -14,33 +14,6 @@ export interface IMemory {
   triggerReadWrite(address: number): void;
 }
 
-export const enum RegisterPair {
-  AF = 0,
-  BC = 1,
-  DE = 2,
-  HL = 3,
-  SP = 4,
-  PC = 5,
-}
-
-const highRegisterOfPair: Record<RegisterPair, Register> = {
-  [RegisterPair.AF]: Register.A,
-  [RegisterPair.BC]: Register.B,
-  [RegisterPair.DE]: Register.D,
-  [RegisterPair.HL]: Register.H,
-  [RegisterPair.SP]: Register.SP_H,
-  [RegisterPair.PC]: Register.PC_H,
-};
-
-const lowRegisterOfPair: Record<RegisterPair, Register> = {
-  [RegisterPair.AF]: Register.F,
-  [RegisterPair.BC]: Register.C,
-  [RegisterPair.DE]: Register.E,
-  [RegisterPair.HL]: Register.L,
-  [RegisterPair.SP]: Register.SP_L,
-  [RegisterPair.PC]: Register.PC_L,
-};
-
 export interface CpuStateOptions {
   memory: IMemory;
   onCycle: () => void;
@@ -50,8 +23,6 @@ export interface InstructionContext {
   readRegister(register: Register): number;
   writeRegister(register: Register, value: number): void;
   readRegisterPair(pair: RegisterPair): number;
-  readLowRegisterOfPair(pair: RegisterPair): number;
-  readHighRegisterOfPair(pair: RegisterPair): number;
   writeRegisterPair(pair: RegisterPair, value: number): void;
 
   getFlag(flag: Flag): boolean;
@@ -125,23 +96,11 @@ export class CpuState implements InstructionContext {
   }
 
   public readRegisterPair(pair: RegisterPair) {
-    return makeWord(
-      this.regs.readRegister(highRegisterOfPair[pair]),
-      this.regs.readRegister(lowRegisterOfPair[pair])
-    );
-  }
-
-  public readLowRegisterOfPair(pair: RegisterPair) {
-    return this.regs.readRegister(lowRegisterOfPair[pair]);
-  }
-
-  public readHighRegisterOfPair(pair: RegisterPair) {
-    return this.regs.readRegister(highRegisterOfPair[pair]);
+    return this.regs.readRegisterPair(pair);
   }
 
   public writeRegisterPair(pair: RegisterPair, value: number) {
-    this.regs.writeRegister(highRegisterOfPair[pair], getMSB(value));
-    this.regs.writeRegister(lowRegisterOfPair[pair], getLSB(value));
+    this.regs.writeRegisterPair(pair, value);
   }
 
   public getFlag(flag: Flag) {

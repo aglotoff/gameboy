@@ -1,4 +1,10 @@
-import { Flag, Register } from "../register";
+import {
+  Flag,
+  getHighRegisterOfPair,
+  getLowRegisterOfPair,
+  Register,
+  RegisterPair,
+} from "../register";
 import {
   makeWord,
   wrappingDecrementWord,
@@ -10,7 +16,6 @@ import {
   makeInstructionWithImmediateByte,
   isNegative,
 } from "./lib";
-import { RegisterPair } from "../cpu-state";
 
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#INC_r16
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#INC_SP
@@ -42,7 +47,7 @@ export const decrementRegisterPair = makeInstruction(
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#ADD_HL,SP
 export const addRegisterPair = makeInstruction((ctx, pair: RegisterPair) => {
   const lsb1 = ctx.readRegister(Register.L);
-  const lsb2 = ctx.readLowRegisterOfPair(pair);
+  const lsb2 = ctx.readRegister(getLowRegisterOfPair(pair));
 
   const { result: lsbResult, carryFrom3, carryFrom7 } = addBytes(lsb1, lsb2);
 
@@ -54,7 +59,7 @@ export const addRegisterPair = makeInstruction((ctx, pair: RegisterPair) => {
   ctx.beginNextCycle();
 
   const msb1 = ctx.readRegister(Register.H);
-  const msb2 = ctx.readHighRegisterOfPair(pair);
+  const msb2 = ctx.readRegister(getHighRegisterOfPair(pair));
 
   const {
     result: msbResult,

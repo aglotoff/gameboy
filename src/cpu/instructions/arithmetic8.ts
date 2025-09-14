@@ -1,5 +1,5 @@
-import { InstructionContext, RegisterPair } from "../cpu-state";
-import { Flag, Register } from "../register";
+import { InstructionContext } from "../cpu-state";
+import { Flag, Register, RegisterPair } from "../register";
 import {
   addBytes,
   makeInstruction,

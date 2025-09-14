@@ -1,5 +1,5 @@
-import { Condition, InstructionContext, RegisterPair } from "../cpu-state";
-import { Register } from "../register";
+import { Condition, InstructionContext } from "../cpu-state";
+import { Register, RegisterPair } from "../register";
 import {
   makeWord,
   wrappingDecrementByte,

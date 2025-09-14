@@ -1,8 +1,8 @@
-import { CpuState, IMemory, RegisterPair } from "./cpu-state";
+import { CpuState, IMemory } from "./cpu-state";
 import { getInstruction } from "./instructions";
 import { InterruptController } from "../hw/interrupt-controller";
 import { getLSB, getMSB, wrappingDecrementWord } from "../utils";
-import { Register } from "./register";
+import { Register, RegisterPair } from "./register";
 
 export class Cpu {
   private state: CpuState;

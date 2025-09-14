@@ -1,6 +1,6 @@
 import { describe, expect } from "vitest";
 
-import { Flag } from "../register";
+import { RegisterPair, Flag } from "../register";
 import { testCpuState } from "../test-lib";
 import { getLSB, getMSB } from "../../utils";
 
@@ -17,7 +17,7 @@ import {
   returnFromFunctionConditional,
   returnFromInterruptHandler,
 } from "./flow";
-import { RegisterPair, Condition } from "../cpu-state";
+import { Condition } from "../cpu-state";
 
 describe("Control flow instructions", () => {
   testCpuState("JP nn", ({ state }) => {
