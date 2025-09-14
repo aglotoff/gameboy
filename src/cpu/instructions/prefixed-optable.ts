@@ -25,10 +25,10 @@ import {
   testBitInIndirectHL,
   testBitInRegister,
 } from "./bitwise";
-import { bindInstructionArgs as bia, OpTable } from "./lib";
+import { bindInstructionArgs as bia, fetchImmediateByte, OpTable } from "./lib";
 
 export const prefixCBInstruction = (ctx: InstructionContext) => {
-  const opcode = ctx.fetchImmediateByte();
+  const opcode = fetchImmediateByte(ctx);
   prefixCBInstructions[opcode](ctx);
 };
 

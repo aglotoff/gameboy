@@ -6,6 +6,8 @@ import {
   makeInstructionWithImmediateByte,
   makeInstructionWithImmediateWord,
   isNegative,
+  pushWord,
+  popWord,
 } from "./lib";
 
 export const loadRegisterPair = makeInstructionWithImmediateWord(
@@ -16,8 +18,10 @@ export const loadRegisterPair = makeInstructionWithImmediateWord(
 
 export const loadDirectFromStackPointer = makeInstructionWithImmediateWord(
   (ctx, address) => {
-    ctx.writeMemoryCycle(address, ctx.readRegister(Register.SP_L));
-    ctx.writeMemoryCycle(address + 1, ctx.readRegister(Register.SP_H));
+    ctx.writeMemory(address, ctx.readRegister(Register.SP_L));
+    ctx.beginNextCycle();
+    ctx.writeMemory(address + 1, ctx.readRegister(Register.SP_H));
+    ctx.beginNextCycle();
   }
 );
 
@@ -27,12 +31,12 @@ export const loadStackPointerFromHL = makeInstruction((ctx) => {
 });
 
 export const pushToStack = makeInstruction((ctx, pair: RegisterPair) => {
-  ctx.pushWord(ctx.readRegisterPair(pair));
+  pushWord(ctx, ctx.readRegisterPair(pair));
   ctx.beginNextCycle();
 });
 
 export const popFromStack = makeInstruction((ctx, pair: RegisterPair) => {
-  ctx.writeRegisterPair(pair, ctx.popWord());
+  ctx.writeRegisterPair(pair, popWord(ctx));
 });
 
 export const loadHLFromAdjustedStackPointer = makeInstructionWithImmediateByte(

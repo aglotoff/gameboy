@@ -1,4 +1,12 @@
+import {
+  getLSB,
+  getMSB,
+  makeWord,
+  wrappingDecrementWord,
+  wrappingIncrementWord,
+} from "../../utils";
 import { InstructionContext } from "../cpu-state";
+import { Flag, RegisterPair } from "../register";
 
 export type OpTable = Array<(ctx: InstructionContext) => void>;
 
@@ -20,8 +28,19 @@ export function makeInstructionWithImmediateByte<T extends unknown[]>(
 ) {
   return (ctx: InstructionContext, ...args: T) => {
     ctx.beginNextCycle();
-    cb(ctx, ctx.fetchImmediateByte(), ...args);
+    cb(ctx, fetchImmediateByte(ctx), ...args);
   };
+}
+
+export function fetchImmediateByte(ctx: InstructionContext) {
+  const address = ctx.readRegisterPair(RegisterPair.PC);
+  const data = ctx.readMemory(address);
+
+  ctx.beginNextCycle();
+
+  ctx.writeRegisterPair(RegisterPair.PC, wrappingIncrementWord(address));
+
+  return data;
 }
 
 export function makeInstructionWithImmediateWord<T extends unknown[]>(
@@ -29,8 +48,14 @@ export function makeInstructionWithImmediateWord<T extends unknown[]>(
 ) {
   return (ctx: InstructionContext, ...args: T) => {
     ctx.beginNextCycle();
-    cb(ctx, ctx.fetchImmediateWord(), ...args);
+    cb(ctx, fetchImmediateWord(ctx), ...args);
   };
+}
+
+function fetchImmediateWord(ctx: InstructionContext) {
+  const lsb = fetchImmediateByte(ctx);
+  const msb = fetchImmediateByte(ctx);
+  return makeWord(msb, lsb);
 }
 
 export function bindInstructionArgs<T extends unknown[]>(
@@ -68,4 +93,66 @@ export function subtractBytes(a: number, b: number, carryFlag = false) {
     borrowTo7: (a & BYTE_MASK) < (b & BYTE_MASK) + c,
     result: (a - b - c) & BYTE_MASK,
   };
+}
+
+export const enum Condition {
+  Z,
+  C,
+  NZ,
+  NC,
+}
+
+export function checkCondition(ctx: InstructionContext, condition: Condition) {
+  switch (condition) {
+    case Condition.Z:
+      return ctx.getFlag(Flag.Z);
+    case Condition.C:
+      return ctx.getFlag(Flag.CY);
+    case Condition.NZ:
+      return !ctx.getFlag(Flag.Z);
+    case Condition.NC:
+      return !ctx.getFlag(Flag.CY);
+  }
+}
+
+export function pushWord(ctx: InstructionContext, data: number) {
+  let address = ctx.readRegisterPair(RegisterPair.SP);
+
+  ctx.triggerMemoryWrite(address);
+  ctx.writeRegisterPair(RegisterPair.SP, wrappingDecrementWord(address));
+
+  ctx.beginNextCycle();
+
+  address = ctx.readRegisterPair(RegisterPair.SP);
+
+  ctx.triggerMemoryWrite(address);
+  ctx.writeRegisterPair(RegisterPair.SP, wrappingDecrementWord(address));
+
+  ctx.writeMemory(address, getMSB(data));
+
+  ctx.beginNextCycle();
+
+  address = ctx.readRegisterPair(RegisterPair.SP);
+  ctx.writeMemory(address, getLSB(data));
+}
+
+export function popWord(ctx: InstructionContext) {
+  let address = ctx.readRegisterPair(RegisterPair.SP);
+
+  ctx.writeRegisterPair(RegisterPair.SP, wrappingIncrementWord(address));
+  ctx.triggerMemoryReadWrite(address);
+
+  const lsb = ctx.readMemory(address);
+
+  ctx.beginNextCycle();
+
+  address = ctx.readRegisterPair(RegisterPair.SP);
+
+  ctx.writeRegisterPair(RegisterPair.SP, wrappingIncrementWord(address));
+
+  const msb = ctx.readMemory(address);
+
+  ctx.beginNextCycle();
+
+  return makeWord(msb, lsb);
 }

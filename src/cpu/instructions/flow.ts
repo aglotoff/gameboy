@@ -1,4 +1,4 @@
-import { Condition, InstructionContext } from "../cpu-state";
+import { InstructionContext } from "../cpu-state";
 import { Register, RegisterPair } from "../register";
 import {
   makeWord,
@@ -11,6 +11,10 @@ import {
   makeInstructionWithImmediateByte,
   makeInstructionWithImmediateWord,
   isNegative,
+  checkCondition,
+  Condition,
+  pushWord,
+  popWord,
 } from "./lib";
 
 export const jump = makeInstructionWithImmediateWord((ctx, address) => {
@@ -25,7 +29,7 @@ export const jumpToHL = makeInstruction((ctx) => {
 export const jumpConditional = makeInstructionWithImmediateWord(
   (ctx, address, condition: Condition) => {
     // FIXME: condition check is performed during M3
-    if (!ctx.checkCondition(condition)) {
+    if (!checkCondition(ctx, condition)) {
       return;
     }
 
@@ -40,7 +44,7 @@ export const relativeJump = makeInstructionWithImmediateByte(doRelativeJump);
 export const relativeJumpConditional = makeInstructionWithImmediateByte(
   (ctx, offset, condition: Condition) => {
     // FIXME: condition check is performed during M2
-    if (ctx.checkCondition(condition)) {
+    if (checkCondition(ctx, condition)) {
       doRelativeJump(ctx, offset);
     }
   }
@@ -72,7 +76,7 @@ export const callFunction = makeInstructionWithImmediateWord(doCallFunction);
 export const callFunctionConditional = makeInstructionWithImmediateWord(
   (ctx, address, condition: Condition) => {
     // FIXME: condition check is performed during M3
-    if (ctx.checkCondition(condition)) {
+    if (checkCondition(ctx, condition)) {
       doCallFunction(ctx, address);
     }
   }
@@ -85,7 +89,7 @@ export const restartFunction = makeInstruction(
 );
 
 function doCallFunction(ctx: InstructionContext, address: number) {
-  ctx.pushWord(ctx.readRegisterPair(RegisterPair.PC));
+  pushWord(ctx, ctx.readRegisterPair(RegisterPair.PC));
 
   ctx.writeRegisterPair(RegisterPair.PC, address);
 
@@ -98,7 +102,7 @@ export const returnFromFunction = makeInstruction((ctx) => {
 
 export const returnFromFunctionConditional = makeInstruction(
   (ctx, condition: Condition) => {
-    const result = ctx.checkCondition(condition);
+    const result = checkCondition(ctx, condition);
 
     ctx.beginNextCycle();
 
@@ -114,6 +118,6 @@ export const returnFromInterruptHandler = makeInstruction((ctx) => {
 });
 
 function doReturn(ctx: InstructionContext) {
-  ctx.writeRegisterPair(RegisterPair.PC, ctx.popWord());
+  ctx.writeRegisterPair(RegisterPair.PC, popWord(ctx));
   ctx.beginNextCycle();
 }

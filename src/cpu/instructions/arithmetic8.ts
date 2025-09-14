@@ -17,7 +17,9 @@ export const addRegisterToAccumulator = makeInstruction(
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#ADD_A,_HL_
 export const addIndirectHLToAccumulator = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
-  const data = ctx.readMemoryCycle(address);
+  const data = ctx.readMemory(address);
+
+  ctx.beginNextCycle();
 
   addToAccumulator(ctx, data);
 });
@@ -39,8 +41,10 @@ export const addRegisterToAccumulatorWithCarry = makeInstruction(
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#ADC_A,_HL_
 export const addIndirectHLToAccumulatorWithCarry = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
-  const data = ctx.readMemoryCycle(address);
+  const data = ctx.readMemory(address);
   const carry = ctx.getFlag(Flag.CY);
+
+  ctx.beginNextCycle();
 
   addToAccumulator(ctx, data, carry);
 });
@@ -82,7 +86,9 @@ export const subtractRegisterFromAccumualtor = makeInstruction(
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#SUB_A,_HL_
 export const subtractIndirectHLFromAccumualtor = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
-  const data = ctx.readMemoryCycle(address);
+  const data = ctx.readMemory(address);
+
+  ctx.beginNextCycle();
 
   subtractFromAccumulator(ctx, data);
 });
@@ -105,8 +111,10 @@ export const subtractRegisterFromAccumualtorWithCarry = makeInstruction(
 export const subtractIndirectHLFromAccumualtorWithCarry = makeInstruction(
   (ctx) => {
     const address = ctx.readRegisterPair(RegisterPair.HL);
-    const data = ctx.readMemoryCycle(address);
+    const data = ctx.readMemory(address);
     const carry = ctx.getFlag(Flag.CY);
+
+    ctx.beginNextCycle();
 
     subtractFromAccumulator(ctx, data, carry);
   }
@@ -150,7 +158,9 @@ export const compareAccumulatorToRegister = makeInstruction(
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#CP_A,_HL_
 export const compareAccumulatorToIndirectHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
-  const data = ctx.readMemoryCycle(address);
+  const data = ctx.readMemory(address);
+
+  ctx.beginNextCycle();
 
   compareAccumulatorTo(ctx, data);
 });
@@ -179,9 +189,13 @@ export const incrementRegister = makeInstruction((ctx, reg: Register) => {
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#INC__HL_
 export const incrementIndirectHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
-  const data = ctx.readMemoryCycle(address);
+  const data = ctx.readMemory(address);
 
-  ctx.writeMemoryCycle(address, increment(ctx, data));
+  ctx.beginNextCycle();
+
+  ctx.writeMemory(address, increment(ctx, data));
+
+  ctx.beginNextCycle();
 });
 
 function increment(ctx: InstructionContext, data: number) {
@@ -203,9 +217,13 @@ export const decrementRegister = makeInstruction((ctx, reg: Register) => {
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#DEC__HL_
 export const decrementIndirectHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
-  const data = ctx.readMemoryCycle(address);
+  const data = ctx.readMemory(address);
 
-  ctx.writeMemoryCycle(address, decrement(ctx, data));
+  ctx.beginNextCycle();
+
+  ctx.writeMemory(address, decrement(ctx, data));
+
+  ctx.beginNextCycle();
 });
 
 function decrement(ctx: InstructionContext, data: number) {
@@ -229,7 +247,9 @@ export const andAccumulatorWithRegister = makeInstruction(
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#AND_A,_HL_
 export const andAccumulatorWithIndirectHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
-  const data = ctx.readMemoryCycle(address);
+  const data = ctx.readMemory(address);
+
+  ctx.beginNextCycle();
 
   andAccumulatorWith(ctx, data);
 });
@@ -260,7 +280,9 @@ export const orAccumulatorWithRegister = makeInstruction(
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#OR_A,_HL_
 export const orAccumulatorWithIndirectHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
-  const data = ctx.readMemoryCycle(address);
+  const data = ctx.readMemory(address);
+
+  ctx.beginNextCycle();
 
   orAccumulatorWith(ctx, data);
 });
@@ -291,7 +313,9 @@ export const xorAccumulatorWithRegister = makeInstruction(
 // https://rgbds.gbdev.io/docs/v0.9.4/gbz80.7#XOR_A,_HL_
 export const xorAccumulatorWithIndirectHL = makeInstruction((ctx) => {
   const address = ctx.readRegisterPair(RegisterPair.HL);
-  const data = ctx.readMemoryCycle(address);
+  const data = ctx.readMemory(address);
+
+  ctx.beginNextCycle();
 
   xorAccumulatorWith(ctx, data);
 });

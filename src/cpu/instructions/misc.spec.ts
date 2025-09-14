@@ -35,12 +35,9 @@ describe("Miscellaneous instructions", () => {
   testCpuState("EI", ({ ctx, onCycle }) => {
     enableInterrupts(ctx);
 
+    expect(ctx.isInterruptMasterEnableScheduled()).toBe(true);
     expect(ctx.isInterruptMasterEnabled()).toBe(false);
     expect(onCycle).toBeCalledTimes(1);
-
-    ctx.updateInterruptMasterEnabled();
-
-    expect(ctx.isInterruptMasterEnabled()).toBe(true);
   });
 
   testCpuState("NOP", ({ ctx, onCycle }) => {

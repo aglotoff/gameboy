@@ -1,11 +1,4 @@
 import { Flag, Register, RegisterFile, RegisterPair } from "./register";
-import {
-  getLSB,
-  getMSB,
-  makeWord,
-  wrappingDecrementWord,
-  wrappingIncrementWord,
-} from "../utils";
 
 export interface IMemory {
   read(address: number): number;
@@ -27,35 +20,17 @@ export interface InstructionContext {
 
   getFlag(flag: Flag): boolean;
   setFlag(flag: Flag, value: boolean): void;
-  checkCondition(condition: Condition): boolean;
 
   readMemory(address: number): number;
   writeMemory(address: number, data: number): void;
   triggerMemoryWrite(address: number): void;
   triggerMemoryReadWrite(address: number): void;
-  readMemoryCycle(address: number): number;
-  writeMemoryCycle(address: number, data: number): void;
-
-  pushWord(value: number): void;
-  popWord(): number;
 
   halt(): void;
   stop(): void;
-
   setInterruptMasterEnable(enable: boolean): void;
   scheduleInterruptMasterEnable(): void;
-
-  fetchImmediateByte(): number;
-  fetchImmediateWord(): number;
-
   beginNextCycle(): void;
-}
-
-export const enum Condition {
-  Z,
-  C,
-  NZ,
-  NC,
 }
 
 export class CpuState implements InstructionContext {
@@ -64,7 +39,6 @@ export class CpuState implements InstructionContext {
   private halted = false;
   private stopped = false;
 
-  private opcode = 0;
   private imeNext = false;
   private memory: IMemory;
   private onCycle: () => void;
@@ -106,19 +80,8 @@ export class CpuState implements InstructionContext {
     return this.memory.read(address);
   }
 
-  public readMemoryCycle(address: number): number {
-    const value = this.memory.read(address);
-    this.beginNextCycle();
-    return value;
-  }
-
   public writeMemory(address: number, data: number) {
     this.memory.write(address, data);
-  }
-
-  public writeMemoryCycle(address: number, data: number) {
-    this.memory.write(address, data);
-    this.beginNextCycle();
   }
 
   public triggerMemoryWrite(address: number) {
@@ -149,10 +112,6 @@ export class CpuState implements InstructionContext {
     return this.stopped;
   }
 
-  public getOpcode() {
-    return this.opcode;
-  }
-
   public setInterruptMasterEnable(ime: boolean) {
     this.ime = ime;
     this.imeNext = false;
@@ -168,85 +127,5 @@ export class CpuState implements InstructionContext {
 
   public isInterruptMasterEnableScheduled() {
     return this.imeNext;
-  }
-
-  public fetchImmediateByte() {
-    let address = this.readRegisterPair(RegisterPair.PC);
-    const data = this.readMemoryCycle(address);
-
-    this.advancePC();
-
-    return data;
-  }
-
-  public fetchImmediateWord() {
-    const lsb = this.fetchImmediateByte();
-    const msb = this.fetchImmediateByte();
-    return makeWord(msb, lsb);
-  }
-
-  public fetchNextOpcode() {
-    let address = this.readRegisterPair(RegisterPair.PC);
-    this.opcode = this.readMemory(address);
-  }
-
-  public checkCondition(condition: Condition) {
-    switch (condition) {
-      case Condition.Z:
-        return this.getFlag(Flag.Z);
-      case Condition.C:
-        return this.getFlag(Flag.CY);
-      case Condition.NZ:
-        return !this.getFlag(Flag.Z);
-      case Condition.NC:
-        return !this.getFlag(Flag.CY);
-    }
-  }
-
-  public pushWord(data: number) {
-    let address = this.readRegisterPair(RegisterPair.SP);
-
-    this.triggerMemoryWrite(address);
-    this.writeRegisterPair(RegisterPair.SP, wrappingDecrementWord(address));
-
-    this.beginNextCycle();
-
-    address = this.readRegisterPair(RegisterPair.SP);
-
-    this.triggerMemoryWrite(address);
-    this.writeRegisterPair(RegisterPair.SP, wrappingDecrementWord(address));
-
-    this.writeMemoryCycle(address, getMSB(data));
-
-    address = this.readRegisterPair(RegisterPair.SP);
-    this.writeMemory(address, getLSB(data));
-  }
-
-  public popWord() {
-    let address = this.readRegisterPair(RegisterPair.SP);
-
-    this.writeRegisterPair(RegisterPair.SP, wrappingIncrementWord(address));
-    this.triggerMemoryReadWrite(address);
-
-    const lsb = this.readMemoryCycle(address);
-
-    address = this.readRegisterPair(RegisterPair.SP);
-
-    this.writeRegisterPair(RegisterPair.SP, wrappingIncrementWord(address));
-
-    const msb = this.readMemoryCycle(address);
-
-    return makeWord(msb, lsb);
-  }
-
-  public updateInterruptMasterEnabled() {
-    if (this.isInterruptMasterEnableScheduled()) {
-      this.setInterruptMasterEnable(true);
-    }
-  }
-
-  public advancePC() {
-    const address = this.readRegisterPair(RegisterPair.PC);
-    this.writeRegisterPair(RegisterPair.PC, wrappingIncrementWord(address));
   }
 }

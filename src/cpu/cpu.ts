@@ -1,11 +1,17 @@
 import { CpuState, IMemory } from "./cpu-state";
 import { getInstruction } from "./instructions";
 import { InterruptController } from "../hw/interrupt-controller";
-import { getLSB, getMSB, wrappingDecrementWord } from "../utils";
+import {
+  getLSB,
+  getMSB,
+  wrappingDecrementWord,
+  wrappingIncrementWord,
+} from "../utils";
 import { Register, RegisterPair } from "./register";
 
 export class Cpu {
   private state: CpuState;
+  private opcode = 0;
 
   public constructor(
     memory: IMemory,
@@ -36,8 +42,8 @@ export class Cpu {
       this.processInterruptRequests();
 
       if (!this.state.isHalted()) {
-        this.state.advancePC();
-        this.state.updateInterruptMasterEnabled();
+        this.advancePC();
+        this.updateInterruptMasterEnabled();
       }
     } catch (error) {
       this.state.stop();
@@ -45,10 +51,29 @@ export class Cpu {
     }
   }
 
+  private advancePC() {
+    const address = this.state.readRegisterPair(RegisterPair.PC);
+    this.state.writeRegisterPair(
+      RegisterPair.PC,
+      wrappingIncrementWord(address)
+    );
+  }
+
+  private updateInterruptMasterEnabled() {
+    if (this.state.isInterruptMasterEnableScheduled()) {
+      this.state.setInterruptMasterEnable(true);
+    }
+  }
+
   private executeNextInstruction() {
-    const instruction = getInstruction(this.state.getOpcode());
+    const instruction = getInstruction(this.opcode);
     instruction(this.state);
-    this.state.fetchNextOpcode();
+    this.fetchNextOpcode();
+  }
+
+  private fetchNextOpcode() {
+    let address = this.state.readRegisterPair(RegisterPair.PC);
+    this.opcode = this.state.readMemory(address);
   }
 
   private isHaltBug() {
@@ -109,7 +134,7 @@ export class Cpu {
     }
 
     this.state.beginNextCycle();
-    this.state.fetchNextOpcode();
+    this.fetchNextOpcode();
   }
 
   public writeRegister(reg: Register, value: number) {

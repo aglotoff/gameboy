@@ -17,7 +17,7 @@ import {
   returnFromFunctionConditional,
   returnFromInterruptHandler,
 } from "./flow";
-import { Condition } from "../cpu-state";
+import { Condition } from "./lib";
 
 describe("Control flow instructions", () => {
   testCpuState("JP nn", ({ ctx, onCycle }) => {
