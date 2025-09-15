@@ -18,7 +18,7 @@ export function makeInstruction<T extends unknown[]>(
   cb: (ctx: InstructionContext, ...args: T) => void
 ) {
   return function (ctx: InstructionContext, ...args: T) {
-    ctx.beginNextCycle();
+    ctx.state.beginNextCycle();
     cb(ctx, ...args);
   };
 }
@@ -27,18 +27,18 @@ export function makeInstructionWithImmediateByte<T extends unknown[]>(
   cb: (ctx: InstructionContext, byte: number, ...args: T) => void
 ) {
   return (ctx: InstructionContext, ...args: T) => {
-    ctx.beginNextCycle();
+    ctx.state.beginNextCycle();
     cb(ctx, fetchImmediateByte(ctx), ...args);
   };
 }
 
 export function fetchImmediateByte(ctx: InstructionContext) {
-  const address = ctx.readRegisterPair(RegisterPair.PC);
-  const data = ctx.readMemory(address);
+  const address = ctx.registers.readPair(RegisterPair.PC);
+  const data = ctx.memory.read(address);
 
-  ctx.beginNextCycle();
+  ctx.state.beginNextCycle();
 
-  ctx.writeRegisterPair(RegisterPair.PC, wrappingIncrementWord(address));
+  ctx.registers.writePair(RegisterPair.PC, wrappingIncrementWord(address));
 
   return data;
 }
@@ -47,7 +47,7 @@ export function makeInstructionWithImmediateWord<T extends unknown[]>(
   cb: (ctx: InstructionContext, word: number, ...args: T) => void
 ) {
   return (ctx: InstructionContext, ...args: T) => {
-    ctx.beginNextCycle();
+    ctx.state.beginNextCycle();
     cb(ctx, fetchImmediateWord(ctx), ...args);
   };
 }
@@ -105,54 +105,54 @@ export const enum Condition {
 export function checkCondition(ctx: InstructionContext, condition: Condition) {
   switch (condition) {
     case Condition.Z:
-      return ctx.getFlag(Flag.Z);
+      return ctx.registers.getFlag(Flag.Z);
     case Condition.C:
-      return ctx.getFlag(Flag.CY);
+      return ctx.registers.getFlag(Flag.CY);
     case Condition.NZ:
-      return !ctx.getFlag(Flag.Z);
+      return !ctx.registers.getFlag(Flag.Z);
     case Condition.NC:
-      return !ctx.getFlag(Flag.CY);
+      return !ctx.registers.getFlag(Flag.CY);
   }
 }
 
 export function pushWord(ctx: InstructionContext, data: number) {
-  let address = ctx.readRegisterPair(RegisterPair.SP);
+  let address = ctx.registers.readPair(RegisterPair.SP);
 
-  ctx.triggerMemoryWrite(address);
-  ctx.writeRegisterPair(RegisterPair.SP, wrappingDecrementWord(address));
+  ctx.memory.triggerWrite(address);
+  ctx.registers.writePair(RegisterPair.SP, wrappingDecrementWord(address));
 
-  ctx.beginNextCycle();
+  ctx.state.beginNextCycle();
 
-  address = ctx.readRegisterPair(RegisterPair.SP);
+  address = ctx.registers.readPair(RegisterPair.SP);
 
-  ctx.triggerMemoryWrite(address);
-  ctx.writeRegisterPair(RegisterPair.SP, wrappingDecrementWord(address));
+  ctx.memory.triggerWrite(address);
+  ctx.registers.writePair(RegisterPair.SP, wrappingDecrementWord(address));
 
-  ctx.writeMemory(address, getMSB(data));
+  ctx.memory.write(address, getMSB(data));
 
-  ctx.beginNextCycle();
+  ctx.state.beginNextCycle();
 
-  address = ctx.readRegisterPair(RegisterPair.SP);
-  ctx.writeMemory(address, getLSB(data));
+  address = ctx.registers.readPair(RegisterPair.SP);
+  ctx.memory.write(address, getLSB(data));
 }
 
 export function popWord(ctx: InstructionContext) {
-  let address = ctx.readRegisterPair(RegisterPair.SP);
+  let address = ctx.registers.readPair(RegisterPair.SP);
 
-  ctx.writeRegisterPair(RegisterPair.SP, wrappingIncrementWord(address));
-  ctx.triggerMemoryReadWrite(address);
+  ctx.registers.writePair(RegisterPair.SP, wrappingIncrementWord(address));
+  ctx.memory.triggerReadWrite(address);
 
-  const lsb = ctx.readMemory(address);
+  const lsb = ctx.memory.read(address);
 
-  ctx.beginNextCycle();
+  ctx.state.beginNextCycle();
 
-  address = ctx.readRegisterPair(RegisterPair.SP);
+  address = ctx.registers.readPair(RegisterPair.SP);
 
-  ctx.writeRegisterPair(RegisterPair.SP, wrappingIncrementWord(address));
+  ctx.registers.writePair(RegisterPair.SP, wrappingIncrementWord(address));
 
-  const msb = ctx.readMemory(address);
+  const msb = ctx.memory.read(address);
 
-  ctx.beginNextCycle();
+  ctx.state.beginNextCycle();
 
   return makeWord(msb, lsb);
 }

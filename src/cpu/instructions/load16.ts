@@ -12,31 +12,34 @@ import {
 
 export const loadRegisterPair = makeInstructionWithImmediateWord(
   (ctx, data, dst: RegisterPair) => {
-    ctx.writeRegisterPair(dst, data);
+    ctx.registers.writePair(dst, data);
   }
 );
 
 export const loadDirectFromStackPointer = makeInstructionWithImmediateWord(
   (ctx, address) => {
-    ctx.writeMemory(address, ctx.readRegister(Register.SP_L));
-    ctx.beginNextCycle();
-    ctx.writeMemory(address + 1, ctx.readRegister(Register.SP_H));
-    ctx.beginNextCycle();
+    ctx.memory.write(address, ctx.registers.read(Register.SP_L));
+    ctx.state.beginNextCycle();
+    ctx.memory.write(address + 1, ctx.registers.read(Register.SP_H));
+    ctx.state.beginNextCycle();
   }
 );
 
 export const loadStackPointerFromHL = makeInstruction((ctx) => {
-  ctx.writeRegisterPair(RegisterPair.SP, ctx.readRegisterPair(RegisterPair.HL));
-  ctx.beginNextCycle();
+  ctx.registers.writePair(
+    RegisterPair.SP,
+    ctx.registers.readPair(RegisterPair.HL)
+  );
+  ctx.state.beginNextCycle();
 });
 
 export const pushToStack = makeInstruction((ctx, pair: RegisterPair) => {
-  pushWord(ctx, ctx.readRegisterPair(pair));
-  ctx.beginNextCycle();
+  pushWord(ctx, ctx.registers.readPair(pair));
+  ctx.state.beginNextCycle();
 });
 
 export const popFromStack = makeInstruction((ctx, pair: RegisterPair) => {
-  ctx.writeRegisterPair(pair, popWord(ctx));
+  ctx.registers.writePair(pair, popWord(ctx));
 });
 
 export const loadHLFromAdjustedStackPointer = makeInstructionWithImmediateByte(
@@ -45,23 +48,23 @@ export const loadHLFromAdjustedStackPointer = makeInstructionWithImmediateByte(
       result: lsb,
       carryFrom3,
       carryFrom7,
-    } = addBytes(ctx.readRegister(Register.SP_L), e);
+    } = addBytes(ctx.registers.read(Register.SP_L), e);
 
-    ctx.writeRegister(Register.L, lsb);
+    ctx.registers.write(Register.L, lsb);
 
-    ctx.setFlag(Flag.Z, false);
-    ctx.setFlag(Flag.N, false);
-    ctx.setFlag(Flag.H, carryFrom3);
-    ctx.setFlag(Flag.CY, carryFrom7);
+    ctx.registers.setFlag(Flag.Z, false);
+    ctx.registers.setFlag(Flag.N, false);
+    ctx.registers.setFlag(Flag.H, carryFrom3);
+    ctx.registers.setFlag(Flag.CY, carryFrom7);
 
-    ctx.beginNextCycle();
+    ctx.state.beginNextCycle();
 
     const { result: msb } = addBytes(
-      ctx.readRegister(Register.SP_H),
+      ctx.registers.read(Register.SP_H),
       isNegative(e) ? 0xff : 0x00,
       carryFrom7
     );
 
-    ctx.writeRegister(Register.H, msb);
+    ctx.registers.write(Register.H, msb);
   }
 );

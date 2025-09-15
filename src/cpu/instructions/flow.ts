@@ -18,12 +18,15 @@ import {
 } from "./lib";
 
 export const jump = makeInstructionWithImmediateWord((ctx, address) => {
-  ctx.writeRegisterPair(RegisterPair.PC, address);
-  ctx.beginNextCycle();
+  ctx.registers.writePair(RegisterPair.PC, address);
+  ctx.state.beginNextCycle();
 });
 
 export const jumpToHL = makeInstruction((ctx) => {
-  ctx.writeRegisterPair(RegisterPair.PC, ctx.readRegisterPair(RegisterPair.HL));
+  ctx.registers.writePair(
+    RegisterPair.PC,
+    ctx.registers.readPair(RegisterPair.HL)
+  );
 });
 
 export const jumpConditional = makeInstructionWithImmediateWord(
@@ -33,9 +36,9 @@ export const jumpConditional = makeInstructionWithImmediateWord(
       return;
     }
 
-    ctx.writeRegisterPair(RegisterPair.PC, address);
+    ctx.registers.writePair(RegisterPair.PC, address);
 
-    ctx.beginNextCycle();
+    ctx.state.beginNextCycle();
   }
 );
 
@@ -54,11 +57,11 @@ function doRelativeJump(ctx: InstructionContext, offset: number) {
   const isOffsetNegative = isNegative(offset);
 
   const { result: lsb, carryFrom7 } = addBytes(
-    ctx.readRegister(Register.PC_L),
+    ctx.registers.read(Register.PC_L),
     offset
   );
 
-  let msb = ctx.readRegister(Register.PC_H);
+  let msb = ctx.registers.read(Register.PC_H);
 
   if (carryFrom7 && !isOffsetNegative) {
     msb = wrappingIncrementByte(msb);
@@ -66,9 +69,9 @@ function doRelativeJump(ctx: InstructionContext, offset: number) {
     msb = wrappingDecrementByte(msb);
   }
 
-  ctx.beginNextCycle();
+  ctx.state.beginNextCycle();
 
-  ctx.writeRegisterPair(RegisterPair.PC, makeWord(msb, lsb));
+  ctx.registers.writePair(RegisterPair.PC, makeWord(msb, lsb));
 }
 
 export const callFunction = makeInstructionWithImmediateWord(doCallFunction);
@@ -89,11 +92,11 @@ export const restartFunction = makeInstruction(
 );
 
 function doCallFunction(ctx: InstructionContext, address: number) {
-  pushWord(ctx, ctx.readRegisterPair(RegisterPair.PC));
+  pushWord(ctx, ctx.registers.readPair(RegisterPair.PC));
 
-  ctx.writeRegisterPair(RegisterPair.PC, address);
+  ctx.registers.writePair(RegisterPair.PC, address);
 
-  ctx.beginNextCycle();
+  ctx.state.beginNextCycle();
 }
 
 export const returnFromFunction = makeInstruction((ctx) => {
@@ -104,7 +107,7 @@ export const returnFromFunctionConditional = makeInstruction(
   (ctx, condition: Condition) => {
     const result = checkCondition(ctx, condition);
 
-    ctx.beginNextCycle();
+    ctx.state.beginNextCycle();
 
     if (result) {
       doReturn(ctx);
@@ -114,10 +117,10 @@ export const returnFromFunctionConditional = makeInstruction(
 
 export const returnFromInterruptHandler = makeInstruction((ctx) => {
   doReturn(ctx);
-  ctx.setInterruptMasterEnable(true);
+  ctx.state.setInterruptMasterEnable(true);
 });
 
 function doReturn(ctx: InstructionContext) {
-  ctx.writeRegisterPair(RegisterPair.PC, popWord(ctx));
-  ctx.beginNextCycle();
+  ctx.registers.writePair(RegisterPair.PC, popWord(ctx));
+  ctx.state.beginNextCycle();
 }

@@ -1,4 +1,4 @@
-import { CpuState, IMemory } from "./cpu-state";
+import { CpuState, IMemory, InstructionContext } from "./cpu-state";
 import { getInstruction } from "./instructions";
 import { InterruptController } from "../hw/interrupt-controller";
 import {
@@ -7,18 +7,40 @@ import {
   wrappingDecrementWord,
   wrappingIncrementWord,
 } from "../utils";
-import { Register, RegisterPair } from "./register";
+import { Register, RegisterFile, RegisterPair } from "./register";
+
+export interface CpuOptions {
+  memory: IMemory;
+  interruptController: InterruptController;
+  onCycle: () => void;
+}
 
 export class Cpu {
+  private registers: RegisterFile;
   private state: CpuState;
+  private memory: IMemory;
+  private interruptController: InterruptController;
+
+  private instructionContext: InstructionContext;
+
   private opcode = 0;
 
-  public constructor(
-    memory: IMemory,
-    private interruptController: InterruptController,
-    onCycle: () => void
-  ) {
-    this.state = new CpuState({ memory, onCycle });
+  public constructor({ memory, interruptController, onCycle }: CpuOptions) {
+    this.registers = new RegisterFile();
+    this.state = new CpuState({ onCycle });
+    this.memory = memory;
+    this.interruptController = interruptController;
+
+    this.instructionContext = {
+      registers: this.registers,
+      state: this.state,
+      memory,
+    };
+
+    this.registers.write(Register.A, 0x01);
+    this.registers.write(Register.B, 0xff);
+    this.registers.write(Register.C, 0x13);
+    this.registers.write(Register.D, 0x00);
 
     // TODO: this extra M-cycle was added to pass boot_div-dmgABCmgb, do we
     // miss something?
@@ -52,11 +74,8 @@ export class Cpu {
   }
 
   private advancePC() {
-    const address = this.state.readRegisterPair(RegisterPair.PC);
-    this.state.writeRegisterPair(
-      RegisterPair.PC,
-      wrappingIncrementWord(address)
-    );
+    const address = this.registers.readPair(RegisterPair.PC);
+    this.registers.writePair(RegisterPair.PC, wrappingIncrementWord(address));
   }
 
   private updateInterruptMasterEnabled() {
@@ -67,13 +86,13 @@ export class Cpu {
 
   private executeNextInstruction() {
     const instruction = getInstruction(this.opcode);
-    instruction(this.state);
+    instruction(this.instructionContext);
     this.fetchNextOpcode();
   }
 
   private fetchNextOpcode() {
-    let address = this.state.readRegisterPair(RegisterPair.PC);
-    this.opcode = this.state.readMemory(address);
+    let address = this.registers.readPair(RegisterPair.PC);
+    this.opcode = this.memory.read(address);
   }
 
   private isHaltBug() {
@@ -99,15 +118,12 @@ export class Cpu {
 
     this.state.beginNextCycle();
 
-    let sp = this.state.readRegisterPair(RegisterPair.SP);
+    let sp = this.registers.readPair(RegisterPair.SP);
     sp = wrappingDecrementWord(sp);
 
     this.state.beginNextCycle();
 
-    this.state.writeMemory(
-      sp,
-      getMSB(this.state.readRegisterPair(RegisterPair.PC))
-    );
+    this.memory.write(sp, getMSB(this.registers.readPair(RegisterPair.PC)));
 
     this.state.beginNextCycle();
 
@@ -115,30 +131,20 @@ export class Cpu {
 
     const irq = this.interruptController.getPendingInterrupt();
 
-    this.state.writeMemory(
-      sp,
-      getLSB(this.state.readRegisterPair(RegisterPair.PC))
-    );
-    this.state.writeRegisterPair(RegisterPair.SP, sp);
+    this.memory.write(sp, getLSB(this.registers.readPair(RegisterPair.PC)));
+    this.registers.writePair(RegisterPair.SP, sp);
 
     this.state.beginNextCycle();
 
     if (irq < 0) {
-      this.state.writeRegisterPair(RegisterPair.PC, 0);
+      this.registers.writePair(RegisterPair.PC, 0);
     } else {
       this.interruptController.acknowledgeInterrupt(irq);
-      this.state.writeRegisterPair(
-        RegisterPair.PC,
-        getInterruptVectorAddress(irq)
-      );
+      this.registers.writePair(RegisterPair.PC, getInterruptVectorAddress(irq));
     }
 
     this.state.beginNextCycle();
     this.fetchNextOpcode();
-  }
-
-  public writeRegister(reg: Register, value: number) {
-    this.state.writeRegister(reg, value);
   }
 
   public isStopped() {

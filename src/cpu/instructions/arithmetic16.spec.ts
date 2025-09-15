@@ -1,7 +1,7 @@
 import { describe, expect } from "vitest";
 
 import { Flag, RegisterPair } from "../register";
-import { testCpuState } from "../test-lib";
+import { testInstructions } from "../test-lib";
 
 import {
   addRegisterPair,
@@ -11,58 +11,58 @@ import {
 } from "./arithmetic16";
 
 describe("16-bit arithmetic instructions", () => {
-  testCpuState("INC rr", ({ ctx, onCycle }) => {
-    ctx.writeRegisterPair(RegisterPair.DE, 0x235f);
+  testInstructions("INC rr", ({ ctx, onCycle }) => {
+    ctx.registers.writePair(RegisterPair.DE, 0x235f);
 
     incrementRegisterPair(ctx, RegisterPair.DE);
 
-    expect(ctx.readRegisterPair(RegisterPair.DE)).toBe(0x2360);
+    expect(ctx.registers.readPair(RegisterPair.DE)).toBe(0x2360);
     expect(onCycle).toBeCalledTimes(2);
   });
 
-  testCpuState("DEC rr", ({ ctx, onCycle }) => {
-    ctx.writeRegisterPair(RegisterPair.DE, 0x235f);
+  testInstructions("DEC rr", ({ ctx, onCycle }) => {
+    ctx.registers.writePair(RegisterPair.DE, 0x235f);
 
     decrementRegisterPair(ctx, RegisterPair.DE);
 
-    expect(ctx.readRegisterPair(RegisterPair.DE)).toBe(0x235e);
+    expect(ctx.registers.readPair(RegisterPair.DE)).toBe(0x235e);
     expect(onCycle).toBeCalledTimes(2);
   });
 
-  testCpuState("ADD HL,rr", ({ ctx, onCycle }) => {
-    ctx.writeRegisterPair(RegisterPair.HL, 0x8a23);
-    ctx.writeRegisterPair(RegisterPair.BC, 0x0605);
+  testInstructions("ADD HL,rr", ({ ctx, onCycle }) => {
+    ctx.registers.writePair(RegisterPair.HL, 0x8a23);
+    ctx.registers.writePair(RegisterPair.BC, 0x0605);
 
     addRegisterPair(ctx, RegisterPair.BC);
 
-    expect(ctx.readRegisterPair(RegisterPair.HL)).toBe(0x9028);
-    expect(ctx.getFlag(Flag.H)).toBe(true);
-    expect(ctx.getFlag(Flag.N)).toBe(false);
-    expect(ctx.getFlag(Flag.CY)).toBe(false);
+    expect(ctx.registers.readPair(RegisterPair.HL)).toBe(0x9028);
+    expect(ctx.registers.getFlag(Flag.H)).toBe(true);
+    expect(ctx.registers.getFlag(Flag.N)).toBe(false);
+    expect(ctx.registers.getFlag(Flag.CY)).toBe(false);
     expect(onCycle).toBeCalledTimes(2);
 
-    ctx.writeRegisterPair(RegisterPair.HL, 0x8a23);
+    ctx.registers.writePair(RegisterPair.HL, 0x8a23);
 
     addRegisterPair(ctx, RegisterPair.HL);
 
-    expect(ctx.readRegisterPair(RegisterPair.HL)).toBe(0x1446);
-    expect(ctx.getFlag(Flag.H)).toBe(true);
-    expect(ctx.getFlag(Flag.N)).toBe(false);
-    expect(ctx.getFlag(Flag.CY)).toBe(true);
+    expect(ctx.registers.readPair(RegisterPair.HL)).toBe(0x1446);
+    expect(ctx.registers.getFlag(Flag.H)).toBe(true);
+    expect(ctx.registers.getFlag(Flag.N)).toBe(false);
+    expect(ctx.registers.getFlag(Flag.CY)).toBe(true);
     expect(onCycle).toBeCalledTimes(4);
   });
 
-  testCpuState("ADD SP,e8", ({ ctx, onCycle }) => {
-    ctx.writeRegisterPair(RegisterPair.SP, 0xfff8);
-    ctx.writeMemory(0, 0x2);
+  testInstructions("ADD SP,e8", ({ ctx, onCycle }) => {
+    ctx.registers.writePair(RegisterPair.SP, 0xfff8);
+    ctx.memory.write(0, 0x2);
 
     addOffsetToStackPointer(ctx);
 
-    expect(ctx.readRegisterPair(RegisterPair.SP)).toBe(0xfffa);
-    expect(ctx.getFlag(Flag.H)).toBe(false);
-    expect(ctx.getFlag(Flag.N)).toBe(false);
-    expect(ctx.getFlag(Flag.CY)).toBe(false);
-    expect(ctx.getFlag(Flag.Z)).toBe(false);
+    expect(ctx.registers.readPair(RegisterPair.SP)).toBe(0xfffa);
+    expect(ctx.registers.getFlag(Flag.H)).toBe(false);
+    expect(ctx.registers.getFlag(Flag.N)).toBe(false);
+    expect(ctx.registers.getFlag(Flag.CY)).toBe(false);
+    expect(ctx.registers.getFlag(Flag.Z)).toBe(false);
     expect(onCycle).toBeCalledTimes(4);
   });
 });

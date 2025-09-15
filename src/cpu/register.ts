@@ -48,11 +48,11 @@ export function getLowRegisterOfPair(pair: RegisterPair): Register {
 export class RegisterFile {
   private registers = new Uint8Array(14);
 
-  public readRegister(register: Register) {
+  public read(register: Register) {
     return this.registers[register];
   }
 
-  public writeRegister(register: Register, value: number) {
+  public write(register: Register, value: number) {
     if (register === Register.F) {
       // High 4 bits of flags are always zero
       // TODO: re-check that
@@ -62,16 +62,16 @@ export class RegisterFile {
     }
   }
 
-  public readRegisterPair(pair: RegisterPair) {
+  public readPair(pair: RegisterPair) {
     return makeWord(
-      this.readRegister(getHighRegisterOfPair(pair)),
-      this.readRegister(getLowRegisterOfPair(pair))
+      this.read(getHighRegisterOfPair(pair)),
+      this.read(getLowRegisterOfPair(pair))
     );
   }
 
-  public writeRegisterPair(pair: RegisterPair, value: number) {
-    this.writeRegister(getHighRegisterOfPair(pair), getMSB(value));
-    this.writeRegister(getLowRegisterOfPair(pair), getLSB(value));
+  public writePair(pair: RegisterPair, value: number) {
+    this.write(getHighRegisterOfPair(pair), getMSB(value));
+    this.write(getLowRegisterOfPair(pair), getLSB(value));
   }
 
   public getFlag(flag: Flag) {

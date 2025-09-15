@@ -1,6 +1,7 @@
 import { test, vi } from "vitest";
 
-import { CpuState, IMemory } from "./cpu-state";
+import { CpuState, IMemory, InstructionContext } from "./cpu-state";
+import { RegisterFile } from "./register";
 
 class TestMemory implements IMemory {
   private ram = new Uint8Array(0x10000);
@@ -19,14 +20,18 @@ class TestMemory implements IMemory {
 
 export interface Fixtures {
   onCycle: () => void;
-  ctx: CpuState;
+  ctx: InstructionContext;
 }
 
-export const testCpuState = test.extend<Fixtures>({
+export const testInstructions = test.extend<Fixtures>({
   onCycle: async ({}, use: (onCycle: () => void) => Promise<void>) => {
     await use(vi.fn());
   },
-  ctx: async ({ onCycle }, use: (ctx: CpuState) => Promise<void>) => {
-    await use(new CpuState({ memory: new TestMemory(), onCycle }));
+  ctx: async ({ onCycle }, use: (ctx: InstructionContext) => Promise<void>) => {
+    await use({
+      registers: new RegisterFile(),
+      memory: new TestMemory(),
+      state: new CpuState({ onCycle }),
+    });
   },
 });
